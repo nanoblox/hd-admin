@@ -1,0 +1,6 @@
+{
+	"editor.insertSpaces": false,
+	"editor.detectIndentation": false,
+	"luau-lsp.fflags.enableNewSolver": true,
+	"luau-lsp.fflags.enableByDefault": true
+}

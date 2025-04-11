@@ -1,0 +1,53 @@
+{
+  "name": "HD Admin",
+  "emitLegacyScripts": false,
+  "tree": {
+      "$className": "DataModel",
+      "ServerScriptService": {
+          "$className": "ServerScriptService",
+          "HD Admin": {
+              "$className": "Folder",
+              "READ_ME": {
+                "$path": "src/Loader/READ_ME.lua"
+              },
+              "Settings": {
+                "$path": "src/Loader/Settings.lua"
+              },
+              "Config": {
+                "$className": "Configuration",
+                "$path": "src/Loader/Config"
+              },
+              "Core": {
+                "$className": "Model",
+                "Loader": {
+                  "$path": "src/Loader/Core/Loader.server.lua"
+                },
+				"API": {
+                  "$path": "src/Loader/Core/API.lua"
+                },
+                "MainModule": {
+                    "$path": "src/MainModule/MainModule.lua",
+                    "LICENSE": {
+                        "$path": "src/MainModule/LICENSE.lua"
+                    },
+                    "Value": {
+                        "$className": "Folder",
+						"Controllers": {
+                            "$path": "src/MainModule/Value/Controllers"
+                        },
+                        "Modules": {
+                            "$path": "src/MainModule/Value/Modules"
+                        },
+                        "Packages": {
+                            "$path": "Packages"
+                        },
+                        "Services": {
+                            "$path": "src/MainModule/Value/Services"
+                        }
+                    }
+                }
+              }
+          }
+      }
+  }
+}

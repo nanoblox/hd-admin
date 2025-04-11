@@ -1,0 +1,3 @@
+local MathUtil = {}
+
+return MathUtil
