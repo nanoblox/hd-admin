@@ -14,7 +14,6 @@ local Args = {}
 local Players = game:GetService("Players")
 local modules = script:FindFirstAncestor("MainModule").Value.Modules
 local InputObjects = require(modules.UI.InputObjects)
-local items = {}
 
 
 -- LOCAL FUNCTIONS
@@ -707,7 +706,6 @@ Args.items = {
 
 -- TYPES
 export type Argument = keyof<typeof(Args.items)>
-export type Argument2 = keyof<typeof(items)>
 export type ArgumentDetail = {
 	inputObject: InputObjects.InputConfig?,
 	mustBecomeAliasOf: string?,
