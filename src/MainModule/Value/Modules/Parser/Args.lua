@@ -80,7 +80,6 @@ end
 Args.items = {
 
 	["Player"] = register({
-		-- Accepts qualifiers ("me", "all", "others") or players within game.Players
 		inputObject = {
 			inputType = "ItemSelector",
 			pickerName = "Players",
@@ -89,6 +88,9 @@ Args.items = {
 		description = "Accepts qualifiers (e.g. 'raza', '@ForeverHD', 'others' from ';paint raza,@ForeverHD,others'), calls the command *for each player*, and returns a single Player instance.",
 		playerArg = true,
 		executeForEachPlayer = true,
+		stringify = function(self, original)
+
+		end,
 		parse = function(self, qualifiers, callerUserId, additional)
 			--[[
 			local defaultToMe = qualifiers == nil or main.modules.TableUtil.isQualifiersEmpty(qualifiers)
@@ -129,7 +131,6 @@ Args.items = {
 	}),
 
 	["Players"] = register({
-		-- Accepts qualifiers ("me", "all", "others") or players within game.Players
 		inputObject = {
 			inputType = "ItemSelector",
 			pickerName = "Players",
@@ -212,10 +213,6 @@ Args.items = {
 	["AnyPlayer"] = register({
 		-- Accepts qualifiers ("me", "all", "others") or players within game.Players
 		-- Accepts an Integer OR String OR Qualifier ("me", "all", "others")
-		-- Upon FocusLost of the box, it will search for that user (by UserId or Name)
-		-- of the corresponding account. If present, it displays the profile image, userId
-		-- and username in or below the box. If an invalid user (such as a banned account)
-		-- or too higher integer, then display a Red outline requiring the box to be re-done
 		inputObject = {
 			inputType = "ItemSelector",
 			pickerName = "Server & Offline Players",
@@ -319,8 +316,6 @@ Args.items = {
 	}),
 
 	["Integer"] = Args.becomeAliasOf("Number", register({
-		-- Accepts a number value (but only whole numbers)
-		-- Consider the same as Number
 		inputObject = {
 			inputType = "NumberInput",
 			stepAmount = 1,
@@ -400,9 +395,8 @@ Args.items = {
 	}),
 	
 	["Duration"] = register({
-		-- See ban panel time section, 1h, 4m, etc
 		inputObject = {
-			inputType = "TimeSelector",
+			inputType = "DurationSelector",
 		},
 		description = "Accepts a timestring (such as '5s7d8h') and returns the integer equivalent in seconds. Timestring letters are: seconds(s), minutes(m), hours(h), days(d), weeks(w), months(o) and years(y).",
 		defaultValue = 0,
@@ -412,7 +406,6 @@ Args.items = {
 	}),
 
 	["Color"] = register({
-		-- Accepts a Color3 value (generated from color wheel, or presets)
 		inputObject = {
 			inputType = "ColorPicker",
 		},
@@ -488,6 +481,32 @@ Args.items = {
 
 	["Toggle"] = Args.becomeAliasOf("Bool"),
 
+	["Options"] = register({
+		inputObject = {
+			inputType = "Options",
+			optionsArray = {"Yes", "No"}
+		},
+		description = "Accepts any value within the optionsArray and returns the value.",
+		defaultValue = false,
+		parse = function(self, stringToParse)
+			
+		end,
+	}),
+
+	["ServersOptions"] = Args.becomeAliasOf("Options", register({
+		inputObject = {
+			inputType = "Options",
+			optionsArray = {"Current", "All"}
+		},
+	})),
+
+	["BanLengthOptions"] = Args.becomeAliasOf("Options", register({
+		inputObject = {
+			inputType = "Options",
+			optionsArray = {"∞", "Time"}
+		},
+	})),
+
 	["Leaderstat"] = register({
 		-- Accepts the names of stats within the player's leaderstats:
 		-- https://create.roblox.com/docs/players/leaderboards
@@ -497,6 +516,7 @@ Args.items = {
 			pickerName = "Leaderstats",
 			pickerItems = function()
 				-- Return array of leaderstat names from player's leaderstats
+				-- To-do later
 				return {}
 			end,
 		},
@@ -517,6 +537,7 @@ Args.items = {
 			pickerName = "Teams",
 			pickerItems = function()
 				-- Return array of team names with game.Teams
+				-- To-do later
 				return {}
 			end,
 		},
@@ -539,12 +560,12 @@ Args.items = {
 	}),
 
 	["Material"] = register({
-		-- Accepts the names of materials from Enum.Material 
 		inputObject = {
 			inputType = "ItemSelector",
 			pickerName = "Materials",
 			pickerItems = function()
 				-- Return array of all possible material enums
+				-- To-do later
 				return {}
 			end,
 		},
@@ -561,8 +582,6 @@ Args.items = {
 	}),
 
 	["Gear"] = register({
-		-- Accepts the names of gear centralised in an array
-		-- For now, just make up this array
 		inputObject = {
 			inputType = "NumberInput",
 		},
@@ -691,12 +710,9 @@ Args.items = {
 		--]]
 	}),
 
-	["Options"] = register({
-		-- Accepts an array of strings
-		-- For example, the ;vote command has the ability to +Create and -Delete
-		-- option boxes, then input a string into these boxes
+	["Fields"] = register({
 		inputObject = {
-			inputType = "TextOptions",
+			inputType = "InputFields",
 			maxItems = 10,
 		},
 	}),
