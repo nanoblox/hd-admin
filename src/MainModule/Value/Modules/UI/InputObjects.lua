@@ -63,7 +63,7 @@ InputObjects.items = {
 
 	["DurationSelector"] = function(inputConfig: InputConfig)
 		-- An object that enables the user to configure duration, including
-		-- seconds, minutes, hours, and optional days, months and years.
+		-- seconds (optional), minutes, hours, days, and years (optional).
 	end,
 
 	["ColorPicker"] = function(inputConfig: InputConfig)
