@@ -1,8 +1,21 @@
 --!nocheck
 local ParsedData = {}
-local MAIN = nil :: any --require(game.Nanoblox)
+local modules = script:FindFirstAncestor("MainModule").Value.Modules
+local Commands = require(modules.Commands)
+local ParserTypes = require(modules.Parser.ParserTypes)
+local Args = require(modules.Parser.Args)
+local Config = require(modules.Config)
 
 
+-- TYPES
+type QualifierRequired = ParserTypes.QualifierRequired
+type PlayerSearch = ParserTypes.PlayerSearch
+type ParserRejection = ParserTypes.ParserRejection
+type ParsedStatement = ParserTypes.ParsedStatement
+type ParsedBatch = ParserTypes.ParsedBatch
+
+
+-- FUNCTIONS
 function ParsedData.generateEmptyParsedData()
 	return {
 		commandStatement = nil,
@@ -27,26 +40,43 @@ function ParsedData.generateEmptyParsedData()
 	}
 end
 
-function ParsedData.parsedDataSetRequiresQualifierFlag(parsedData, optionalUser)
-	local parserModule = MAIN.modules.Parser
+function ParsedData.requiresQualifier(commandName): ParserTypes.QualifierRequired
+	local commandsDictionary = Commands.getLowerCaseNameAndAliasToCommandDictionary()
+	local commandArgs = commandsDictionary[commandName].args
+	if #commandArgs == 0 then
+		return "Never"
+	end
+	local firstArgName = commandArgs[1]:lower() --!!! re-do this
+	local firstArg = Args.get(firstArgName)
+	if firstArg == nil or firstArg.playerArg ~= true then
+		return "Never"
+	else
+		if firstArg.hidden ~= true then
+			return "Always"
+		else
+			return "Sometimes"
+		end
+	end
+end
 
-	local qualifierRequiredEnum = MAIN.enum.QualifierRequired
-	local parsedDataRequiresQualifier = qualifierRequiredEnum.Sometimes
+function ParsedData.parsedDataSetRequiresQualifierFlag(parsedData, optionalUser)
+	
+	local parsedDataRequiresQualifier: QualifierRequired = "Sometimes"
 
 	for _, capture in pairs(parsedData.commandCaptures) do
 		for commandName, _ in pairs(capture) do
-			local commandRequiresQualifier = parserModule.requiresQualifier(commandName)
-			if commandRequiresQualifier == qualifierRequiredEnum.Always then
-				parsedDataRequiresQualifier = qualifierRequiredEnum.Always
+			local commandRequiresQualifier = ParsedData.requiresQualifier(commandName)
+			if commandRequiresQualifier == "Always" then
+				parsedDataRequiresQualifier = "Always"
 				break
-			elseif commandRequiresQualifier == qualifierRequiredEnum.Never then
-				parsedDataRequiresQualifier = qualifierRequiredEnum.Never
+			elseif commandRequiresQualifier == "Never" then
+				parsedDataRequiresQualifier = "Never"
 			end
 		end
 	end
 
-	if parsedDataRequiresQualifier ~= qualifierRequiredEnum.Sometimes then
-		parsedData.requiresQualifier = (parsedDataRequiresQualifier == qualifierRequiredEnum.Always)
+	if parsedDataRequiresQualifier ~= "Sometimes" then
+		parsedData.requiresQualifier = (parsedDataRequiresQualifier == "Always")
 	else
 		parsedData.requiresQualifier = true
 		ParsedData.parseQualifierDescription(parsedData)
@@ -56,20 +86,17 @@ function ParsedData.parsedDataSetRequiresQualifierFlag(parsedData, optionalUser)
 		if areAllQualifiersRecognized then
 			parsedData.requiresQualifier = true
 		else
-			local utilityModule = MAIN.modules.Parser.Utility
-			local settingService = MAIN.services.SettingService
-			local playerSearchEnums = MAIN.enum.PlayerSearch
-
+			local utilityModule = require(modules.Parser.ParserUtility)
 			local players = game:GetService("Players"):GetPlayers()
 			local userNames = {}
 
 			for _, player in pairs(players) do
 				table.insert(userNames, player.Name:lower())
 			end
-
-			local playerIdentifier = settingService.getUsersPlayerSetting(optionalUser, "playerIdentifier")
-			local playerDefinedSearch = settingService.getUsersPlayerSetting(optionalUser, "playerDefinedSearch")
-			local playerUndefinedSearch = settingService.getUsersPlayerSetting(optionalUser, "playerUndefinedSearch")
+			
+			local playerIdentifier = Config.getSetting("PlayerIdentifier", optionalUser)
+			local playerDefinedSearch: PlayerSearch = Config.getSetting("PlayerDefinedSearch", optionalUser)
+			local playerUndefinedSearch: PlayerSearch = Config.getSetting("PlayerUndefinedSearch", optionalUser)
 
 			for _, qualifier in pairs(parsedData.unrecognizedQualifiers) do
 				local qualifierHasPlayerIdentifier = (qualifier:sub(1, 1) == playerIdentifier)
@@ -81,13 +108,13 @@ function ParsedData.parsedDataSetRequiresQualifierFlag(parsedData, optionalUser)
 
 				local isUserNameSearch = utilityModule.ternary(
 					qualifierHasPlayerIdentifier,
-					playerDefinedSearch == playerSearchEnums.UserName,
-					playerUndefinedSearch == playerSearchEnums.UserName
+					playerDefinedSearch == "UserName",
+					playerUndefinedSearch == "UserName"
 				)
 				local isUserNameAndDisplayNameSearch = utilityModule.ternary(
 					qualifierHasPlayerIdentifier,
-					playerDefinedSearch == playerSearchEnums.UserNameAndDisplayName,
-					playerUndefinedSearch == playerSearchEnums.UserNameAndDisplayName
+					playerDefinedSearch == "UserNameAndDisplayName",
+					playerUndefinedSearch == "UserNameAndDisplayName"
 				)
 
 				if isUserNameSearch or isUserNameAndDisplayNameSearch then
@@ -104,12 +131,23 @@ function ParsedData.parsedDataSetRequiresQualifierFlag(parsedData, optionalUser)
 	end
 end
 
-function ParsedData.parsedDataSetHasEndlessArgumentFlag(parsedData)
-	local parserModule = MAIN.modules.Parser
+function ParsedData.hasEndlessArgument(commandName)
+	local argsDictionary = Args.getAll()
+	local commandsDictionary = Commands.getLowerCaseNameAndAliasToCommandDictionary()
+	local commandArgs = commandsDictionary[commandName].args
+	if #commandArgs == 0 then
+		return false
+	end
+	local lastArgName = commandArgs[#commandArgs]:lower()
+	local lastArg = argsDictionary[lastArgName] :: any
+	local bool = if lastArg and lastArg.endlessArg == true then true else false
+	return bool
+end
 
+function ParsedData.parsedDataSetHasEndlessArgumentFlag(parsedData)
 	for _, capture in pairs(parsedData.commandCaptures) do
 		for commandName, _ in pairs(capture) do
-			if parserModule.hasEndlessArgument(commandName) then
+			if ParsedData.hasEndlessArgument(commandName) then
 				parsedData.hasEndlessArgument = true
 				return
 			end
@@ -118,30 +156,29 @@ function ParsedData.parsedDataSetHasEndlessArgumentFlag(parsedData)
 	parsedData.hasEndlessArgument = false
 end
 
-function ParsedData.parsedDataUpdateIsValidFlag(parsedData, parserRejection)
+function ParsedData.parsedDataUpdateIsValidFlag(parsedData, parserRejection: ParserRejection)
 	if not parsedData.isValid then
 		return
 	end
-	local utilityModule = MAIN.modules.Parser.Utility
-	local parserRejectionEnum = MAIN.enum.ParserRejection
-
-	if parserRejection == parserRejectionEnum.MissingCommandDescription then
+	local utilityModule = require(modules.Parser.ParserUtility)
+	
+	if parserRejection == "MissingCommandDescription" then
 		if parsedData.commandDescription == "" then
 			parsedData.isValid = false
 		end
-	elseif parserRejection == parserRejectionEnum.UnbalancedCapsulesInCommandDescription then
+	elseif parserRejection == "UnbalancedCapsulesInCommandDescription" then
 		if utilityModule.getCapsuleRanges(parsedData.commandDescription) == nil then
 			parsedData.isValid = false
 		end
-	elseif parserRejection == parserRejectionEnum.UnbalancedCapsulesInQualifierDescription then
+	elseif parserRejection == "UnbalancedCapsulesInQualifierDescription" then
 		if utilityModule.getCapsuleRanges(parsedData.qualifierDescription) == nil then
 			parsedData.isValid = false
 		end
-	elseif parserRejection == parserRejectionEnum.MissingCommands then
+	elseif parserRejection == "MissingCommands" then
 		if #parsedData.commandCaptures == 0 then
 			parsedData.isValid = false
 		end
-	elseif parserRejection == parserRejectionEnum.MalformedCommandDescription then
+	elseif parserRejection == "MalformedCommandDescription" then
 		if parsedData.commandDescriptionResidue ~= "" then
 			parsedData.isValid = false
 		end
@@ -153,63 +190,63 @@ function ParsedData.parsedDataUpdateIsValidFlag(parsedData, parserRejection)
 end
 
 function ParsedData.generateOrganizedParsedData(allParsedData)
-	local organizedData = {}
+	local parsedBatch: ParsedBatch = {}
 	for _, parsedData in pairs(allParsedData) do
+
+		local parsedStatement: ParserTypes.ParsedStatement = {
+			isValid = true,
+			isConverted = false,
+			isFromClient = false,
+			commands = {},
+			modifiers = {},
+			qualifiers = {},
+			errorMessage = nil,
+		}
+
 		if parsedData.isValid then
-			local commands = {}
 			for _, capture in pairs(parsedData.commandCaptures) do
 				for command, arguments in pairs(capture) do
-					commands[command] = arguments
+					parsedStatement.commands[command] = arguments
 				end
 			end
-
-			local modifiers = {}
 			for _, capture in pairs(parsedData.modifierCaptures) do
 				for modifier, arguments in pairs(capture) do
-					modifiers[modifier] = arguments
+					parsedStatement.modifiers[modifier] = arguments
 				end
 			end
-
-			local qualifiers = {}
 			for _, capture in pairs(parsedData.qualifierCaptures) do
 				for qualifier, arguments in pairs(capture) do
-					qualifiers[qualifier] = arguments
+					parsedStatement.qualifiers[qualifier] = arguments
 				end
 			end
 
-			table.insert(organizedData, {
-				commands = commands,
-				modifiers = modifiers,
-				qualifiers = qualifiers,
-			})
 		else
-			table.insert(organizedData, {
-				isValid = false,
-				parserRejection = parsedData.parserRejection,
-			})
+
+			parsedStatement.isValid = false
+			parsedStatement.errorMessage = parsedData.parserRejection
 		end
+
+		table.insert(parsedBatch, parsedStatement)
 	end
-	return organizedData
+	return parsedBatch
 end
 
 function ParsedData.parseCommandStatement(parsedData)
-	local parserRejectionEnum = MAIN.enum.ParserRejection
-	local algorithmModule = MAIN.modules.Parser.Algorithm
-
+	local algorithmModule = require(modules.Parser.Algorithm)
+	
 	local descriptions = algorithmModule.getDescriptionsFromCommandStatement(parsedData.commandStatement)
-
+	
 	parsedData.commandDescription = descriptions[1]
 	parsedData.qualifierDescription = descriptions[2]
 	parsedData.extraArgumentDescription = descriptions[3]
 
-	ParsedData.parsedDataUpdateIsValidFlag(parsedData, parserRejectionEnum.MissingCommandDescription)
-	ParsedData.parsedDataUpdateIsValidFlag(parsedData, parserRejectionEnum.UnbalancedCapsulesInCommandDescription)
-	ParsedData.parsedDataUpdateIsValidFlag(parsedData, parserRejectionEnum.UnbalancedCapsulesInQualifierDescription)
+	ParsedData.parsedDataUpdateIsValidFlag(parsedData, "MissingCommandDescription")
+	ParsedData.parsedDataUpdateIsValidFlag(parsedData, "UnbalancedCapsulesInCommandDescription")
+	ParsedData.parsedDataUpdateIsValidFlag(parsedData, "UnbalancedCapsulesInQualifierDescription")
 end
 
 function ParsedData.parseCommandDescription(parsedData)
-	local parserRejectionEnum = MAIN.enum.ParserRejection
-	local algorithmModule = MAIN.modules.Parser.Algorithm
+	local algorithmModule = require(modules.Parser.Algorithm)
 
 	local capturesAndResidue = algorithmModule.parseCommandDescription(parsedData.commandDescription)
 
@@ -217,8 +254,8 @@ function ParsedData.parseCommandDescription(parsedData)
 	parsedData.modifierCaptures = capturesAndResidue[2]
 	parsedData.commandDescriptionResidue = capturesAndResidue[3]
 
-	ParsedData.parsedDataUpdateIsValidFlag(parsedData, parserRejectionEnum.MissingCommands)
-	ParsedData.parsedDataUpdateIsValidFlag(parsedData, parserRejectionEnum.MalformedCommandDescription)
+	ParsedData.parsedDataUpdateIsValidFlag(parsedData, "MissingCommands")
+	ParsedData.parsedDataUpdateIsValidFlag(parsedData, "MalformedCommandDescription")
 end
 
 function ParsedData.parseCommandDescriptionAndSetFlags(parsedData, optionalUser)
@@ -237,7 +274,7 @@ function ParsedData.parseQualifierDescription(parsedData)
 		return
 	end
 
-	local algorithmModule = MAIN.modules.Parser.Algorithm
+	local algorithmModule = require(modules.Parser.Algorithm)
 
 	local qualifierCapturesAndUnrecognizedQualifiers =
 		algorithmModule.parseQualifierDescription(parsedData.qualifierDescription)
@@ -279,18 +316,17 @@ function ParsedData.parseExtraArgumentDescription(parsedData, allParsedDatas, or
 		end
 
 		local extraArgumentsBeforeText = math.huge
+		local commandsDictionary = Commands.getLowerCaseNameAndAliasToCommandDictionary()
 		for _, capture in pairs(parsedData.commandCaptures) do
 			for commandName, arguments in pairs(capture) do
-				local argumentsDictionary = MAIN.modules.Parser.Args.dictionary
-				local commandArgumentNames =
-					MAIN.services.CommandService.getTable("lowerCaseNameAndAliasToCommandDictionary")[commandName].args
+				local commandArgumentNames = commandsDictionary[commandName].args
 
 				local firstArgumentName = commandArgumentNames[1]:lower()
-				local firstArgument = argumentsDictionary[firstArgumentName]
+				local firstArgument = Args.get(firstArgumentName)
 				local isPlayerArgument = firstArgument.playerArg == true
 
 				local lastArgumentName = commandArgumentNames[#commandArgumentNames]:lower()
-				local lastArgument = argumentsDictionary[lastArgumentName]
+				local lastArgument = Args.get(lastArgumentName)
 				local hasEndlessArgument = lastArgument.endlessArg == true
 
 				local commandArguments = #commandArgumentNames
@@ -318,7 +354,7 @@ function ParsedData.parseExtraArgumentDescription(parsedData, allParsedDatas, or
 			end
 		end
 
-		local extraArgument = foundIndex and string.sub(originalMessage, foundIndex) or nil
+		local extraArgument = foundIndex and string.sub(originalMessage, foundIndex :: any) or nil
 		for _, capture in pairs(parsedData.commandCaptures) do
 			for _, arguments in pairs(capture) do
 				for counter = 1, extraArgumentsBeforeText do

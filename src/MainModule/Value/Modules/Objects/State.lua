@@ -28,7 +28,9 @@ local modules = script:FindFirstAncestor("MainModule").Value.Modules
 local deepCopyTable = require(modules.Utility.TableUtil.deepCopyTable)
 local Serializer = require(modules.Utility.Serializer)
 local Janitor = require(modules.Objects.Janitor)
-local stateReplication, stateReplicationRequest = nil, nil
+local Players = game:GetService("Players")
+local Remote = require(modules.Objects.Remote)
+local stateReplication: Remote.Class?, stateReplicationRequest: Remote.Class? = nil, nil
 local replicationHandlers = {}
 local State = {}
 State.__index = State
@@ -62,7 +64,7 @@ function State.new(dataMustBeSerializable: boolean?, initialTable: {[string]: an
 		_data = {} :: {[string]: any},
 		_listeners = {} :: {[string]: {[number]: (...any) -> (...any)}},
 		_changedCallbacks = {} :: {[number]: (...any) -> (...any)},
-		_bindingReplicationName = nil :: any?,
+		_bindingReplicationKey = nil :: any?,
 		_successfulBindings = {},
 		_requestingBindings = {},
 		janitor = janitor,
@@ -270,8 +272,8 @@ function State.listen(self: Class, ...: string | (...any) -> (...any)): Disconne
 		callbacksArray = {}
 		self._listeners[pathwayKey] = callbacksArray
 	end
-	table.insert(callbacksArray, callback)
-	if self._bindingReplicationName then
+	table.insert(callbacksArray, callback :: any) 
+	if self._bindingReplicationKey then
 		task.spawn(function()
 			self:fetchAsync(table.unpack(pathwayAndCallback :: {string}))
 		end)
@@ -301,7 +303,7 @@ function State.observe(self: Class, ...: string | (...any) -> (...any)): {discon
 	end
 	local pathwayKey = State.getPathwayKey(pathway)
 	local successfulBindings = self._successfulBindings :: {[string]: any}
-	if self._bindingReplicationName == nil or successfulBindings[pathwayKey] then
+	if self._bindingReplicationKey == nil or successfulBindings[pathwayKey] then
 		task.spawn(callback, self:get(table.unpack(pathway)))
 	end
 	return self:listen(...)
@@ -311,21 +313,31 @@ function State.replicate(self: Class, player: Player, replicationName: string, p
 	if RunService:IsServer() == false then
 		error("State.replicate can only be called on the server")
 	end
-	local alreadyExists = replicationHandlers[replicationName]
+	if typeof(player) ~= "Instance" or player:IsA("Player") == false then
+		error("First argument must be a player")
+	end
+	local userId = player.UserId
+	local replicationKey = `{userId}_{replicationName}`
+	local alreadyExists = replicationHandlers[replicationKey]
 	if alreadyExists then
-		error(`replicationName '{replicationName}' has already been used'`)
+		error(`replicationKey '{replicationKey}' has already been used'`)
 	end
 
+	-- Remove key once replication ends (i.e. player leaves)
+	local repJanitor = self.janitor:add(Janitor.new())
+	repJanitor:add(function()
+		replicationHandlers[replicationKey] = nil
+	end)
+
 	-- Invoke can only be called once so we set it up initially here then build the handler below
-	local Remote = require(modules.Objects.Remote)
 	if not stateReplication then
-		stateReplication = Remote.new("StateReplication", "Event")
+		stateReplication = Remote.new("StateReplication", "Event") :: any
 		stateReplicationRequest = Remote.new("StateReplicationRequest", "Function")
-		stateReplicationRequest:onServerInvoke(function(player, incomingReplicationName: string, ...: unknown): (boolean, string | {any})
-			if typeof(incomingReplicationName) ~= "string" then
+		stateReplicationRequest:onServerInvoke(function(player, incomingReplicationKey: string, ...: unknown): (boolean, string | {any})
+			if typeof(incomingReplicationKey) ~= "string" then
 				return false, "Replication name must be a string"
 			end
-			local replicationHandler = replicationHandlers[incomingReplicationName] :: (...any) -> (boolean, string | {any})?
+			local replicationHandler = replicationHandlers[incomingReplicationKey] :: (...any) -> (boolean, string | {any})?
 			if not replicationHandler then
 				return false, "Replication handler does not exist"
 			end
@@ -333,7 +345,6 @@ function State.replicate(self: Class, player: Player, replicationName: string, p
 		end)
 	end
 	stateReplicationRequest = stateReplicationRequest :: Remote.Class
-	local repJanitor = self.janitor:add(Janitor.new())
 	local activeListeners = {}
 	local activeListenersSize = 0
 	repJanitor:add(function()
@@ -402,14 +413,14 @@ function State.replicate(self: Class, player: Player, replicationName: string, p
 		local currentValue = self:get(table.unpack(pathway))
 		return true, currentValue
 	end
-	replicationHandlers[replicationName] = replicationHandler
+	replicationHandlers[replicationKey] = replicationHandler
 	
 	-- Replicate all valid changes to the client
-	local stateEvent = stateReplication :: Remote.Class
+	local stateEvent = stateReplication :: any
 	repJanitor:add(self:changed(function(pathwayKey: string, value: any)
 		if activeListeners[pathwayKey] then
 			local pathway = State.getPathway(pathwayKey)
-			stateEvent:fireClient(player, replicationName, pathway, value)
+			stateEvent:fireClient(player, replicationKey, pathway, value)
 		end
 	end))
 
@@ -424,22 +435,27 @@ function State.bind(self: Class, replicationName: string)
 	if RunService:IsClient() == false then
 		error("State.bind can only be called on the client")
 	end
-	if self._bindingReplicationName ~= nil then
+	if self._bindingReplicationKey ~= nil then
 		error("Client state tables can only bind to one server state at a time")
 	end
-	self._bindingReplicationName = replicationName :: any
-	local Remote = require(modules.Objects.Remote)
+	local userId = Players.LocalPlayer.UserId
+	local replicationKey = `{userId}_{replicationName}`
+	self._bindingReplicationKey = replicationKey :: any
 	local janitor = self.janitor
 	if stateReplication == nil then
 		stateReplication = Remote.get("StateReplication")
 	end
 	stateReplication = stateReplication :: Remote.Class
-	janitor:add(stateReplication:onClientEvent(function(replicationName: string, pathway, value)
-		if replicationName ~= self._bindingReplicationName then
+	if stateReplication == nil then
+		error("StateReplication remote does not exist")
+	end
+	local selfClass = self :: Class
+	janitor:add(stateReplication:onClientEvent(function(replicationKey: string, pathway, value)
+		if replicationKey ~= self._bindingReplicationKey then
 			return
 		end
 		table.insert(pathway, value)
-		self:set(table.unpack(pathway))
+		selfClass:set(table.unpack(pathway))
 	end))
 	return
 end
@@ -474,7 +490,7 @@ function State.fetchAsync(self: Class, ...: string): (boolean, string | {any})
 	if RunService:IsClient() == false then
 		error("State.bind can only be called on the client")
 	end
-	if self._bindingReplicationName == nil then
+	if self._bindingReplicationKey == nil then
 		error("State.fetchAsync can only be called after State.bind")
 	end
 	local pathwayKey = State.getPathwayKey(pathway)
@@ -486,15 +502,18 @@ function State.fetchAsync(self: Class, ...: string): (boolean, string | {any})
 	if successfulBindings[pathwayKey] then
 		-- Already fetched and syncing from server, simply return what we have
 		-- already on client
-		return true, self:get(table.unpack(pathway))
+		local value = self:get(table.unpack(pathway))
+		return true, value
 	end
-	local Remote = require(modules.Objects.Remote)
 	if stateReplicationRequest == nil then
 		stateReplicationRequest = Remote.get("StateReplicationRequest")
 	end
 	requestingBindings[pathwayKey] = true
+	if stateReplicationRequest == nil then
+		error("StateReplicationRequest remote does not exist")
+	end
 	stateReplicationRequest = stateReplicationRequest :: Remote.Class
-	local success, approved, value = stateReplicationRequest:invokeServerAsync(self._bindingReplicationName, ...)
+	local success, approved, value = stateReplicationRequest:invokeServerAsync(self._bindingReplicationKey, ...)
 	requestingBindings[pathwayKey] = nil
 	if not success then
 		return false, approved

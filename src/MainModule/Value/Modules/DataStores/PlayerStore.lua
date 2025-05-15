@@ -2,6 +2,10 @@
 -- LOCAL
 local dataTemplates = require(script.Parent)
 local modules = script:FindFirstAncestor("MainModule").Value.Modules
+local areValuesEqual = require(modules.Utility.DataUtil.areValuesEqual)
+local deepCopyTable = require(modules.Utility.TableUtil.deepCopyTable)
+local config = modules.Config
+local configSettings = require(config.Settings)
 local User = require(modules.Objects.User)
 local DataStore = {}
 
@@ -15,7 +19,39 @@ DataStore.compressData = false -- Compress data before saving (then decompress w
 -- FUNCTIONS
 function DataStore.generateTemplate(user: User.Class?)
 	if user then
+		user.beforeLoading:connect(function()
+			-- See if the game dev has changed settings, and if so, update the player's
+			-- settings with these new values
+			local perm = user.perm
+			local playerSettings = perm:get("PlayerSettings")
+			local previousPlayerSettings = perm:get("PreviousPlayerSettings")
+			local gamePlayerSettings = configSettings.PlayerSettings
+			local didChange = false
+			local function recursivelyMerge(table1, table2, tableToUpdate)
+				-- table1 will have its changes applied, while table2 is checked against
+				for key, value in pairs(table1) do
+					local matchingValue = table2[key]
+					local matchingValueToUpdate = tableToUpdate[key]
+					if type(value) == "table" and type(matchingValue) == "table" then
+						if type(matchingValueToUpdate) ~= "table" then
+							matchingValueToUpdate = {}
+							tableToUpdate[key] = matchingValueToUpdate
+						end
+						recursivelyMerge(value, matchingValue, matchingValueToUpdate)
+					elseif not areValuesEqual(value, matchingValue) then
+						tableToUpdate[key] = value
+						didChange = true
+					end
+				end
+			end
+			recursivelyMerge(gamePlayerSettings, previousPlayerSettings, playerSettings)
+			if didChange then
+				perm:set("PlayerSettings", playerSettings)
+				perm:set("PreviousPlayerSettings", gamePlayerSettings)
+			end
+		end)
 		user.beforeSaving:connect(function()
+			-- Set details on last session, playtime, etc
 			local perm = user.perm
 			local temp = user.temp
 			local timeNow = os.time()
@@ -35,6 +71,7 @@ function DataStore.generateTemplate(user: User.Class?)
 		-- Data that is saved *and* retrievable by the client
 		{"perm", "public", {
 			Cash = 0,
+			PlayerSettings = deepCopyTable(configSettings.PlayerSettings),
 		}},
 		
 		-- Data that is saved *but not* retrievable by the client
@@ -42,6 +79,7 @@ function DataStore.generateTemplate(user: User.Class?)
 			FirstSession = timeNow,
 			LastSession = 0,
 			TotalPlayTime = 0,
+			PreviousPlayerSettings = deepCopyTable(configSettings.PlayerSettings),
 		}},
 
 		-- Data that is not saved *but* retrievable by the client

@@ -2,9 +2,9 @@
 
 local MainModule = {}
 
-function MainModule.initialize()
+function MainModule.initialize(loader)
 	local Framework = require(script.Value.Modules.Framework)
-	return Framework.initialize()
+	return Framework.initialize(loader)
 end
 
 return MainModule

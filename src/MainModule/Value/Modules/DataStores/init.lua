@@ -1,24 +1,19 @@
 --!strict
+local DATA_STORE_NAME = "HDAdmin"
 local DataStoreService = game:GetService("DataStoreService")
 local DataStores = {}
-local _dataStore = nil
+local _dataStore: DataStore = DataStoreService:GetDataStore(DATA_STORE_NAME)
+local config = script:FindFirstAncestor("MainModule").Value.Modules.Config
+local configSettings = require(config.Settings)
 
 
 -- PUBLIC
-DataStores.dataStoreName = "HDAdmin"
-DataStores.dataGroupName = "HD" --!!! This should be configurable in settings, it can be changed to HD2, HD3, etc, if the user ever wants to reset all their data
+DataStores.dataStoreName = DATA_STORE_NAME
+DataStores.dataGroupName = configSettings.SystemSettings.DataGroupName
 
 
 -- FUNCTIONS
-function DataStores.getDataStore(storeName): DataStore
-	local store = script:FindFirstChild(storeName)
-	if not store then
-		error("Invalid data store name: " .. storeName)
-	end
-	if not _dataStore then
-		_dataStore = DataStoreService:GetDataStore(DataStores.dataStoreName)
-	end
-	_dataStore = _dataStore :: DataStore
+function DataStores.getDataStore(): DataStore
 	return _dataStore
 end
 
@@ -34,7 +29,7 @@ function DataStores.getDataKey(storeName: string, key: string): string
 end
 
 function DataStores.getAsync(storeName: string, key: string, options: DataStoreGetOptions?): (boolean, string? | any)
-	local dataStore = DataStores.getDataStore(storeName)
+	local dataStore = DataStores.getDataStore()
 	local dataKey = DataStores.getDataKey(storeName, key)
 	local success, result = pcall(function()
 		return dataStore:GetAsync(dataKey, options)
@@ -43,7 +38,7 @@ function DataStores.getAsync(storeName: string, key: string, options: DataStoreG
 end
 
 function DataStores.setAsync(storeName: string, key: string, value: any, gdprUserIds: {number}, options: DataStoreSetOptions?): (boolean, string? | any)
-	local dataStore = DataStores.getDataStore(storeName)
+	local dataStore = DataStores.getDataStore()
 	local dataKey = DataStores.getDataKey(storeName, key)
 	local success, result = pcall(function()
 		return dataStore:SetAsync(dataKey, value, gdprUserIds, options)
@@ -52,7 +47,7 @@ function DataStores.setAsync(storeName: string, key: string, value: any, gdprUse
 end
 
 function DataStores.updateAsync(storeName: string, key: string, transformFunction): (boolean, string? | any)
-	local dataStore = DataStores.getDataStore(storeName)
+	local dataStore = DataStores.getDataStore()
 	local dataKey = DataStores.getDataKey(storeName, key)
 	local success, result = pcall(function()
 		return dataStore:UpdateAsync(dataKey, transformFunction)

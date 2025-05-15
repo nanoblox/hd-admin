@@ -30,7 +30,7 @@ Framework.serverLocation = "ServerStorage"
 Framework.sharedName = `{appNameClean}Shared`
 Framework.sharedLocation = "ReplicatedStorage"
 
-function Framework.initialize()
+function Framework.initialize(loader)
 	-- To do:
 	-- 1. Check no other MainModule exists
 	-- 2. Perform AutomaticUpdate if Core folder Attribute is not enabled
@@ -38,11 +38,19 @@ function Framework.initialize()
 	if hasLoaded then
 		return false
 	end
-	hasLoaded = Instance.new("BoolValue")
-	hasLoaded.Value = true
+	hasLoaded = Instance.new("ObjectValue")
+	hasLoaded.Value = loader
 	hasLoaded.Name = "HasLoaded"
 	hasLoaded.Parent = script
 	return true
+end
+
+function Framework.getLoader()
+	local hasLoaded = script:FindFirstChild("HasLoaded")
+	if not hasLoaded then
+		return nil
+	end
+	return hasLoaded.Value
 end
 
 function Framework.startAsync()

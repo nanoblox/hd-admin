@@ -27,18 +27,21 @@ end
 
 -- FUNCTIONS
 function Qualifiers.get(qualifierName: Qualifier): QualifierDetail?
-	local item = Qualifiers.items[qualifierName]
+	local qualifierNameLower = tostring(qualifierName):lower()
+	local qualifierNameCorrected = qualifierNameLower:gsub("^%l", string.upper)
+	local item = Qualifiers.items[qualifierNameCorrected :: Qualifier] :: QualifierDetail?
 	if not item then
+		warn("THIS DID NOT EXIST:", qualifierName, qualifierNameCorrected)
 		return nil
 	end
 	if not item.name then
-		item.name = qualifierName :: any
+		item.name = qualifierNameCorrected
 	end
 	if item.mustBecomeAliasOf then
 		local toBecomeName = item.mustBecomeAliasOf
 		local qualifierToBecome = Qualifiers.items[toBecomeName]
 		if not qualifierToBecome then
-			error(`Qualifiers: {qualifierName} can not become alias because {toBecomeName} is not a valid qualifier`)
+			error(`Qualifiers: {qualifierNameCorrected} can not become alias because {toBecomeName} is not a valid qualifier`)
 		end
 		qualifierToBecome = qualifierToBecome :: any
 		for k,v in qualifierToBecome do
@@ -54,10 +57,10 @@ end
 
 function Qualifiers.getAll()
 	-- We call .get to ensure all aliases are registered and setup correctly
-	for qualifierName, _ in Qualifiers.items do
-		Qualifiers.get(qualifierName)
+	local items = Qualifiers.items :: {[string]: QualifierDetail}
+	for qualifierName, _ in items do
+		Qualifiers.get(qualifierName :: Qualifier)
 	end
-	local items = Qualifiers.items :: {[Qualifier]: QualifierDetail}
 	return items
 end
 
@@ -78,25 +81,60 @@ function Qualifiers.becomeAliasOf(qualifierName: Qualifier, initialTable: any?)
 	return initialTable
 end
 
+function Qualifiers.getSortedNameAndAliasLengthArray()
+	local array = Qualifiers._sortedNameAndAliasLengthArray
+	if typeof(array) == "table" then
+		return array
+	end
+	array = {}
+	Qualifiers._sortedNameAndAliasLengthArray = array
+	local allItems = Qualifiers.getAll()
+	for itemNameOrAlias, item in pairs(allItems) do
+		table.insert(array, itemNameOrAlias)
+	end
+	table.sort(array, function(a: string, b: string): boolean
+		return #a > #b
+	end)
+	return array
+end
+
+function Qualifiers.getLowerCaseNameAndAliasToArgDictionary()
+	local dictionary = Qualifiers._lowerCaseNameAndAliasToArgDictionary
+	if typeof(dictionary) == "table" then
+		return dictionary
+	end
+	dictionary = {}
+	Qualifiers._lowerCaseNameAndAliasToArgDictionary = dictionary
+	local allItems = Qualifiers.getAll()
+	for itemNameOrAlias, item in pairs(allItems) do
+		if not item.name then
+			warn("WARNING, NO NAME EXISTS:", item)
+		end
+		dictionary[item.name:lower()] = item
+	end
+	return dictionary
+end
+
 
 -- PUBLIC
+Qualifiers._sortedNameAndAliasLengthArray = nil :: any
+Qualifiers._lowerCaseNameAndAliasToArgDictionary = nil :: any
 Qualifiers.items = {
 	
 	["Default"] = register({
 		isHidden = true,
 		description	= "Default action, returns players with matching shorthand names.",
 		getTargets = function(callerUserId, stringToParse, useDisplayName)
-			local Parser = require(script.Parent)
+			local ParserUtility = require(script.Parent.ParserUtility)
 			local callerUser = User.getUser(callerUserId)
-			local targets = Parser.getPlayersFromString(stringToParse, callerUser)
+			local targets = ParserUtility.getPlayersFromString(stringToParse :: string, callerUser)
 			return targets
 		end,
 	}),
-
 	["Me"] = register({
 		description = "You!",
-		getTargets = function(callerUserId)
-			local targets = {}
+		getTargets = function(callerUserId: number)
+			local targets: {Player} = {}
 			local callerPlayer = Players:GetPlayerByUserId(callerUserId)
 			if callerPlayer then
 				table.insert(targets, callerPlayer)
@@ -307,6 +345,7 @@ Qualifiers.items = {
 
 	["Admins"] = Qualifiers.becomeAliasOf("Staff"),
 	
+	--[[
 	["NonStaff"] = register({
 		description = "Selects all player's who are not staff",
 		getTargets = function(_)
@@ -323,6 +362,7 @@ Qualifiers.items = {
 	}),
 
 	["NonAdmins"] = Qualifiers.becomeAliasOf("NonStaff"),
+	--]]
 
 	["Premium"] = register({
 		description = "Players with Roblox Premium membership",
@@ -349,7 +389,7 @@ Qualifiers.items = {
 			return targets
 		end,
 	}),
-
+		--]]
 }
 
 
@@ -357,9 +397,12 @@ Qualifiers.items = {
 export type Qualifier = keyof<typeof(Qualifiers.items)>
 export type QualifierDetail = {
 	description: string?,
-	getTargets: any?,
+	getTargets: any, --(callerUserId: number?, stringToParse: string?, useDisplayName: boolean?) -> {Player},
 	aliases: {[Qualifier]: boolean}?,
 	isHidden: boolean?, -- Does this appear within the Commands Preview menu?
+	mustBecomeAliasOf: any?,
+	aliasOf: any?,
+	name: any?,
 }
 
 

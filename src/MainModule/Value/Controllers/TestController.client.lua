@@ -8,7 +8,12 @@ if require(modules.Framework).startAsync() == false then
 end
 
 -- Test stuff
+--[[
 local clientUser = require(modules.References.clientUser)
 clientUser.perm:observe("Cash", function(value)
 	print("CASH (on client) =", value)
 end)
+clientUser.everyone:observe("Test", function(value)
+	print("SERVER TIME (on client) =", value)
+end)
+--]]

@@ -1,5 +1,5 @@
 {
-  "properties": {
-    "Tags": ["Shared"]
+	"attributes": {
+	  "Shared": true
+	}
   }
-}

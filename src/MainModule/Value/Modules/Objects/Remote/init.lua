@@ -1,5 +1,5 @@
--- LOCAL
 --!strict
+-- LOCAL
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local modules = script:FindFirstAncestor("MainModule").Value.Modules
@@ -100,7 +100,7 @@ function Remote._getContainer(self: Class): Instance?
 		end
 	end
 	if remotesContainerToGet then
-		remotesContainerSaved = remotesContainerToGet
+		remotesContainerSaved = remotesContainerToGet :: any
 	end
 	return remotesContainerToGet
 end
@@ -121,7 +121,10 @@ function Remote._waitForInstance(self: Class): Instance?
 		return nil
 	end
 	while self.isActive do
-		local instance = self.remoteInstance or remotesContainer:FindFirstChild(self.uniqueName)
+		local instance = self.remoteInstance
+		if instance == nil then
+			instance = remotesContainer:FindFirstChild(self.uniqueName)
+		end
 		if instance then
 			self.remoteInstance = instance
 			return instance
@@ -221,7 +224,7 @@ function Remote.onClientEvent(self: Class, callback: (...any) -> ...any)
 	if RunService:IsServer() then
 		error("Can only call onClientEvent on client")
 	end
-	local realConnection = nil
+	local realConnection = nil :: any
 	self:_onInstanceLoaded(function(remoteInstance)
 		if not remoteInstance:IsA("RemoteEvent") then
 			error("Can only call onClientEvent for remoteType 'Event'")

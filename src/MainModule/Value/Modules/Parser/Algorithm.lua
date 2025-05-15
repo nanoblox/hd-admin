@@ -1,23 +1,53 @@
+--!nonstrict
+
+--[[
+
+Analyzes the given command name to determine whether or not it's appearance in a
+commandstatement mandates that commandstatement to require a qualifierdescription
+to be considered valid.
+
+It is not always possible to determine qualifierdescription requirement solely from
+the command name or the data associated with it but rather has to be confirmed further
+from the information of the commandstatement it appears in.
+
+1) If every argument for the command has playerArg ~= true then returns QualifierRequired.Never
+
+2) If even one argument for the command has playerArg == true and hidden ~= true returns
+	QualifierRequired.Always
+
+3) If condition (1) and condition (2) are not satisfied, meaning every argument for
+	the command has playerArg == true and hidden == true returns QualifierRequired.Sometimes
+
+]]
+
 local Algorithm = {}
-local MAIN = nil :: any
+local modules = script:FindFirstAncestor("MainModule").Value.Modules
+local parserModules = modules.Parser
+local Modifiers = require(parserModules.Modifiers)
+local Qualifiers = require(parserModules.Qualifiers)
+local ParserPatterns = require(parserModules.ParserPatterns)
+local Commands = require(modules.Commands)
 
 
-function Algorithm.getCommandStatementsFromBatch(batch)
-	local parserModule = MAIN.modules.Parser
-	local utilityModule = MAIN.modules.Parser.Utility
-
-	return utilityModule.getMatches(batch, parserModule.patterns.commandStatementsFromBatch)
+function Algorithm.getCommandStatementsFromBatch(batch, prefixUsed)
+	
+	local ParserUtility =  require(modules.Parser.ParserUtility)
+	local formattedPattern = string.format(
+		ParserPatterns.commandStatementsFromBatchUnFormatted,
+		prefixUsed,
+		prefixUsed
+	)
+	local matches = ParserUtility.getMatches(batch, formattedPattern)
+	return matches
 end
 
 function Algorithm.getDescriptionsFromCommandStatement(commandStatement)
-	local parserModule = MAIN.modules.Parser
-	local utilityModule = MAIN.modules.Parser.Utility
-
-	local descriptions = utilityModule.getMatches(
+	local ParserUtility =  require(modules.Parser.ParserUtility)
+	local descriptions = ParserUtility.getMatches(
 		commandStatement,
-		parserModule.patterns.descriptionsFromCommandStatement
+		ParserPatterns.descriptionsFromCommandStatement
 	)
-
+	
 	local extraArgumentDescription = {}
 	if #descriptions >= 3 then
 		for counter = 3, #descriptions do
@@ -33,28 +63,28 @@ function Algorithm.getDescriptionsFromCommandStatement(commandStatement)
 end
 
 function Algorithm.parseCommandDescription(commandDescription)
-	local utilityModule = MAIN.modules.Parser.Utility
-
-	local commandCapsuleCaptures, commandDescriptionResidue = utilityModule.getCapsuleCaptures(
+	local ParserUtility =  require(modules.Parser.ParserUtility)
+	
+	local commandCapsuleCaptures, commandDescriptionResidue = ParserUtility.getCapsuleCaptures(
 		commandDescription,
-		MAIN.services.CommandService.getTable("sortedNameAndAliasLengthArray")
+		Commands.getSortedNameAndAliasLengthArray()
 	)
-	local commandPlainCaptures, commandDescriptionResidue = utilityModule.getPlainCaptures(
+	local commandPlainCaptures, commandDescriptionResidue = ParserUtility.getPlainCaptures(
 		commandDescriptionResidue,
-		MAIN.services.CommandService.getTable("sortedNameAndAliasLengthArray")
+		Commands.getSortedNameAndAliasLengthArray()
 	)
-	local commandCaptures = utilityModule.combineCaptures(commandCapsuleCaptures, commandPlainCaptures)
+	local commandCaptures = ParserUtility.combineCaptures(commandCapsuleCaptures, commandPlainCaptures)
 
-	local modifierCapsuleCaptures, commandDescriptionResidue = utilityModule.getCapsuleCaptures(
+	local modifierCapsuleCaptures, commandDescriptionResidue = ParserUtility.getCapsuleCaptures(
 		commandDescriptionResidue,
-		MAIN.modules.Parser.Modifiers.sortedNameAndAliasLengthArray
+		Modifiers.getSortedNameAndAliasLengthArray()
 	)
-	local modifierPlainCaptures, commandDescriptionResidue = utilityModule.getPlainCaptures(
+	local modifierPlainCaptures, commandDescriptionResidue = ParserUtility.getPlainCaptures(
 		commandDescriptionResidue,
-		MAIN.modules.Parser.Modifiers.sortedNameAndAliasLengthArray
+		Modifiers.getSortedNameAndAliasLengthArray()
 
 	)
-	local modifierCaptures = utilityModule.combineCaptures(modifierCapsuleCaptures, modifierPlainCaptures)
+	local modifierCaptures = ParserUtility.combineCaptures(modifierCapsuleCaptures, modifierPlainCaptures)
 
 	return {
 		commandCaptures,
@@ -64,21 +94,20 @@ function Algorithm.parseCommandDescription(commandDescription)
 end
 
 function Algorithm.parseQualifierDescription(qualifierDescription)
-	local parserModule = MAIN.modules.Parser
-	local utilityModule = MAIN.modules.Parser.Utility
+	local ParserUtility =  require(modules.Parser.ParserUtility)
 
-	local qualifierCaptures, qualifierDescriptionResidue = utilityModule.getCapsuleCaptures(
+	local qualifierCaptures, qualifierDescriptionResidue = ParserUtility.getCapsuleCaptures(
 		qualifierDescription,
-		MAIN.modules.Parser.Qualifiers.sortedNameAndAliasLengthArray
+		Qualifiers.getSortedNameAndAliasLengthArray()
 	)
 
-	local qualifiers = utilityModule.getMatches(
+	local qualifiers = ParserUtility.getMatches(
 		qualifierDescriptionResidue,
-		parserModule.patterns.argumentsFromCollection
+		ParserPatterns.argumentsFromCollection
 	)
 	local unrecognizedQualifiers = {}
 
-	local qualifierDictionary = MAIN.modules.Parser.Qualifiers.lowerCaseNameAndAliasToArgDictionary
+	local qualifierDictionary = Qualifiers.getLowerCaseNameAndAliasToArgDictionary()
 	for _, match in pairs(qualifiers) do
 		if match ~= "" then
 			if not qualifierDictionary[match:lower()] then

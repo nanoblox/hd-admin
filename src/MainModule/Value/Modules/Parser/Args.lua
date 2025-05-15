@@ -11,9 +11,13 @@ To do:
 --!strict
 -- LOCAL
 local Args = {}
-local Players = game:GetService("Players")
 local modules = script:FindFirstAncestor("MainModule").Value.Modules
+local Config = require(modules.Config)
 local InputObjects = require(modules.UI.InputObjects)
+local sortedNameAndAliasLengthArray = {}
+local requiresUpdating = true
+local Players = game:GetService("Players")
+local ParserUtility = require(modules.Parser.ParserUtility)
 
 
 -- LOCAL FUNCTIONS
@@ -23,21 +27,24 @@ end
 
 
 -- FUNCTIONS
-function Args.get(qualifierName: Argument): ArgumentDetail?
-	local item = Args.items[qualifierName]
+function Args.get(argName: Argument): ArgumentDetail?
+	local argNameLower = tostring(argName):lower()
+	local argNameCorrected = argNameLower:gsub("^%l", string.upper)
+	local item = Args.items[argNameCorrected]
 	if not item then
 		return nil
 	end
 	if not item.name then
-		item.name = qualifierName :: any
+		item.name = argNameCorrected :: any
 	end
 	local toBecomeName = item.mustBecomeAliasOf
 	if toBecomeName then
 		local qualifierToBecome = Args.items[toBecomeName]
 		if not qualifierToBecome then
-			error(`Args: {qualifierName} can not become alias because {toBecomeName} is not a valid qualifier`)
+			error(`Args: {argNameCorrected} can not become alias because {toBecomeName} is not a valid qualifier`)
 		end
 		qualifierToBecome = qualifierToBecome :: any
+		item = item :: any
 		for k,v in qualifierToBecome do
 			if not item[k] then
 				item[k] = v
@@ -75,6 +82,20 @@ function Args.becomeAliasOf(qualifierName: Argument, initialTable: any?): Argume
 	return initialTable
 end
 
+function Args.getSortedNameAndAliasLengthArray (): {string}
+	if not requiresUpdating then
+		return sortedNameAndAliasLengthArray
+	end
+	local items = Args.getAll()
+	for itemNameOrAlias, item in pairs(items) do
+		table.insert(sortedNameAndAliasLengthArray, itemNameOrAlias)
+	end
+	table.sort(sortedNameAndAliasLengthArray, function(a: string, b: string): boolean
+		return #a > #b
+	end)
+	return sortedNameAndAliasLengthArray
+end
+
 
 -- PUBLIC
 Args.items = {
@@ -91,12 +112,11 @@ Args.items = {
 		stringify = function(self, original)
 
 		end,
-		parse = function(self, qualifiers, callerUserId, additional)
-			--[[
-			local defaultToMe = qualifiers == nil or main.modules.TableUtil.isQualifiersEmpty(qualifiers)
+		parse = function(self, qualifiers, callerUserId, additional: any)
+			local defaultToMe = qualifiers == nil or ParserUtility.isQualifiersEmpty(qualifiers)
 			local ignoreDefault = (additional and additional.ignoreDefault)
 			if defaultToMe and not ignoreDefault then
-				local players = {}
+				local players: {Player} = {}
 				local callerPlayer = Players:GetPlayerByUserId(callerUserId)
 				if callerPlayer then
 					table.insert(players, callerPlayer)
@@ -108,25 +128,26 @@ Args.items = {
 				if qualifierName == "" then
 					continue
 				end
-				local Qualifiers = main.modules.Parser.Qualifiers
+				local Qualifiers = require(modules.Parser.Qualifiers)
 				local qualifierDetail = Qualifiers.get(qualifierName)
 				local targets
 				if not qualifierDetail then
-					qualifierDetail = Qualifiers.get("user")
+					qualifierDetail = Qualifiers.get("Default")
 					targets = qualifierDetail.getTargets(callerUserId, qualifierName)
 				else
-					targets = qualifierDetail.getTargets(callerUserId, unpack(qualifierArgs))
+					targets = qualifierDetail.getTargets(callerUserId, unpack(qualifierArgs :: any))
 				end
 				for _, plr in pairs(targets) do
 					targetsDict[plr] = true
 				end
 			end
-			local players = {}
+			local players: {Player} = {}
 			for plr, _ in pairs(targetsDict) do
-				table.insert(players, plr)
+				if typeof(plr) == "Instance" and plr:IsA("Player") then
+					table.insert(players, plr :: Player)
+				end
 			end
 			return players
-			--]]
 		end,
 	}),
 
@@ -141,13 +162,12 @@ Args.items = {
 		playerArg = true,
 		executeForEachPlayer = false,
 		parse = function(self, qualifiers, callerUserId)
-			--[[
-			if main.modules.TableUtil.isQualifiersEmpty(qualifiers) then
+			if ParserUtility.isQualifiersEmpty(qualifiers) then
 				return nil
 			end
-			local players = main.modules.Parser.Args.get("player"):parse(qualifiers, callerUserId, {ignoreDefault = true})
+			local argPlayer = Args.get("Player")
+			local players = if argPlayer then argPlayer:parse(qualifiers, callerUserId, {ignoreDefault = true}) else {}
 			return players
-			--]]
 		end,
 	}),
 
@@ -163,10 +183,9 @@ Args.items = {
 		playerArg = true,
 		executeForEachPlayer = true,
 		parse = function(self, qualifiers, callerUserId)
-			--[[
-			local players = main.modules.Parser.Args.get("player"):parse(qualifiers, callerUserId, {ignoreDefault = true})
+			local argPlayer = Args.get("Player")
+			local players = if argPlayer then argPlayer:parse(qualifiers, callerUserId, {ignoreDefault = true}) else {}
 			return players[1]
-			]]
 		end,
 	}),
 
@@ -186,7 +205,7 @@ Args.items = {
 			if defaultToAll then
 				return Players:GetPlayers()
 			end
-			return main.modules.Parser.Args.get("player"):parse(qualifiers, callerUserId)
+			return main.modules.Parser.Args.get("Player"):parse(qualifiers, callerUserId)
 			]]
 		end,
 	}),
@@ -204,7 +223,7 @@ Args.items = {
 		executeForEachPlayer = false,
 		parse = function(self, qualifiers, callerUserId)
 			--[[
-			local players = main.modules.Parser.Args.get("optionalplayer"):parse(qualifiers, callerUserId)
+			local players = main.modules.Parser.Args.get("OptionalPlayer"):parse(qualifiers, callerUserId)
 			return players
 			--]]
 		end,
@@ -225,7 +244,7 @@ Args.items = {
 		parse = function(self, stringToParse, callerUserId)
 			--[[
 			local callerUser = main.modules.PlayerStore:getUserByUserId(callerUserId)
-			local playersInServer = Args.dictionary.player:parse({[stringToParse] = {}}, callerUserId) --main.modules.Parser.getPlayersFromString(stringToParse, callerUser)
+			local playersInServer = Args.get("Player"):parse({[stringToParse] = {}}, callerUserId) --ParserUtility.getPlayersFromString(stringToParse, callerUser)
 			local player = playersInServer[1]
 			if player then
 				return player.UserId
@@ -234,7 +253,7 @@ Args.items = {
 			if userId then
 				return userId
 			end
-			local approved, username = main.modules.Parser.verifyAndParseUsername(callerUser, stringToParse)
+			local approved, username = ParserUtility.verifyAndParseUsername(callerUser, stringToParse)
 			local success, finalUserId
 			if approved then
 				success, finalUserId = main.modules.PlayerUtil.getUserIdFromName(username):await()
@@ -285,7 +304,7 @@ Args.items = {
 		defaultValue = "",
 		endlessArg = false,
 		parse = function(...)
-			--return Args.get("text").parse(...)
+			--return Args.get("Text").parse(...)
 		end,
 	}),
 
@@ -729,7 +748,8 @@ export type ArgumentDetail = {
 	description: string?,
 	playerArg: boolean?,
 	executeForEachPlayer: boolean?,
-	parse: ((...any) -> (...any))?,
+	parse: any, --((...any) -> (...any))?,
+	name: string?,
 }
 
 

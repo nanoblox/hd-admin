@@ -1,22 +1,19 @@
-local Players = game:GetService("Players")
 local main = script:FindFirstAncestor("MainModule")
 local State = require(main.Value.Modules.Objects.State)
-local localPlayer = Players.LocalPlayer
-local userId = localPlayer.UserId
 
 local perm = State.new()
-perm:bind(`UserPerm_{userId}`)
+perm:bind(`UserPerm`)
 
 local temp = State.new()
-temp:bind(`UserTemp_{userId}`)
+temp:bind(`UserTemp`)
 
-local all = State.new()
-all:bind(`UserAll`)
+local everyone = State.new()
+everyone:bind(`UserEveryone`)
 
 local clientUser = {
 	temp = temp,
 	perm = perm,
-	all = all
+	everyone = everyone
 }
 
 return clientUser

@@ -9,21 +9,24 @@ local commands: {Commands.Command} = {
 	
     --------------------
     {
-		name = "hi",
+		name = "ddd",
+		aliases = {"ddd2"},
+		args = {"ddd"},
+	},
+
+
+    --------------------
+	{
+		name = "eee",
+		aliases = {"eee2"},
 		args = {"Player"},
 	},
 
 
     --------------------
 	{
-		name = "test",
-		args = {"Player"},
-	},
-
-
-    --------------------
-	{
-		name = "test",
+		name = "fff",
+		aliases = {"fff2"},
 		args = {"Player"},
 	},
 

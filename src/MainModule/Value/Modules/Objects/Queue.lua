@@ -2,6 +2,7 @@
 --!strict
 local modules = script:FindFirstAncestor("MainModule").Value.Modules
 local Janitor = require(modules.Objects.Janitor)
+local Signal = require(modules.Objects.Signal)
 local Queue = {}
 Queue.__index = Queue
 
@@ -12,7 +13,6 @@ function Queue.new()
 	-- Define properties
 	-- I made this before this before type checking existed, so will convert to properly
 	-- typed another time instead of defining everything as 'any'
-	local Signal = require(modules.Objects.Signal)
 	local janitor = Janitor.new()
 	local self = {
 		janitor = janitor,
@@ -22,13 +22,14 @@ function Queue.new()
 		processing = false :: any,
 		isSorting = false :: any,
 		isRequestingSort = false :: any,
-		sorted = janitor:add(Signal.new() :: any),
-		started = janitor:add(Signal.new() :: any),
-		ended = janitor:add(Signal.new() :: any),
+		sorted = janitor:add(Signal.new()) :: Signal.Class,
+		started = janitor:add(Signal.new()) :: Signal.Class,
+		ended = janitor:add(Signal.new()) :: Signal.Class,
 		hasStarted = false :: any,
 		isActive = true :: any,
 		sortByFunction = nil :: any,
 	}
+	self.sorted:fire()
 	setmetatable(self, Queue)
 
 	return self
@@ -79,7 +80,7 @@ function Queue._add(self: Class, index, incomingCallback, sortValue)
 	end)
 end
 
-function Queue.add(self: Class, callback, sortValue)
+function Queue.add(self: Class, callback:() -> (...unknown), sortValue: any?)
 	self:_add(nil, callback, sortValue)
 end
 
@@ -115,8 +116,9 @@ function Queue.next(self: Class)
 		return
 	end
 	if not self.hasStarted then
-		self.hasStarted = true
-		self.started:Fire()
+		local started = self.started :: Signal.Class
+		self.hasStarted = true :: any
+		started:fire()
 	end
 	self.processing = true
 	local callback = group[1]

@@ -1,234 +1,129 @@
---[[
-	To do:
-	- Complete Modifiers
-	- Complete Args
-	- Upload to GitHub
-	- Support 'CommandService' alternative and build into Parser
-	- Support 'SettingService' alternative and build into Parser
-	- Complete this (and make fully typed)
-	- Complete Algorithm (make fully typed)
-	- Complete ParserUtility (make fully typed)
-	- Begin extensive testing
-]]
-
-
 --!strict
 -- LOCAL
 local Parser = {}
 local modules = script:FindFirstAncestor("MainModule").Value.Modules
-local MAIN = nil :: any
-
-
--- TYPES
-export type QualifierRequired = "Always" | "Sometimes" | "Never"
-export type PlayerSearch = "None" | "UserName" | "DisplayName" | "UserNameAndDisplayName"
+local Commands = require(modules.Commands)
+local User = require(modules.Objects.User)
+local Config = require(modules.Config)
+local ParserTypes = require(script.ParserTypes)
 
 
 -- FUNCTIONS
-function Parser.init()
-	local ClientSettings = MAIN.services.SettingService.getGroup("Client")
-
-	Parser.patterns = {
-		commandStatementsFromBatch = string.format(
-			"%s([^%s]+)",
-			";", --ClientSettings.prefix,
-			";" --ClientSettings.prefix
-		),
-		descriptionsFromCommandStatement = string.format(
-			"%s?([^%s]+)",
-			" ", --ClientSettings.descriptorSeparator,
-			" " --ClientSettings.descriptorSeparator
-		),
-		argumentsFromCollection = string.format(
-			"([^%s]+)%s?",
-			",", --ClientSettings.collective,
-			"," --ClientSettings.collective
-		),
-		capsuleFromKeyword = string.format(
-			"%%(%s%%)", --Capsule
-			string.format("(%s)", ".-")
-		),
-	}
-end
-
---[[
-
-Analyzes the given command name to determine whether or not it's appearance in a
-commandstatement mandates that commandstatement to require a qualifierdescription
-to be considered valid.
-
-It is not always possible to determine qualifierdescription requirement solely from
-the command name or the data associated with it but rather has to be confirmed further
-from the information of the commandstatement it appears in.
-
-1) If every argument for the command has playerArg ~= true then returns QualifierRequired.Never
-
-2) If even one argument for the command has playerArg == true and hidden ~= true returns
-	QualifierRequired.Always
-
-3) If condition (1) and condition (2) are not satisfied, meaning every argument for
-	the command has playerArg == true and hidden == true returns QualifierRequired.Sometimes
-
-]]
-
-function Parser.requiresQualifier(commandName)
-	local commandArgs = MAIN.services.CommandService.getTable("lowerCaseNameAndAliasToCommandDictionary")[commandName].args
-	if #commandArgs == 0 then
-		return "Never"
-	end
-	local firstArgName = commandArgs[1]:lower() --!!! re-do this
-	local Args = require(script.Args)
-	local firstArg = Args.get(firstArgName)
-	if firstArg == nil or firstArg.playerArg ~= true then
-		return "Never"
-	else
-		if firstArg.hidden ~= true then
-			return "Always"
-		else
-			return "Sometimes"
-		end
-	end
-end
-
-
-function Parser.hasEndlessArgument(commandName)
-	local Args = require(script.Args)
-	local argsDictionary = Args.getAll()
-	local commandArgs =
-		MAIN.services.CommandService.getTable("lowerCaseNameAndAliasToCommandDictionary")[commandName].args
-	if #commandArgs == 0 then
-		return false
-	end
-	local lastArgName = commandArgs[#commandArgs]:lower()
-	local lastArg = argsDictionary[lastArgName] :: any
-	local bool = if lastArg and lastArg.endlessArg == true then true else false
-	return bool
-end
-
-
-function Parser.getPlayersFromString(playerString, optionalUser)
-	local selectedPlayers = {}
-	local ParserUtility = require(script.ParserUtility)
-	local settingService = MAIN.services.SettingService
-	local players = game:GetService("Players"):GetPlayers()
-
-	local playerIdentifier = settingService.getUsersPlayerSetting(optionalUser, "playerIdentifier")
-	local playerDefinedSearch = settingService.getUsersPlayerSetting(optionalUser, "playerDefinedSearch")
-	local playerUndefinedSearch = settingService.getUsersPlayerSetting(optionalUser, "playerUndefinedSearch")
-
-	local hasPlayerIdentifier = (playerString:sub(1, 1) == playerIdentifier)
-	playerString = playerString:lower()
-	local playerStringWithoutIdentifier = ParserUtility.ternary(
-		hasPlayerIdentifier,
-		playerString:sub(2, #playerString),
-		playerString
-	)
-
-	local isUserNameSearch = ParserUtility.ternary(
-		hasPlayerIdentifier,
-		playerDefinedSearch == "UserName",
-		playerUndefinedSearch == "UserName"
-	)
-	local isDisplayNameSearch = ParserUtility.ternary(
-		hasPlayerIdentifier,
-		playerDefinedSearch == "DisplayName",
-		playerUndefinedSearch == "DisplayName"
-	)
-	local isUserNameAndDisplayNameSearch = ParserUtility.ternary(
-		hasPlayerIdentifier,
-		playerDefinedSearch == "UserNameAndDisplayName",
-		playerUndefinedSearch == "UserNameAndDisplayName"
-	)
-
-	if isUserNameSearch or isUserNameAndDisplayNameSearch then
-		for _, player in pairs(players) do
-			if string.find(player.Name:lower(), playerStringWithoutIdentifier) == 1 then
-				if table.find(selectedPlayers, player) == nil then
-					table.insert(selectedPlayers, player)
-				end
-			end
-		end
-	end
-
-	if isDisplayNameSearch or isUserNameAndDisplayNameSearch then
-		for _, player in pairs(players) do
-			if string.find(player.DisplayName:lower(), playerStringWithoutIdentifier) == 1 then
-				if table.find(selectedPlayers, player) == nil then
-					table.insert(selectedPlayers, player)
-				end
-			end
-		end
-	end
-
-	return selectedPlayers
-end
-
-
-function Parser.verifyAndParseUsername(callerUser, usernameString: string): (boolean, string?)
-	if not callerUser or not usernameString then
-		return false, nil
-	end
-	local playerIdentifier = MAIN.services.SettingService.getUsersPlayerSetting(callerUser, "playerIdentifier")
-	if string.sub(usernameString, 1, 1) == playerIdentifier then
-		-- Is the username defined (e.g @ForeverHD, @ObliviousHD)
-		local playerDefinedSearch = MAIN.services.SettingService.getUsersPlayerSetting(callerUser, "playerDefinedSearch")
-		if playerDefinedSearch == "UserName" or playerDefinedSearch == "UserNameAndDisplayName" then
-			return true, string.sub(usernameString, 2)
-		end
-	else
-		-- Is the username undefined (e.g ForeverHD, ObliviousHD)
-		local playerUndefinedSearch = MAIN.services.SettingService.getUsersPlayerSetting(callerUser, "playerUndefinedSearch")
-		if playerUndefinedSearch == "UserName" or playerUndefinedSearch == "UserNameAndDisplayName" then
-			return true, usernameString
-		end
-	end
-	return false, nil
-end
-
-
-function Parser.parseMessage(message, optionalUser)
+function Parser.parseMessage(message: string, optionalUser: User.Class?): ParserTypes.ParsedBatch
+	
 	local Algorithm = require(script.Algorithm)
 	local ParsedData = require(script.ParsedData)
 	local allParsedDatas = {}
-	--[[
-	for _, commandStatement in pairs(Algorithm.getCommandStatementsFromBatch(message)) do
+	
+	-- player.Chatted processes ">" as "&gt;" and "<" as "&lt;"
+	-- e.g., if someone chatted ">kill me", it produces "&gt;kill me"
+	-- This reverts this behaviour so that these characters can be used as prefixes
+	message = string.gsub(message, "&gt;", ">")
+	message = string.gsub(message, "&lt;", "<")
+
+	-- Account for 'silent' commands by supporting '/e' (e.g. "/e ;fly me")
+	if string.sub(message,1,3) == "/e " then
+		message = string.sub(message,4)
+	end
+
+	-- Retrieve the first character of the message
+	-- If blank, ignore
+	local firstChar = string.match(message, "%S")
+	if firstChar == nil then
+		return {}
+	end
+
+	-- ... otherwise ensure that the first character is a valid prefix.
+	-- If not valid, ignore parsing entirely and save resources
+	local commandPrefixes = Commands.getCommandPrefixes()
+	local validPrefixesForThisUser = {}
+	local defaultGamePrefix = Config.getSetting("Prefix")
+	local usersPrefix = Config.getSetting("Prefix", optionalUser)
+	local isCommandSpecificPrefix = firstChar ~= defaultGamePrefix and firstChar ~= usersPrefix
+	validPrefixesForThisUser[defaultGamePrefix] = true
+	validPrefixesForThisUser[usersPrefix] = true
+	for prefix, _ in pairs(commandPrefixes) do
+		validPrefixesForThisUser[prefix] = true
+	end
+	if not validPrefixesForThisUser[firstChar] then
+		return {}
+	end
+
+	-- This is the main parser handler which breaks down the message into
+	-- readable statements of information
+	local statements = Algorithm.getCommandStatementsFromBatch(message, firstChar)
+	for _, commandStatement in pairs(statements) do
 		
 		-- Step 1
-		local parsedData = ParsedData.generateEmptyParsedData()
+		local parsedData = ParsedData.generateEmptyParsedData() :: any
 		parsedData.commandStatement = commandStatement
 
 		-- Step 2
 		ParsedData.parseCommandStatement(parsedData)
 		if not parsedData.isValid then
-			table.insert(allParsedDatas, parsedData)
+			table.insert(allParsedDatas, parsedData :: any)
 			continue
 		end
 
 		-- Step 3
-		ParsedData.parseCommandDescriptionAndSetFlags(parsedData, optionalUser)
+		ParsedData.parseCommandDescriptionAndSetFlags(parsedData :: any, optionalUser)
 		if not parsedData.isValid then
 			table.insert(allParsedDatas, parsedData)
 			continue
 		end
 
 		-- Step 4
-		ParsedData.parseQualifierDescription(parsedData)
+		ParsedData.parseQualifierDescription(parsedData :: any)
 		if not parsedData.isValid then
 			table.insert(allParsedDatas, parsedData)
 			continue
 		end
 
 		-- Step 5
-		ParsedData.parseExtraArgumentDescription(parsedData, allParsedDatas, message)
-		table.insert(allParsedDatas, parsedData)
+		ParsedData.parseExtraArgumentDescription(parsedData :: any, allParsedDatas, message)
+		table.insert(allParsedDatas, parsedData :: any)
 		if parsedData.hasTextArgument then
 			break
 		end
 	end
 
-	--!! Potential Step 6
-	return ParsedData.generateOrganizedParsedData(allParsedDatas)
-	--]]
+	-- Step 6
+	local parsedBatch = ParsedData.generateOrganizedParsedData(allParsedDatas)
+
+	-- Ensure commands within parsedData are executable with the given prefix
+	-- If not, convert into error statement
+	if isCommandSpecificPrefix then
+		for _, statement in pairs(parsedBatch) do
+			for commandName, _ in statement.commands do
+				local command = Commands.getCommand(commandName)
+				if command == nil then
+					continue
+				end
+				local prefixes = command.prefixes
+				local isValid = false
+				if prefixes then
+					for _, prefix in pairs(prefixes :: any) do
+						if prefix == firstChar then
+							isValid = true
+							break
+						end
+					end
+				end
+				if isValid == false then
+					statement.isValid = false
+					statement.errorMessage = `Command '{commandName}' not valid with prefix '{firstChar}`
+				end
+			end
+		end
+	end
+
+	-- Now return
+	return parsedBatch
+end
+
+
+function Parser.stringify(statement)
+
 end
 
 

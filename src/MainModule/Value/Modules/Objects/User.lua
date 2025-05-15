@@ -9,12 +9,12 @@ as it enables the ability to create 'fake users' with for example elevated permi
 without having to build any additional logic around to account for these.
 
 Overview:
-	- There are three main State objects: user.perm, user.temp, and User.all
+	- There are three main State objects: user.perm, user.temp, and User.everyone
 	- Data within user.perm is persistent and saved to the datastore
 	- Data is saved on a need-to-save basis, and when the player leaves, with
 	  cooldowns and delays to handle limits appropriately. Data is serialized and (if specified) compressed.
 	- Data within user.temp is temporary and not saved to the datastore
-	- *All* data within User.all is retrievable by *all* clients
+	- *Everyone* within User.everyone is retrievable by *everyone* (i.e. all clients)
 	- 'Public' data within user.perm and user.temp is retrievable by the client of the user
 	- 'Private' data within user.perm and user.temp is not retrievable
 	- Public and Private data can be customized within the modules under DataStores
@@ -23,6 +23,11 @@ Overview:
 	- Values can also be listened with :observe and :listen - see State for more details
 	- User objects are automatically destroyed if its given key is a player and when
 	  that player leaves the game
+	- To prevent rapid leave/join abuse, the user will block the loading of user data if their
+	  total saves within the last minute exceed 5. This will rarely if never be exceeded
+	  (maybe unless teleporting a lot and rapidly between servers), and is essential in
+	  preventing malicious users from destroying the game's global limits
+	  
 ]]
 
 
@@ -30,6 +35,7 @@ Overview:
 local SAVE_IN_STUDIO = false
 local AUTO_SAVE_COOLDOWN = 60
 local SESSION_LOCK_RELEASE_RETRIES = 4
+local MAX_SAVES_PER_MINUTE = 5
 
 
 -- LOCAL
@@ -48,11 +54,11 @@ User.__index = User
 User.userAdded = Signal.new()
 User.userLoaded = Signal.new()
 User.userRemoved = Signal.new()
-User.all = State.new(false)
+User.everyone = State.new(false)
 
 
 -- FUNCTIONS
-function User.getRealKey(playerOrKey: Player | string): (string, boolean)
+function User.getRealKey(playerOrKey: UserKey): (string, boolean)
 	-- If is a player object, then their actual key becomes tostring(player.UserId)
 	local isPlayer = if typeof(playerOrKey) == "Instance" and playerOrKey:IsA("Player") then true else false
 	if isPlayer then
@@ -60,11 +66,13 @@ function User.getRealKey(playerOrKey: Player | string): (string, boolean)
 		return tostring(playerOrKey.UserId), isPlayer
 	elseif typeof(playerOrKey) == "string" then
 		return playerOrKey, isPlayer
+	elseif typeof(playerOrKey) == "number" then
+		return tostring(playerOrKey), isPlayer
 	end
 	error(`playerOrKey '{playerOrKey}' must be a Player or string`)
 end
 
-function User.getUser(playerOrKey: Player | string, canBeUnloaded: boolean?): Class?
+function User.getUser(playerOrKey: UserKey, canBeUnloaded: boolean?): Class?
 	-- If is a player object, then their actual key becomes tostring(player.UserId)
 	local realKey = User.getRealKey(playerOrKey)
 	local user = users[realKey]
@@ -77,11 +85,11 @@ function User.getUser(playerOrKey: Player | string, canBeUnloaded: boolean?): Cl
 	return user
 end
 
-function User.getUserAsync(playerOrKey: Player | string): (boolean, Class)
+function User.getUserAsync(playerOrKey: UserKey): (boolean, Class)
 	local realKey, isPlayer = User.getRealKey(playerOrKey)
 	local checks = 0
 	while true do
-		if isPlayer and playerOrKey.Parent == nil then
+		if isPlayer and typeof(playerOrKey) == "Instance" and playerOrKey.Parent == nil then
 			return false, `Player '{playerOrKey.Name}' ({playerOrKey.UserId}) left the server` :: any
 		end
 		local user = users[realKey]
@@ -108,9 +116,29 @@ function User.getUsers(canBeUnloaded: boolean?): {Class}
 	return usersArray
 end
 
+function User._getSavesThisMinute(dataTable, andIncrement)
+	local nextRefreshTime = dataTable._nextRefreshTime
+	local timeNow = os.time()
+	if nextRefreshTime == nil or timeNow >= nextRefreshTime then
+		nextRefreshTime = timeNow + 60
+		dataTable._nextRefreshTime = nextRefreshTime
+		dataTable._savesThisMinute = nil :: any
+	end
+	local savesThisMinute: number = dataTable._savesThisMinute or 0
+	if andIncrement then
+		savesThisMinute += 1
+		dataTable._savesThisMinute = savesThisMinute
+	end
+	return savesThisMinute
+end
+
+function User.incrementSavesThisMinute(dataTable)
+	return User._getSavesThisMinute(dataTable, true)
+end
+
 
 -- CONSTRUCTOR
-function User.new(playerOrKey: Player | string, dataStoreName: string?)
+function User.new(playerOrKey: UserKey, dataStoreName: string?)
 
 	-- Define properties
 	local realKey, isPlayer = User.getRealKey(playerOrKey)
@@ -120,11 +148,12 @@ function User.new(playerOrKey: Player | string, dataStoreName: string?)
 		janitor = janitor,
 		perm = State.new(true), -- We don't destroy perm until after a successful save and release
 		temp = janitor:add(State.new(false)),
+		beforeLoading = janitor:add(Signal.new()),
 		beforeSaving = janitor:add(Signal.new()),
 		realKey = realKey :: string,
 		player = player,
 		policyInfo = {},
-		policyInfoLoded = false :: boolean,
+		policyInfoLoaded = false :: boolean,
 		isPlayer = isPlayer :: boolean,
 		isLoading = false :: boolean,
 		isLoaded = false :: any,
@@ -176,13 +205,14 @@ end
 
 -- CLASS
 export type Class = typeof(User.new(...))
+type UserKey = (Player | string | number)?
 
 
 -- METHODS
 function User._loadAndAutoSaveData(self: Class, dataStoreName: string)
 	if typeof(dataStoreName) ~= "string" then
 		error("dataStoreName must be a string")
-	end
+	end 
 	local dataStores = modules.DataStores
 	local store = dataStores:FindFirstChild(dataStoreName)
 	if not store then
@@ -204,8 +234,7 @@ function User._loadAndAutoSaveData(self: Class, dataStoreName: string)
 		perm = {},
 		temp = {},
 	}
-	if player then
-		local userId = player.UserId
+	if player and typeof(player) == "Instance" and player:IsA("Player") then
 		local function getPathwaysToLimitTo(dataType)
 			local limiters: {{string}} = {}
 			for _, detail in template do
@@ -228,9 +257,9 @@ function User._loadAndAutoSaveData(self: Class, dataStoreName: string)
 		end
 		local permLimiters = getPathwaysToLimitTo("perm")
 		local tempLimiters = getPathwaysToLimitTo("temp")
-		perm:replicate(player, `UserPerm_{userId}`, permLimiters)
-		temp:replicate(player, `UserTemp_{userId}`, tempLimiters)
-		janitor:add(User.all:replicate(player, `UserAll`))
+		janitor:add(perm:replicate(player, `UserPerm`, permLimiters))
+		janitor:add(temp:replicate(player, `UserTemp`, tempLimiters))
+		janitor:add(User.everyone:replicate(player, `UserEveryone`))
 	end
 	
 	-- We set temp data so it can be accessed via .getUser(key, true) even if perm data hasn't loaded
@@ -242,7 +271,7 @@ function User._loadAndAutoSaveData(self: Class, dataStoreName: string)
 	local Serializer = require(modules.Utility.Serializer)
 	local waitTimeRetry = 2
 	local retries = 0
-	local firstSessionLockRejectTime = nil
+	local firstSessionLockRejectTime: number? = nil
 	while true do
 		if self.isActive == false then
 			return
@@ -255,6 +284,7 @@ function User._loadAndAutoSaveData(self: Class, dataStoreName: string)
 		-- it has been successfully released. Thank you loleris for this idea
 		local dataHasLoaded = true
 		local dataFailedReason = nil
+		local customWaitTime: number? = nil
 		local success, warning = DataStores.updateAsync(dataStoreName, realKey, function(incomingData: any)
 			-- If the data is a string, then it is compressed and needs to be decompressed
 			if typeof(incomingData) == "string" then
@@ -291,6 +321,15 @@ function User._loadAndAutoSaveData(self: Class, dataStoreName: string)
 				-- sessionLock not being applied/removed correctly
 				return nil
 			end
+			local savesThisMinute = User._getSavesThisMinute(incomingData)
+			if savesThisMinute > MAX_SAVES_PER_MINUTE then
+				-- Block loading if the user has exceeded the maximum saves per minute
+				local nextRefreshTime = incomingData._nextRefreshTime + 1 or timeNow + 3
+				dataFailedReason = "Unable to load data as user has exceeded the maximum saves per minute"
+				dataHasLoaded = false
+				customWaitTime = nextRefreshTime - timeNow
+				return nil
+			end
 			local jobId = if RunService:IsStudio() then "Studio" else game.JobId
 			if player then
 				-- We only apply session locks for users with associated players, as session hopping
@@ -298,6 +337,7 @@ function User._loadAndAutoSaveData(self: Class, dataStoreName: string)
 				-- of incorrect programming)
 				incomingData._sessionLock = jobId
 			end
+			User.incrementSavesThisMinute(incomingData)
 			return incomingData
 		end)
 		if dataFailedReason then
@@ -306,10 +346,14 @@ function User._loadAndAutoSaveData(self: Class, dataStoreName: string)
 		if success and dataHasLoaded then
 			break
 		end
-		warn(`HD Admin failed to load data for '{realKey}' from '{dataStoreName}': {warning}`)
-		waitTimeRetry *= 2
-		retries += 1
-		task.wait(waitTimeRetry)
+		if customWaitTime then
+			task.wait(customWaitTime)
+		else
+			warn(`HD Admin failed to load data for '{realKey}' from '{dataStoreName}': {warning}`)
+			waitTimeRetry *= 2
+			retries += 1
+			task.wait(waitTimeRetry)
+		end
 	end
 
 	-- Cancel if user destroyed
@@ -346,7 +390,7 @@ function User._loadAndAutoSaveData(self: Class, dataStoreName: string)
 						originalValue = {}
 						originalData[key] = originalValue
 					end
-					mergeDataRecursive(value :: any, originalValue :: {any})
+					mergeDataRecursive(value :: any, originalValue :: any) -- {any}
 				else
 					originalData[key] = value
 				end
@@ -369,11 +413,14 @@ function User._loadAndAutoSaveData(self: Class, dataStoreName: string)
 			hasReleasedProfile = true
 			return false, "In studio"
 		end
-		if self.isActive == false or serverIsShuttingDown then
+		local isActive = self.isActive :: boolean
+		if isActive == false or serverIsShuttingDown then
 			isReleasingProfile = true
 		end
-		self.beforeSaving:fire(isReleasingProfile) -- This is fired before saving, so that any data can be modified before saving
+		local beforeSaving = self.beforeSaving :: Signal.Class
+		beforeSaving:fire(isReleasingProfile) -- This is fired before saving, so that any data can be modified before saving
 		local dataToSave = perm:getAll(true)
+		User.incrementSavesThisMinute(dataToSave)
 		dataToSave._isSerialized = true
 		dataToSave._lastSavedTime = os.time()
 		if isReleasingProfile then
@@ -400,6 +447,10 @@ function User._loadAndAutoSaveData(self: Class, dataStoreName: string)
 		end
 		return success, warning
 	end
+
+	-- Call the beforeLoading signal to allow for any data to be modified before loading
+	local beforeLoading = self.beforeLoading :: Signal.Class
+	beforeLoading:fire()
 	
 	-- Save data and release session when player leaves
 	self.janitor:add(function()
@@ -423,15 +474,16 @@ function User._loadAndAutoSaveData(self: Class, dataStoreName: string)
 	local queue = Queue.new()
 	perm:changed(function()
 		queue:add(function()
-			task.wait(1) -- Wait a second to include addiitonal values if a lot of changes are made at once
+			local INITIAL_DELAY = 1
+			task.wait(INITIAL_DELAY) -- Wait a second to include addiitonal values if a lot of changes are made at once
 			queue:clear()
 			saveAsync()
-			task.wait(AUTO_SAVE_COOLDOWN)
+			task.wait(AUTO_SAVE_COOLDOWN-INITIAL_DELAY)
 		end)
 	end)
 
 	-- Now fire that we have loaded!
-	self.isLoaded = true
+	self.isLoaded = true :: any
 	if self.isActive then
 		User.userLoaded:fire(self)
 	end
@@ -439,6 +491,8 @@ function User._loadAndAutoSaveData(self: Class, dataStoreName: string)
 end
 
 function User.getPolicyInfoAsync(self: Class): (boolean, string | any)
+	-- Retrieves the policy information for the player
+	-- Also syncs it into temp.PolicyInfo so that it can be accessed by the client
 	local policyInfo = self.policyInfo
 	if not self.isPlayer then
 		return false, "User is not a player"
@@ -454,7 +508,8 @@ function User.getPolicyInfoAsync(self: Class): (boolean, string | any)
 			return PolicyService:GetPolicyInfoForPlayerAsync(player)
 		end)
 		if success then
-			self.temp:set("PolicyInfo", warningOrPolicy)
+			local temp = self.temp :: State.Class
+			temp:set("PolicyInfo", warningOrPolicy)
 			return true, warningOrPolicy
 		end
 		task.wait(3)

@@ -12,7 +12,7 @@ end
 -- hollow (placeholders) and don't actually contain any data
 local function destroyServerOnlyInstances(instance: Instance)
 	for _, child in instance:GetChildren() do
-		if child:GetAttribute("ServerOnly") then
+		if child:GetAttribute("ServerOnly") and child:GetAttribute("HasSharedDescendant") ~= true then
 			child:Destroy()
 		else
 			destroyServerOnlyInstances(child)

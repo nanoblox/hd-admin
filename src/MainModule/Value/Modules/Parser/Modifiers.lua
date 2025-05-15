@@ -32,18 +32,20 @@ end
 
 -- FUNCTIONS
 function Modifiers.get(modifierName: Modifier): ModifierDetail?
-	local item = Modifiers.items[modifierName]
+	local modifierNameLower = tostring(modifierName):lower()
+	local modifierNameCorrected = modifierNameLower:gsub("^%l", string.upper)
+	local item = Modifiers.items[modifierNameCorrected :: Modifier] :: ModifierDetail?
 	if not item then
 		return nil
 	end
 	if not item.name then
-		item.name = modifierName :: any
+		item.name = modifierNameCorrected :: any
 	end
 	if item.mustBecomeAliasOf then
 		local toBecomeName = item.mustBecomeAliasOf
 		local qualifierToBecome = Modifiers.items[toBecomeName]
 		if not qualifierToBecome then
-			error(`Modifiers: {modifierName} can not become alias because {toBecomeName} is not a valid qualifier`)
+			error(`Modifiers: {modifierNameCorrected} can not become alias because {toBecomeName} is not a valid qualifier`)
 		end
 		qualifierToBecome = qualifierToBecome :: any
 		for k,v in qualifierToBecome do
@@ -59,11 +61,11 @@ end
 
 function Modifiers.getAll()
 	-- We call .get to ensure all aliases are registered and setup correctly
-	for modifierName, _ in Modifiers.items do
-		Modifiers.get(modifierName)
+	local items = Modifiers.items :: any
+	for modifierName, _ in items do
+		Modifiers.get(modifierName :: Modifier)
 	end
-	local items = Modifiers.items :: {[Modifier]: ModifierDetail}
-	return items
+	return items :: {[string]: ModifierDetail} --:: {[Modifier]: ModifierDetail}
 end
 
 function Modifiers.becomeAliasOf(modifierName: Modifier, initialTable: any?)
@@ -83,8 +85,26 @@ function Modifiers.becomeAliasOf(modifierName: Modifier, initialTable: any?)
 	return initialTable
 end
 
+function Modifiers.getSortedNameAndAliasLengthArray()
+	local array = Modifiers._sortedNameAndAliasLengthArray
+	if typeof(array) == "table" then
+		return array
+	end
+	array = {}
+	Modifiers._sortedNameAndAliasLengthArray = array
+	local allItems = Modifiers.getAll()
+	for itemNameOrAlias, item in pairs(allItems) do
+		table.insert(array, itemNameOrAlias)
+	end
+	table.sort(array, function(a: string, b: string): boolean
+		return #a > #b
+	end)
+	return array
+end
+
 
 -- PUBLIC
+Modifiers._sortedNameAndAliasLengthArray = nil :: any
 Modifiers.items = {
 	
 	["Preview"] = register({
@@ -149,10 +169,11 @@ Modifiers.items = {
 	["Undo"] = register({
 		description = "Revokes all Tasks that match the given command name(s) (and associated player targets if specified). To revoke a task across all servers, the 'global' modifier must be included.",
 		preAction = function(callerUserId, statement)
+			local Commands = require(modules.Commands)
 			for commandName, _ in pairs(statement.commands) do
+				local command = Commands.getCommand(commandName :: string)
 				--!!! Top priority itemt to complete later
 				--[[
-				local command = main.services.CommandService.getCommand(commandName)
 				if command then
 					local firstCommandArg = command.args[1]
 					local firstArgItem = Modifiers.get(firstCommandArg)
@@ -285,6 +306,9 @@ export type Modifier = keyof<typeof(Modifiers.items)>
 export type ModifierDetail = {
 	description: string,
 	aliases: {[Modifier]: boolean}?,
+	name: string?,
+	mustBecomeAliasOf: any?,
+	aliasOf: string?,
 }
 
 

@@ -29,11 +29,11 @@ type Connection = {
 	disconnect: (self: any) -> ()
 }
 
-export type Class<T...> = {
-	fire: (self: any, T...) -> (),
-	connect: (self: any, FN: (T...) -> ()) -> Connection,
-	once: (self: any, FN: (T...) -> ()) -> Connection,
-	wait: (self: any) -> T...,
+export type Class = {
+	fire: (self: any, any, ...any) -> (),
+	connect: (self: any, FN: (any...) -> ()) -> Connection,
+	once: (self: any, FN: (any...) -> ()) -> Connection,
+	wait: (self: any) -> any...,
 	disconnectAll: (self: any) -> ()
 }
 

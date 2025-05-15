@@ -1,20 +1,123 @@
-local Utility = {}
-local MAIN = nil
+--!nonstrict
+-- LOCAL
+local ParserUtility = {}
+local modules = script:FindFirstAncestor("MainModule").Value.Modules
+local ParserPatterns = require(modules.Parser.ParserPatterns)
+local Config = require(modules.Config)
+local ParserTypes = require(modules.Parser.ParserTypes)
+local User = require(modules.Objects.User)
+
+
+-- TYPES
+type PlayerSearch = ParserTypes.PlayerSearch
+type Statement = ParserTypes.ParsedStatement
+
+
+-- FUNCTIONS
+-- As name implies, this function will return a table of players that match the
+-- given playerString
+function ParserUtility.getPlayersFromString(playerString: string, optionalUser: User.Class?): ({Player})
+	local selectedPlayers = {}
+	local players = game:GetService("Players"):GetPlayers()
+
+	local playerIdentifier = Config.getSetting("PlayerIdentifier", optionalUser)
+	local playerDefinedSearch: PlayerSearch = Config.getSetting("PlayerDefinedSearch", optionalUser)
+	local playerUndefinedSearch: PlayerSearch = Config.getSetting("PlayerUndefinedSearch", optionalUser)
+
+	local hasPlayerIdentifier = (playerString:sub(1, 1) == playerIdentifier)
+	playerString = playerString:lower()
+	local playerStringWithoutIdentifier = ParserUtility.ternary(
+		hasPlayerIdentifier,
+		playerString:sub(2, #playerString),
+		playerString
+	)
+
+	local isUserNameSearch = ParserUtility.ternary(
+		hasPlayerIdentifier,
+		playerDefinedSearch == "UserName",
+		playerUndefinedSearch == "UserName"
+	)
+	local isDisplayNameSearch = ParserUtility.ternary(
+		hasPlayerIdentifier,
+		playerDefinedSearch == "DisplayName",
+		playerUndefinedSearch == "DisplayName"
+	)
+	local isUserNameAndDisplayNameSearch = ParserUtility.ternary(
+		hasPlayerIdentifier,
+		playerDefinedSearch == "UserNameAndDisplayName",
+		playerUndefinedSearch == "UserNameAndDisplayName"
+	)
+
+	if isUserNameSearch or isUserNameAndDisplayNameSearch then
+		for _, player in pairs(players) do
+			if string.find(player.Name:lower(), playerStringWithoutIdentifier) == 1 then
+				if table.find(selectedPlayers, player) == nil then
+					table.insert(selectedPlayers, player)
+				end
+			end
+		end
+	end
+
+	if isDisplayNameSearch or isUserNameAndDisplayNameSearch then
+		for _, player in pairs(players) do
+			if string.find(player.DisplayName:lower(), playerStringWithoutIdentifier) == 1 then
+				if table.find(selectedPlayers, player) == nil then
+					table.insert(selectedPlayers, player)
+				end
+			end
+		end
+	end
+
+	return selectedPlayers
+end
+
+
+-- Do the incoming strings match a real username?
+function ParserUtility.verifyAndParseUsername(callerUser, usernameString: string): (boolean, string?)
+	if not callerUser or not usernameString then
+		return false, nil
+	end
+	local playerIdentifier = Config.getSetting("PlayerIdentifier", callerUser)
+
+	if string.sub(usernameString, 1, 1) == playerIdentifier then
+		-- Is the username defined (e.g @ForeverHD, @ObliviousHD)
+		local playerDefinedSearch: PlayerSearch = Config.getSetting("PlayerDefinedSearch", callerUser)
+		if playerDefinedSearch == "UserName" or playerDefinedSearch == "UserNameAndDisplayName" then
+			return true, string.sub(usernameString, 2)
+		end
+	else
+		-- Is the username undefined (e.g ForeverHD, ObliviousHD)
+		local playerUndefinedSearch: PlayerSearch = Config.getSetting("PlayerUndefinedSearch", callerUser)
+		if playerUndefinedSearch == "UserName" or playerUndefinedSearch == "UserNameAndDisplayName" then
+			return true, usernameString
+		end
+	end
+	return false, nil
+end
 
 
 -- Return all matches in a source using a pattern.
-function Utility.getMatches(source, pattern)
+function ParserUtility.getMatches(source, pattern)
 	local matches = {}
 
 	for match in string.gmatch(source, pattern) do
 		table.insert(matches, match)
 	end
-
+	
 	return matches
 end
 
+function ParserUtility.isQualifiersEmpty(tbl)
+	for k,v in pairs(tbl) do
+		if k ~= "" then
+			return false
+		end
+	end
+	return true
+end
+
 -- getCaptures Helper Functions
-function Utility.getCapsuleRanges(source)
+function ParserUtility.getCapsuleRanges(source)
 	local capsuleRanges = {}
 
 	local searchIndex = 0
@@ -53,9 +156,7 @@ captures).
 ]]
 
 
-function Utility.getCapsuleCaptures(source, sortedKeywords)
-	local parserModule = MAIN.modules.Parser
-
+function ParserUtility.getCapsuleCaptures(source, sortedKeywords)
 	source = source:lower()
 	-- Find all the captures
 	local captures = {}
@@ -73,7 +174,7 @@ function Utility.getCapsuleCaptures(source, sortedKeywords)
 		if string.match(keyword, "^%s*$") ~= nil then
 			continue
 		end
-		keyword = Utility.escapeSpecialCharacters(keyword)
+		keyword = ParserUtility.escapeSpecialCharacters(keyword)
 
 		-- Used to prevent parsing duplicates
 		local alreadyFound = false
@@ -81,14 +182,14 @@ function Utility.getCapsuleCaptures(source, sortedKeywords)
 		-- Captures with argument capsules are stripped away from the source
 		source = string.gsub(
 			source,
-			string.format("(%s)%s", keyword, parserModule.patterns.capsuleFromKeyword),
+			string.format("(%s)%s", keyword, ParserPatterns.capsuleFromKeyword),
 			function(keyword, arguments)
 				-- Arguments need to be separated as they are the literal string
 				-- in the capsule at this point
 				if not alreadyFound then
-					local separatedArguments = Utility.getMatches(
+					local separatedArguments = ParserUtility.getMatches(
 						arguments,
-						parserModule.patterns.argumentsFromCollection
+						ParserPatterns.argumentsFromCollection
 					)
 					table.insert(captures, { [keyword] = separatedArguments })
 				end
@@ -101,7 +202,7 @@ function Utility.getCapsuleCaptures(source, sortedKeywords)
 	return captures, source
 end
 
-function Utility.getPlainCaptures(source, sortedKeywords)
+function ParserUtility.getPlainCaptures(source, sortedKeywords)
 	source = source:lower()
 
 	local captures = {}
@@ -118,7 +219,7 @@ function Utility.getPlainCaptures(source, sortedKeywords)
 		if string.match(keyword, "^%s*$") ~= nil then
 			continue
 		end
-		keyword = Utility.escapeSpecialCharacters(keyword)
+		keyword = ParserUtility.escapeSpecialCharacters(keyword)
 
 		-- Used to prevent parsing duplicates
 		local alreadyFound = false
@@ -137,7 +238,7 @@ function Utility.getPlainCaptures(source, sortedKeywords)
 	return captures, source
 end
 
-function Utility.combineCaptures(firstCaptures, secondCaptures)
+function ParserUtility.combineCaptures(firstCaptures, secondCaptures)
 	local combinedCaptures = {}
 
 	for keyword, arguments in pairs(firstCaptures) do
@@ -153,11 +254,11 @@ function Utility.combineCaptures(firstCaptures, secondCaptures)
 	return combinedCaptures
 end
 
-function Utility.escapeSpecialCharacters(source)
+function ParserUtility.escapeSpecialCharacters(source)
 	return source:gsub("([%.%%%^%$%(%)%[%]%+%*%-%?])", "%%%1")
 end
 
-function Utility.ternary(condition, ifTrue, ifFalse)
+function ParserUtility.ternary(condition, ifTrue, ifFalse)
 	if condition then
 		return ifTrue
 	else
@@ -165,5 +266,39 @@ function Utility.ternary(condition, ifTrue, ifFalse)
 	end
 end
 
+function ParserUtility.convertStatementToRealNames(statement: Statement)
+	-- We modify the statement to convert all aliases into the actual names for commands and modifiers
+	if statement.isConverted == true then
+		return
+	end
+	statement.isConverted = true
+	local tablesToConvertToRealNames = {
+		["commands"] = {modules.Commands, "getCommand"},
+		["modifiers"] = {modules.Parser.Modifiers, "get"},
+	}
+	for tableName, getMethodDetail in pairs(tablesToConvertToRealNames) do
+		local table = statement[tableName]
+		if table then
+			local getModule = getMethodDetail[1]
+			local getReference = require(getModule) :: any
+			local getMethod = getReference[getMethodDetail[2]]
+			local newTable = {}
+			local originalTableName = "original"..tableName:sub(1,1):upper()..tableName:sub(2)
+			local originalTable = {}
+			for name, value in pairs(table) do
+				local returnValue = getMethod(name)
+				local realName = returnValue and string.lower(returnValue.name)
+				if realName then
+					newTable[realName] = value
+				end
+				originalTable[name] = true
+			end
+			statement[originalTableName] = originalTable
+			statement[tableName] = newTable
+		end
+	end
+	print("requested statement: ", statement)
+end
 
-return Utility
+
+return ParserUtility
