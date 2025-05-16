@@ -35,7 +35,7 @@ Under this License, you are granted a **limited, non-exclusive, non-transferable
 
 **✅ In Private Roblox Experiences**
 
-- You may use and modify the Core **in experiences on roblox.com with Privacy set to “Private”** under Settings within the Roblox Creator Dashboard.
+- You may modify and use modified version of the Core **only in experiences on roblox.com with Privacy set to “Private”** under Settings within the Roblox Creator Dashboard.
 
 
 ### 4. Contribution Agreement Requirement
@@ -49,7 +49,7 @@ Failure to sign the CA **revokes** the right to contribute.
 
 ### 5. Change Date & Future Licensing
 
-On or before **1st January 2035**, the Licensor **may** choose to transition HD Admin to an **open-source license** (such as MIT or Apache 2.0). Until then, this B**usiness Source License** remains in effect.
+On or before **1st January 2030**, the Licensor **may** choose to transition HD Admin to an **open-source license** (such as MIT or Apache 2.0). Until then, this B**usiness Source License** remains in effect.
 
 
 ### 6. Disclaimer & Liability
