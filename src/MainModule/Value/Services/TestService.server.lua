@@ -42,15 +42,20 @@ task.defer(function()
 	end
 end)
 
+
 -- Test Parser
+--[[
 local Qualifiers = require(modules.Parser.Qualifiers)
---print("NonAdmins =", Qualifiers.get("NonAdmins"))
+print("NonStaff =", Qualifiers.get("NonStaff"))
+print("nonstaff =", Qualifiers.get("nonstaff"))
 
 local Modifiers = require(modules.Parser.Modifiers)
---print("Un =", Modifiers.get("Un"))
+print("unn =", Modifiers.get("unn"))
+print("tesToNe =", Modifiers.get("tesToNe"))
 
 local Args = require(modules.Parser.Args)
---print("UnfilteredString =", Args.get("UnfilteredText"))
+print("oPtIonalplaYers =", Args.get("oPtIonalplaYers"))
+--]]
 
 
 -- Are Values Equal

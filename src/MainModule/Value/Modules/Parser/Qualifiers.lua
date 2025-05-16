@@ -17,6 +17,9 @@ local Teams = game:GetService("Teams")
 local modules = script:FindFirstAncestor("MainModule").Value.Modules
 local Qualifiers = {}
 local User = require(modules.Objects.User)
+local requiresUpdating = true
+local sortedNameAndAliasLengthArray = {}
+local lowerCaseDictionary = {}
 
 
 -- LOCAL FUNCTIONS
@@ -26,17 +29,43 @@ end
 
 
 -- FUNCTIONS
+function Qualifiers.update()
+	if not requiresUpdating then
+		return false
+	end
+	requiresUpdating = false
+	local allItems = Qualifiers.getAll()
+	sortedNameAndAliasLengthArray = {}
+	lowerCaseDictionary = {}
+	for itemNameOrAlias, item in pairs(allItems :: any) do
+		local lowerCaseName = tostring(itemNameOrAlias):lower()
+		lowerCaseDictionary[lowerCaseName] = item
+		table.insert(sortedNameAndAliasLengthArray, tostring(itemNameOrAlias))
+	end
+	table.sort(sortedNameAndAliasLengthArray, function(a: string, b: string): boolean
+		return #a > #b
+	end)
+	return true
+end
+
+function Qualifiers.getSortedNameAndAliasLengthArray()
+	Qualifiers.update()
+	return sortedNameAndAliasLengthArray
+end
+
+function Qualifiers.getLowercaseDictionary()
+	Qualifiers.update()
+	return lowerCaseDictionary
+end
+
 function Qualifiers.get(qualifierName: Qualifier): QualifierDetail?
 	local qualifierNameLower = tostring(qualifierName):lower()
-	local qualifierNameCorrected = qualifierNameLower:gsub("^%l", string.upper)
-	local item = Qualifiers.items[qualifierNameCorrected :: Qualifier] :: QualifierDetail?
+	local ourDictionary = Qualifiers.getLowercaseDictionary()
+	local item = ourDictionary[qualifierNameLower] :: QualifierDetail?
 	if not item then
-		warn("THIS DID NOT EXIST:", qualifierName, qualifierNameCorrected)
 		return nil
 	end
-	if not item.name then
-		item.name = qualifierNameCorrected
-	end
+	local qualifierNameCorrected = item.name
 	if item.mustBecomeAliasOf then
 		local toBecomeName = item.mustBecomeAliasOf
 		local qualifierToBecome = Qualifiers.items[toBecomeName]
@@ -58,7 +87,10 @@ end
 function Qualifiers.getAll()
 	-- We call .get to ensure all aliases are registered and setup correctly
 	local items = Qualifiers.items :: {[string]: QualifierDetail}
-	for qualifierName, _ in items do
+	for qualifierName, item in items do
+		if not item.name then
+			item.name = qualifierName
+		end
 		Qualifiers.get(qualifierName :: Qualifier)
 	end
 	return items
@@ -81,44 +113,8 @@ function Qualifiers.becomeAliasOf(qualifierName: Qualifier, initialTable: any?)
 	return initialTable
 end
 
-function Qualifiers.getSortedNameAndAliasLengthArray()
-	local array = Qualifiers._sortedNameAndAliasLengthArray
-	if typeof(array) == "table" then
-		return array
-	end
-	array = {}
-	Qualifiers._sortedNameAndAliasLengthArray = array
-	local allItems = Qualifiers.getAll()
-	for itemNameOrAlias, item in pairs(allItems) do
-		table.insert(array, itemNameOrAlias)
-	end
-	table.sort(array, function(a: string, b: string): boolean
-		return #a > #b
-	end)
-	return array
-end
-
-function Qualifiers.getLowerCaseNameAndAliasToArgDictionary()
-	local dictionary = Qualifiers._lowerCaseNameAndAliasToArgDictionary
-	if typeof(dictionary) == "table" then
-		return dictionary
-	end
-	dictionary = {}
-	Qualifiers._lowerCaseNameAndAliasToArgDictionary = dictionary
-	local allItems = Qualifiers.getAll()
-	for itemNameOrAlias, item in pairs(allItems) do
-		if not item.name then
-			warn("WARNING, NO NAME EXISTS:", item)
-		end
-		dictionary[item.name:lower()] = item
-	end
-	return dictionary
-end
-
 
 -- PUBLIC
-Qualifiers._sortedNameAndAliasLengthArray = nil :: any
-Qualifiers._lowerCaseNameAndAliasToArgDictionary = nil :: any
 Qualifiers.items = {
 	
 	["Default"] = register({
@@ -345,7 +341,6 @@ Qualifiers.items = {
 
 	["Admins"] = Qualifiers.becomeAliasOf("Staff"),
 	
-	--[[
 	["NonStaff"] = register({
 		description = "Selects all player's who are not staff",
 		getTargets = function(_)
@@ -362,7 +357,6 @@ Qualifiers.items = {
 	}),
 
 	["NonAdmins"] = Qualifiers.becomeAliasOf("NonStaff"),
-	--]]
 
 	["Premium"] = register({
 		description = "Players with Roblox Premium membership",

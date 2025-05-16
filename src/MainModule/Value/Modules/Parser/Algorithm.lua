@@ -107,7 +107,7 @@ function Algorithm.parseQualifierDescription(qualifierDescription)
 	)
 	local unrecognizedQualifiers = {}
 
-	local qualifierDictionary = Qualifiers.getLowerCaseNameAndAliasToArgDictionary()
+	local qualifierDictionary = Qualifiers.getLowercaseDictionary()
 	for _, match in pairs(qualifiers) do
 		if match ~= "" then
 			if not qualifierDictionary[match:lower()] then

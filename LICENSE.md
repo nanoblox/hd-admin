@@ -1,9 +1,9 @@
 # Business Source License 1.1 (BSL-1.1) for HD Admin
 
-**Licensor:** Nanoblox Limited
-**Software:** HD Admin
-**Creator:** The group owner of: https://www.roblox.com/communities/4676369/HD-Admin
-**Core Package - “Core”:** The Core directory, including but not limited to the MainModule, Commands, system logic, framework code and UI components
+- **Licensor:** Nanoblox Limited
+- **Software:** HD Admin
+- **Creator:** ForeverHD (Ben Horton)
+- **Core Package - “Core”:** The Core directory, including but not limited to the MainModule, Commands, system logic, framework code and UI components
 
 ----
 
@@ -61,9 +61,9 @@ THIS SOFTWARE IS PROVIDED "AS IS," WITHOUT WARRANTY OF ANY KIND. THE LICENSOR IS
 
 ### Summary of Key Rules:
 
-**🚫 No redistributing of the Core**
-**🚫 No using Core package code in other software**
-**🚫 No modifications to the Core except within private experiences**
-**✅ You may configure HD Admin via Settings & Config**
-**✅ You may use the HD Admin API to extend behavior**
-**✍️ You must sign a CA before contributing**
+- **🚫 No redistributing of the Core**
+- **🚫 No using Core package code in other software**
+- **🚫 No modifications to the Core except within private experiences**
+- **✅ You may configure HD Admin via Settings & Config**
+- **✅ You may use the HD Admin API to extend behavior**
+- **✍️ You must sign a CA before contributing**

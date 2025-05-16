@@ -14,10 +14,11 @@ local Args = {}
 local modules = script:FindFirstAncestor("MainModule").Value.Modules
 local Config = require(modules.Config)
 local InputObjects = require(modules.UI.InputObjects)
-local sortedNameAndAliasLengthArray = {}
-local requiresUpdating = true
 local Players = game:GetService("Players")
 local ParserUtility = require(modules.Parser.ParserUtility)
+local requiresUpdating = true
+local sortedNameAndAliasLengthArray = {}
+local lowerCaseDictionary = {}
 
 
 -- LOCAL FUNCTIONS
@@ -27,25 +28,52 @@ end
 
 
 -- FUNCTIONS
+function Args.update()
+	if not requiresUpdating then
+		return false
+	end
+	requiresUpdating = false
+	local allItems = Args.getAll()
+	sortedNameAndAliasLengthArray = {}
+	lowerCaseDictionary = {}
+	for itemNameOrAlias, item in pairs(allItems :: any) do
+		local lowerCaseName = tostring(itemNameOrAlias):lower()
+		lowerCaseDictionary[lowerCaseName] = item
+		table.insert(sortedNameAndAliasLengthArray, tostring(itemNameOrAlias))
+	end
+	table.sort(sortedNameAndAliasLengthArray, function(a: string, b: string): boolean
+		return #a > #b
+	end)
+	return true
+end
+
+function Args.getSortedNameAndAliasLengthArray()
+	Args.update()
+	return sortedNameAndAliasLengthArray
+end
+
+function Args.getLowercaseDictionary()
+	Args.update()
+	return lowerCaseDictionary
+end
+
 function Args.get(argName: Argument): ArgumentDetail?
 	local argNameLower = tostring(argName):lower()
-	local argNameCorrected = argNameLower:gsub("^%l", string.upper)
-	local item = Args.items[argNameCorrected]
+	local ourDictionary = Args.getLowercaseDictionary()
+	local item = ourDictionary[argNameLower] :: ArgumentDetail?
 	if not item then
 		return nil
 	end
-	if not item.name then
-		item.name = argNameCorrected :: any
-	end
+	local argNameCorrected = item.name
 	local toBecomeName = item.mustBecomeAliasOf
 	if toBecomeName then
-		local qualifierToBecome = Args.items[toBecomeName]
-		if not qualifierToBecome then
-			error(`Args: {argNameCorrected} can not become alias because {toBecomeName} is not a valid qualifier`)
+		local argToBecome = Args.items[toBecomeName]
+		if not argToBecome then
+			error(`Args: {argNameCorrected} can not become alias because {toBecomeName} is not a valid argument`)
 		end
-		qualifierToBecome = qualifierToBecome :: any
+		argToBecome = argToBecome :: any
 		item = item :: any
-		for k,v in qualifierToBecome do
+		for k,v in argToBecome do
 			if not item[k] then
 				item[k] = v
 			end
@@ -58,42 +86,31 @@ end
 
 function Args.getAll()
 	-- We call .get to ensure all aliases are registered and setup correctly
-	for qualifierName, _ in Args.items do
-		Args.get(qualifierName)
+	for argName, item in Args.items do
+		if not item.name then
+			item.name = argName :: any
+		end
+		Args.get(argName)
 	end
 	local items = Args.items :: {[Argument]: ArgumentDetail}
 	return items
 end
 
-function Args.becomeAliasOf(qualifierName: Argument, initialTable: any?): ArgumentDetail
+function Args.becomeAliasOf(argName: Argument, initialTable: any?): ArgumentDetail
 	-- We don't actually create a mirror table here as the data of items will have
 	-- not yet gone into memory. Instead, we record the table as an alias, then
 	-- set it's data once .get is called or 
 	task.defer(function()
 		-- This servers as a warning as opposed to an actual error
-		if not Args.items[qualifierName] then
-			error(`Args: {qualifierName} is not a valid qualifier`)
+		if not Args.items[argName] then
+			error(`Args: {argName} is not a valid argument`)
 		end
 	end)
 	if typeof(initialTable) ~= "table" then
 		initialTable = {}
 	end
-	initialTable.mustBecomeAliasOf = qualifierName
+	initialTable.mustBecomeAliasOf = argName
 	return initialTable
-end
-
-function Args.getSortedNameAndAliasLengthArray (): {string}
-	if not requiresUpdating then
-		return sortedNameAndAliasLengthArray
-	end
-	local items = Args.getAll()
-	for itemNameOrAlias, item in pairs(items) do
-		table.insert(sortedNameAndAliasLengthArray, itemNameOrAlias)
-	end
-	table.sort(sortedNameAndAliasLengthArray, function(a: string, b: string): boolean
-		return #a > #b
-	end)
-	return sortedNameAndAliasLengthArray
 end
 
 

@@ -22,6 +22,9 @@ local modules = script:FindFirstAncestor("MainModule").Value.Modules
 local Modifiers = {}
 local Players = game:GetService("Players")
 local User = require(modules.Objects.User)
+local requiresUpdating = true
+local sortedNameAndAliasLengthArray = {}
+local lowerCaseDictionary = {}
 
 
 -- LOCAL FUNCTIONS
@@ -31,16 +34,43 @@ end
 
 
 -- FUNCTIONS
+function Modifiers.update()
+	if not requiresUpdating then
+		return false
+	end
+	requiresUpdating = false
+	local allItems = Modifiers.getAll()
+	sortedNameAndAliasLengthArray = {}
+	lowerCaseDictionary = {}
+	for itemNameOrAlias, item in pairs(allItems :: any) do
+		local lowerCaseName = tostring(itemNameOrAlias):lower()
+		lowerCaseDictionary[lowerCaseName] = item
+		table.insert(sortedNameAndAliasLengthArray, tostring(itemNameOrAlias))
+	end
+	table.sort(sortedNameAndAliasLengthArray, function(a: string, b: string): boolean
+		return #a > #b
+	end)
+	return true
+end
+
+function Modifiers.getSortedNameAndAliasLengthArray()
+	Modifiers.update()
+	return sortedNameAndAliasLengthArray
+end
+
+function Modifiers.getLowercaseDictionary()
+	Modifiers.update()
+	return lowerCaseDictionary
+end
+
 function Modifiers.get(modifierName: Modifier): ModifierDetail?
 	local modifierNameLower = tostring(modifierName):lower()
-	local modifierNameCorrected = modifierNameLower:gsub("^%l", string.upper)
-	local item = Modifiers.items[modifierNameCorrected :: Modifier] :: ModifierDetail?
+	local ourDictionary = Modifiers.getLowercaseDictionary()
+	local item = ourDictionary[modifierNameLower] :: ModifierDetail?
 	if not item then
 		return nil
 	end
-	if not item.name then
-		item.name = modifierNameCorrected :: any
-	end
+	local modifierNameCorrected = item.name
 	if item.mustBecomeAliasOf then
 		local toBecomeName = item.mustBecomeAliasOf
 		local qualifierToBecome = Modifiers.items[toBecomeName]
@@ -62,7 +92,10 @@ end
 function Modifiers.getAll()
 	-- We call .get to ensure all aliases are registered and setup correctly
 	local items = Modifiers.items :: any
-	for modifierName, _ in items do
+	for modifierName, item in items do
+		if not item.name then
+			item.name = modifierName
+		end
 		Modifiers.get(modifierName :: Modifier)
 	end
 	return items :: {[string]: ModifierDetail} --:: {[Modifier]: ModifierDetail}
@@ -85,26 +118,8 @@ function Modifiers.becomeAliasOf(modifierName: Modifier, initialTable: any?)
 	return initialTable
 end
 
-function Modifiers.getSortedNameAndAliasLengthArray()
-	local array = Modifiers._sortedNameAndAliasLengthArray
-	if typeof(array) == "table" then
-		return array
-	end
-	array = {}
-	Modifiers._sortedNameAndAliasLengthArray = array
-	local allItems = Modifiers.getAll()
-	for itemNameOrAlias, item in pairs(allItems) do
-		table.insert(array, itemNameOrAlias)
-	end
-	table.sort(array, function(a: string, b: string): boolean
-		return #a > #b
-	end)
-	return array
-end
-
 
 -- PUBLIC
-Modifiers._sortedNameAndAliasLengthArray = nil :: any
 Modifiers.items = {
 	
 	["Preview"] = register({
