@@ -157,7 +157,7 @@ captures).
 
 
 function ParserUtility.getCapsuleCaptures(source, sortedKeywords)
-	source = source:lower()
+	source = source:lower() :: any
 	-- Find all the captures
 	local captures = {}
 	-- We need sorted table so that larger keywords get captured before smaller
@@ -203,7 +203,7 @@ function ParserUtility.getCapsuleCaptures(source, sortedKeywords)
 end
 
 function ParserUtility.getPlainCaptures(source, sortedKeywords)
-	source = source:lower()
+	source = source:lower() :: any
 
 	local captures = {}
 

@@ -25,7 +25,8 @@ local function playerAdded(player: Player)
 	player.Chatted:Connect(function(message)
 		local Parser = require(modules.Parser)
 		local batch = Parser.parseMessage(message, user)
-		Commands.processBatchAsync(user, batch)
+		local approved, notices, tasks = Commands.processBatchAsync(user, batch)
+		print("batch, approved, notices, tasks =", batch, approved, notices, tasks)
 	end)
 
 end

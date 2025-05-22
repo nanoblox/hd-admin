@@ -1,1 +1,1 @@
-return require(script.Parent.Parent["howmanysmall_typed-promise@4.0.3"]["typed-promise"])
+return require(script.Parent.Parent["howmanysmall_typed-promise@4.0.6"]["typed-promise"])

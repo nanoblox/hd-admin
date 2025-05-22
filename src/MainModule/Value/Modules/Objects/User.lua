@@ -41,6 +41,7 @@ local MAX_SAVES_PER_MINUTE = 5
 -- LOCAL
 local modules = script:FindFirstAncestor("MainModule").Value.Modules
 local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
 local users: {[string]: Class} = {}
 local Janitor = require(modules.Objects.Janitor)
 local State = require(modules.Objects.State)
@@ -79,10 +80,19 @@ function User.getUser(playerOrKey: UserKey, canBeUnloaded: boolean?): Class?
 	if not user then
 		return nil
 	end
-	if not canBeUnloaded and user.isLoaded == false then
+	local isLoaded = if user then user.isLoaded :: boolean else nil
+	if not canBeUnloaded and isLoaded == false then
 		return nil -- User must be loaded!
 	end
 	return user
+end
+
+function User.getUserByUserId(userId: number, canBeUnloaded: boolean?): Class?
+	local player = Players:GetPlayerByUserId(userId)
+	if not player then
+		return nil
+	end
+	return User.getUser(player, canBeUnloaded)
 end
 
 function User.getUserAsync(playerOrKey: UserKey): (boolean, Class)
@@ -96,7 +106,8 @@ function User.getUserAsync(playerOrKey: UserKey): (boolean, Class)
 		if not user and checks > 0 then
 			return false, `User '{realKey}' does not exist`  :: any
 		end
-		if user and user.isLoaded == true then
+		local isLoaded = if user then user.isLoaded :: boolean else nil
+		if user and isLoaded == true then
 			return true, user
 		end
 		checks += 1
@@ -144,6 +155,7 @@ function User.new(playerOrKey: UserKey, dataStoreName: string?)
 	local realKey, isPlayer = User.getRealKey(playerOrKey)
 	local janitor = Janitor.new()
 	local player = if isPlayer then playerOrKey :: Player else nil
+	local userId = if isPlayer and player then player.UserId else nil
 	local self = {
 		janitor = janitor,
 		perm = State.new(true), -- We don't destroy perm until after a successful save and release
@@ -152,6 +164,7 @@ function User.new(playerOrKey: UserKey, dataStoreName: string?)
 		beforeSaving = janitor:add(Signal.new()),
 		realKey = realKey :: string,
 		player = player,
+		userId = userId :: number?,
 		policyInfo = {},
 		policyInfoLoaded = false :: boolean,
 		isPlayer = isPlayer :: boolean,
@@ -164,7 +177,7 @@ function User.new(playerOrKey: UserKey, dataStoreName: string?)
 	-- If an existing user is present (for example, in rare cases where a player
 	-- rejoins the server before the old user is removed), then call destroy on that
 	-- old user and replace it with the new one
-	local oldUser = users[realKey]
+	local oldUser = users[realKey] :: any?
 	if oldUser then
 		oldUser:destroy()
 	end
@@ -429,7 +442,7 @@ function User._loadAndAutoSaveData(self: Class, dataStoreName: string)
 		if Store.compressData then
 			dataToSave = Serializer.compress(dataToSave)
 		end
-		local success, warning
+		local success, warning = false, ""
 		while success ~= true do
 			success, warning = DataStores.setAsync(dataStoreName, realKey, dataToSave, gdprUserIds)
 			if not success then

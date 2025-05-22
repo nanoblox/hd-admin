@@ -1,6 +1,6 @@
 --!strict
 local Players = game:GetService("Players")
-local uneqipTools = require(script.Parent.uneqipTools)
+local unequipTools = require(script.Parent.unequipTools)
 return function(tool: Tool)
 	local character = tool.Parent
 	local player = character and character:IsA("Model") and Players:GetPlayerFromCharacter(character)
@@ -8,7 +8,7 @@ return function(tool: Tool)
 		tool:Destroy()
 		return
 	end
-	uneqipTools(player)
+	unequipTools(player)
 	task.delay(0.01, function()
 		tool:Destroy()
 	end)

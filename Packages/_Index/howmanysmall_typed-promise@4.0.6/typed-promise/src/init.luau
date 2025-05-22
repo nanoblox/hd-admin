@@ -1,3 +1,4 @@
+--!optimize 2
 --!strict
 -- Partial types for Promise
 
@@ -21,21 +22,18 @@ type ErrorOptions = {
 	kind: ErrorKind,
 }
 
-export type Error = typeof(setmetatable(
-	{} :: ErrorStaticAndShared & {
-		error: string,
-		trace: string?,
-		context: string?,
-		kind: ErrorKind,
-		parent: Error?,
-		createdTick: number,
-		createdTrace: string,
+export type Error = typeof(setmetatable({} :: ErrorStaticAndShared & {
+	error: string,
+	trace: string?,
+	context: string?,
+	kind: ErrorKind,
+	parent: Error?,
+	createdTick: number,
+	createdTrace: string,
 
-		extend: (self: Error, options: ErrorOptions?) -> Error,
-		getErrorChain: (self: Error) -> {Error},
-	},
-	{} :: {__tostring: (self: Error) -> string}
-))
+	extend: (self: Error, options: ErrorOptions?) -> Error,
+	getErrorChain: (self: Error) -> {Error},
+}, {} :: {__tostring: (self: Error) -> string}))
 type ErrorStatic = ErrorStaticAndShared & {
 	new: (options: ErrorOptions?, parent: Error?) -> Error,
 	is: (anything: any) -> boolean,
@@ -92,14 +90,15 @@ export type TypedPromise<T...> = {
 
 type Signal<T...> = {
 	Connect: (self: Signal<T...>, callback: (T...) -> ...any) -> SignalConnection,
-}
+	[any]: any,
+} | RBXScriptSignal<T...>
 
 type SignalConnection = {
 	Disconnect: (self: SignalConnection) -> ...any,
 	[any]: any,
-}
+} | RBXScriptConnection
 
-return Promise :: {
+export type PromiseStatic = {
 	Error: ErrorStatic,
 	Status: {
 		Started: "Started",
@@ -158,3 +157,5 @@ return Promise :: {
 	some: <T>(promise: {TypedPromise<T>}, count: number) -> TypedPromise<{T}>,
 	try: <TArgs..., TReturn...>(callback: (TArgs...) -> TReturn..., TArgs...) -> TypedPromise<TReturn...>,
 }
+
+return Promise :: PromiseStatic

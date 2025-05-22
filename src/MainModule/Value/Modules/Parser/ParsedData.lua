@@ -163,6 +163,7 @@ function ParsedData.parsedDataUpdateIsValidFlag(parsedData, parserRejection: Par
 	local utilityModule = require(modules.Parser.ParserUtility)
 	
 	if parserRejection == "MissingCommandDescription" then
+		parsedData.errorMessage = "Invalid command name(s)"
 		if parsedData.commandDescription == "" then
 			parsedData.isValid = false
 		end
@@ -223,7 +224,7 @@ function ParsedData.generateOrganizedParsedData(allParsedData)
 		else
 
 			parsedStatement.isValid = false
-			parsedStatement.errorMessage = parsedData.parserRejection
+			parsedStatement.errorMessage = parsedData.errorMessage or parsedData.parserRejection
 		end
 
 		table.insert(parsedBatch, parsedStatement)

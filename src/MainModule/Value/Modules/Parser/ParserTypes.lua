@@ -11,16 +11,19 @@ export type ParsedStatement = {
 	isValid: boolean,
 	isConverted: boolean,
 	isFromClient: boolean,
+	isRestricted: boolean?,
 	commands: {[string]: {string}},
 	modifiers: {[string]: {string}},
 	qualifiers: {[string]: {string}},
 	errorMessage: string?,
+	callerUserId: number?,
+	taskUID: string?,
 }
 
 export type PlayerSearch = configSettings.PlayerSearch
 
 export type ParserRejection =
-	"MissingCommandDescription" | -- parsedData was missing a commandDescription
+	"MissingCommandDescription" | -- parsedData was missing a commandDescription, previously
 	"UnbalancedCapsulesInCommandDescription" | -- parsedData had unbalanced capsules in commandDescription
 	"UnbalancedCapsulesInQualifierDescription" | -- parsedData had unbalanced capsules in qualifierDescription
 	"MissingCommands" | -- parsedData was missing commands

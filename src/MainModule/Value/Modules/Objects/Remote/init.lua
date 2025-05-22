@@ -36,7 +36,7 @@ function Remote.new(uniqueName: string, remoteType: RemoteType)
 		elseif remoteType ~= "Event" and remoteType ~= nil then
 			error("Invalid remoteType")
 		end
-		local remotesContainer = self:_getContainer()
+		local remotesContainer = self:_getContainer() :: any
 		if remotesContainer then
 			if remotesContainer:FindFirstChild(uniqueName) then
 				error(`Remote with name '{uniqueName}' already exists`)

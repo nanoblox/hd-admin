@@ -4,11 +4,11 @@ local Roles = {}
 
 
 -- FUNCTIONS
-function Roles.getRole(key)
+function Roles.getRole(key: string)
 	return Roles.getRoles()[key] -- Not complete, just for rapid testing
 end
 
-function Roles.getRoles(): {any} -- RoleDetail
+function Roles.getRoles(): any
 	return {
 		settings = {
 			name = "Admin",

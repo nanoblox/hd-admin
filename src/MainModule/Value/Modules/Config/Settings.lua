@@ -103,6 +103,7 @@ local Settings = {
 		},
 
 		-- Commands
+		PreventRepeats = true, -- This prevents a command from being repeated twice before finishing for users/servers
 		ScaleLimit = 3, -- The maximum size players with a rank lower than 'IgnoreScaleLimit' can scale theirself. For example, players will be limited to ,size me 4 (if limit is 4) - any number above is blocked.
 		IgnoreScaleLimit = 3, -- Any ranks equal or above this value will ignore 'ScaleLimit'
 		VIPServerCommandBlacklist = {"permRank", "permBan", "globalAnnouncement"}, -- Commands players are probihited from using in VIP Servers

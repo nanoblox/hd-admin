@@ -3,10 +3,11 @@
 local Commands = {}
 local modules = script:FindFirstAncestor("MainModule").Value.Modules
 local parser = modules.Parser
-local Args = require(parser.Args)
 local User = require(modules.Objects.User)
 local ParserTypes = require(parser.ParserTypes)
-local ParserUtility = require(parser.ParserUtility)
+local Promise = require(modules.Objects.Promise)
+local Config = require(modules.Config)
+local Task = require(modules.Objects.Task)
 local commandsArray: {Command} = {}
 local lowerCaseNameAndAliasCommandsDictionary: {[string]: Command} = {}
 local sortedNameAndAliasLengthArray: {string} = {}
@@ -18,26 +19,11 @@ local commandPrefixes = {}
 type User = User.Class
 type Batch = ParserTypes.ParsedBatch
 type Statement = ParserTypes.ParsedStatement
-
-export type Task = {
-	defer: (any, any) -> (),
-	hiiiiii: (any, any) -> (),
-}
-
-export type Command = {
-	--[string]: any,
-	name: string,
-	aliases: {string},
-	args: {Args.Argument},
-	prefixes: {string}?,
-}
-
-export type ClientCommand = {
-	--[string]: any,
-	name: string,
-	args: {Args.Argument},
-	--run: (() -> ()),
-}
+type ArgGroup = {[string]: {string}}
+export type Command = Task.Command -- Moved under 'Task' to prevent cyclical warning
+export type ClientCommand = Task.ClientCommand -- Moved under 'Task' to prevent cyclical warning
+export type TriStateSetting = Task.TriStateSetting
+export type Properties = Task.Properties
 
 
 -- FUNCTIONS
@@ -117,229 +103,202 @@ function Commands.getCommandPrefixes()
 	return commandPrefixes
 end
 
-function Commands.processStatementAsync(callerUser: User, statement: Statement)
+function Commands.processStatementAsync(callerUser: User, statement: Statement): (boolean, string | {any})
 	-- This verifies and executes the statement (if permitted)
-	local callerUserId = callerUser.userId
-	local callerPlayer = callerUser.player
-	local Promise = main.modules.Promise
-	return Commands.verifyStatement(callerUser, statement)
-		:andThen(function(approved, noticeDetails)
-			if callerPlayer then
-				for _, detail in pairs(noticeDetails) do
-					local method = main.services.MessageService[detail[1]]
-					method(callerPlayer, detail[2])
-				end
+	local approved, reason = Commands.verifyStatementAsync(callerUser, statement)
+	if not approved then
+		return false, reason or "Statement denied"
+	end
+	local callerUserId = callerUser.userId :: number
+	local tasks = Commands.executeStatement(callerUserId, statement)
+	return true, tasks
+end
+
+function Commands.processBatchAsync(callerUser: User, batch: Batch): (boolean, {{boolean | string}}, {any}?)
+	-- This verifies and executes the statements within the batch (if permitted)
+	if type(batch) ~= "table" then
+		return false, {{false, "The batch must be a table!"}}, nil
+	end
+	local approvedPromises = {}
+	local reasons = {}
+	for _, statement in pairs(batch) do
+		if type(statement) ~= "table" then
+			return false, {{false, "Statements must be a table!"}}, nil
+		end
+
+		table.insert(approvedPromises, Promise.new(function(resolve, reject)
+			local approved, reason = Commands.verifyStatementAsync(callerUser, statement)
+			if approved == false and typeof(reason) == "string" then
+				table.insert(reasons, {approved, reason})
 			end
 			if approved then
-				return Promise.new(function(resolve, reject)
-					local sucess, jobsOrWarning = Commands.executeStatement(callerUserId, statement):await()
-					if sucess then
-						return resolve(true, jobsOrWarning)
-					end
-					reject(jobsOrWarning)
-				end)
+				resolve(reason)
+			else
+				reject(reason)
 			end
-			return false
-		end)
-end
+		end::any))
 
-function Commands.processBatchAsync(callerUser: User, batch: Batch)
-	-- This verifies and executes the statements within the batch (if permitted)
-	if true then
-		print("batch =", batch)
-		return
 	end
-	local callerUserId = callerUser.userId
-	local Promise = main.modules.Promise
-	return Promise.defer(function(resolve, reject)
-		if type(batch) ~= "table" then
-			return resolve(false, "The batch must be a table!")
-		end
-		local approvedPromises = {}
-		for _, statement in pairs(batch) do
-			if type(batch) ~= "table" then
-				return resolve(false, "Statements must be a table!")
-			end
-			statement.message = message
-			table.insert(approvedPromises, Promise.new(function(subResolve, subReject)
-				local success, approved, noticeDetails = Commands.verifyStatement(callerUser, statement):await()
-				if success and approved then
-					subResolve()
-				elseif not success then
-					reject(approved)
-					subReject()
-				else
-					subReject()
-				end
-			end))
-		end
-		local approvedAllStatements = Promise.all(approvedPromises):await()
-		if not approvedAllStatements then
-			return resolve(false, "Invalid permission to execute all statements")
-		end
-		local collectiveJobs = {}
-		for _, statement in pairs(batch) do
-			local sucess, jobs = Commands.executeStatement(callerUserId, statement):await()
-			if sucess then
-				for _, job in pairs(jobs) do
-					table.insert(collectiveJobs, job)
-				end
+	local promises = Promise.all(approvedPromises) :: any
+	local approvedAllStatements = promises:await()
+	if not approvedAllStatements then
+		return false, reasons, nil
+	end
+	local collectiveTasks = {}
+	local callerUserId = callerUser.userId :: number
+	local success = false
+	for _, statement in pairs(batch) do
+		local tasks = Commands.executeStatement(callerUserId, statement)
+		if typeof(tasks) == "table" then
+			for _, task in pairs(tasks :: any) do
+				success = true
+				table.insert(collectiveTasks, task)
 			end
 		end
-		resolve(true, collectiveJobs)
-	end)
+	end
+	return success, reasons, collectiveTasks
 end
 
-function Commands.verifyStatement(callerUser, statement)
+function Commands.verifyStatementAsync(callerUser: User, statement: Statement)--: (approved: boolean, reason: string?)
+	
+	if statement.isValid ~= true then
+		return false, statement.errorMessage
+	end
+	
+	--[[
+	-- argItem.verifyCanUse can sometimes be asynchronous therefore we name this an async function
 	local approved = true
 	local details = {}
-	local Promise = main.modules.Promise
-	local RoleService = main.services.RoleService
-	local Args = main.modules.Parser.Args
 	local callerUserId = callerUser.userId
 
-	-- argItem.verifyCanUse can sometimes be asynchronous therefore we return and resolve a Promise
-	local promise = Promise.defer(function(resolve, reject)
+	if typeof(statement) ~= "table" then
+		return false, "Statement must be a statement table!"
+	end
+	--ParserUtility.convertStatementToRealNames(statement) -- Don't do anymore
+	
+	local statementCommands = statement.commands
+	local modifiers = statement.modifiers
+	local qualifiers = statement.qualifiers
+	
+	if not statementCommands then
+		return false, "Failed to execute command as it does not exist!"
+	end
+
+	-- This verifies the caller can use the given commands and associated arguments
+	for commandName, arguments in pairs(statementCommands) do
 		
-		if typeof(statement) ~= "table" then
-			return resolve(false, {{"notice", {
-				text = "Statements must be tables!",
-				error = true,
-			}}})
-		end
-		--ParserUtility.convertStatementToRealNames(statement) -- Don't do anymore
-		
-		local jobId = statement.jobId
-		local statementCommands = statement.commands
-		local modifiers = statement.modifiers
-		local qualifiers = statement.qualifiers
-		
-		if not statementCommands then
-			return resolve(false, {{"notice", {
-				text = "Failed to execute command as it does not exist!",
-				error = true,
-			}}})
+		-- If arguments is not a table, convert to one
+		if typeof(arguments) ~= "table" then
+			arguments = {}
+			statementCommands[commandName] = arguments
 		end
 
-		-- This verifies the caller can use the given commands and associated arguments
-		for commandName, arguments in pairs(statementCommands) do
-			
-			-- If arguments is not a table, convert to one
-			if typeof(arguments) ~= "table" then
-				arguments = {}
-				statementCommands[commandName] = arguments
-			end
+		-- Does the command exist
+		local command = Commands.getCommand(commandName)
+		if not command then
+			return false, `'{commandName}' is not a valid command!`
+		end
 
-			-- Does the command exist
-			local command = Commands.getCommand(commandName)
-			if not command then
+		-- Does the caller have permission to use it
+		local commandNameLower = string.lower(commandName)
+		if not RoleService.verifySettings(callerUser, "commands").have(commandNameLower) then
+			--!!! RE_ENABLE THIS
+			--[[return resolve(false, {{"notice", {
+				text = string.format("You do not have permission to use command '%s'!", commandName),
+				error = true,
+			}}})
+			return--
+		end
+
+		-- Does the caller have permission to target multiple players
+		local targetPlayers = Args.get("player"):parse(statement.qualifiers, callerUserId)
+		if RoleService.verifySettings(callerUser, "limit.whenQualifierTargetCapEnabled").areAll(true) then
+			local limitAmount = RoleService.getMaxValueFromSettings(callerUser, "limit.qualifierTargetCapAmount")
+			if #targetPlayers > limitAmount then
+				local finalMessage
+				if limitAmount == 1 then
+					finalMessage = ("1 player")
+				else
+					finalMessage = string.format("%s players", limitAmount)
+				end
 				return resolve(false, {{"notice", {
-					text = string.format("'%s' is an invalid command name!", commandName),
+					text = string.format("You're only permitted to target %s per statement!", finalMessage),
 					error = true,
 				}}})
 			end
+		end
 
-			-- Does the caller have permission to use it
-			local commandNameLower = string.lower(commandName)
-			if not RoleService.verifySettings(callerUser, "commands").have(commandNameLower) then
-				--!!! RE_ENABLE THIS
-				--[[return resolve(false, {{"notice", {
-					text = string.format("You do not have permission to use command '%s'!", commandName),
-					error = true,
-				}}})
-				return--]]
+		-- Does the caller have permission to use the associated arguments of the command
+		local argStringIndex = 0
+		for _, argNameOrAlias in pairs(command.args) do
+			local argItem = Args.get(argNameOrAlias)
+			if argStringIndex == 0 and argItem.playerArg then
+				continue
 			end
-
-			-- Does the caller have permission to target multiple players
-			local targetPlayers = Args.get("player"):parse(statement.qualifiers, callerUserId)
-			if RoleService.verifySettings(callerUser, "limit.whenQualifierTargetCapEnabled").areAll(true) then
-				local limitAmount = RoleService.getMaxValueFromSettings(callerUser, "limit.qualifierTargetCapAmount")
-				if #targetPlayers > limitAmount then
-					local finalMessage
-					if limitAmount == 1 then
-						finalMessage = ("1 player")
-					else
-						finalMessage = string.format("%s players", limitAmount)
-					end
+			argStringIndex += 1
+			local argString = arguments[argStringIndex]
+			if argItem.verifyCanUse and not (modifiers.undo or modifiers.preview) then
+				local canUseArg, deniedReason = argItem:verifyCanUse(callerUser, argString, {argNameOrAlias = argNameOrAlias})
+				if not canUseArg then
 					return resolve(false, {{"notice", {
-						text = string.format("You're only permitted to target %s per statement!", finalMessage),
+						text = deniedReason,
 						error = true,
 					}}})
 				end
 			end
-
-			-- Does the caller have permission to use the associated arguments of the command
-			local argStringIndex = 0
-			for _, argNameOrAlias in pairs(command.args) do
-				local argItem = Args.get(argNameOrAlias)
-				if argStringIndex == 0 and argItem.playerArg then
-					continue
-				end
-				argStringIndex += 1
-				local argString = arguments[argStringIndex]
-				if argItem.verifyCanUse and not (modifiers.undo or modifiers.preview) then
-					local canUseArg, deniedReason = argItem:verifyCanUse(callerUser, argString, {argNameOrAlias = argNameOrAlias})
-					if not canUseArg then
-						return resolve(false, {{"notice", {
-							text = deniedReason,
-							error = true,
-						}}})
-					end
-				end
-			end
-
 		end
 
-		-- This adds an additional notification if global as these commands can take longer to execute
-		if modifiers and modifiers.global then
-			table.insert(details, {"notice", {
-				text = "Executing global command...",
-				error = false,
-			}})
-		end
-		
-		resolve(approved, details)
-	end)
+	end
+
+	-- This adds an additional notification if global as these commands can take longer to execute
+	if modifiers and modifiers.global then
+		table.insert(details, {"notice", {
+			text = "Executing global command...",
+			error = false,
+		}})
+	end
+	
+	resolve(approved, details)
 
 	return promise:andThen(function(approved, noticeDetails)
 		-- This fires off any notifications to the caller
 		local callerPlayer = callerUser.player
 		if callerPlayer then
 			for _, detail in pairs(noticeDetails) do
-				local method = main.services.MessageService[detail[1]]
+				local method = main.services.MessageService[detail[1]] --[[
 				method(callerPlayer, detail[2])
 			end
 		end
 		return approved, noticeDetails
 	end)
+	--]]
+
+	return true, nil
 end
 
-function Commands.executeStatement(callerUserId, statement)
+function Commands.executeStatement(callerUserId: number, statement: Statement): {any}
 
-	--ParserUtility.convertStatementToRealNames(statement) -- Don't do anymore
-
-	statement.commands = statement.commands or {}
-	statement.modifiers = statement.modifiers or {}
-	statement.qualifiers = statement.qualifiers or {}
-
-	if statement.restrict == nil then
-		local callerUser = main.modules.PlayerStore:getUserByUserId(callerUserId)
+	print("Task creation (1)")
+	-- This enables restrictions to be bypassed if customized
+	-- This is useful for fake server users for example
+	if statement.isRestricted == nil then
+		local callerUser = User.getUserByUserId(callerUserId)
+		statement.isRestricted = true :: any
 		if callerUser then
-			statement.restrict = not main.services.RoleService.verifySettings(callerUser, "ignore.roleRestrictions").areSome(true)
-		end
-		if statement.restrict  == nil then
-			statement.restrict = true
+			--statement.isRestricted = not main.services.RoleService.verifySettings(callerUser, "ignore.roleRestrictions").areSome(true)
 		end
 	end
 	
 	-- If 'player' instance detected within qualifiers, convert to player.Name
+	--ParserUtility.convertStatementToRealNames(statement) -- Don't do anymore
+	local ParserTypes = require(parser.ParserTypes)
 	for qualifierKey, qualifierTable in pairs(statement.qualifiers) do
 		if typeof(qualifierKey) == "Instance" and qualifierKey:IsA("Player") then
-			local callerUser = main.modules.PlayerStore:getUserByUserId(callerUserId)
-			local playerDefinedSearch = main.services.SettingService.getUsersPlayerSetting(callerUser, "playerIdentifier")
+			local callerUser = User.getUserByUserId(callerUserId)
+			local playerDefinedSearch: ParserTypes.PlayerSearch = Config.getSetting("PlayerDefinedSearch", callerUser)
 			local playerName = qualifierKey.Name
-			if playerDefinedSearch == main.enum.PlayerSearch.UserName or playerDefinedSearch == main.enum.PlayerSearch.UserNameAndDisplayName then
-				local playerIdentifier = main.services.SettingService.getUsersPlayerSetting(callerUser, "playerIdentifier")
+			if playerDefinedSearch == "UserName" or playerDefinedSearch == "UserNameAndDisplayName" then
+				local playerIdentifier = Config.getSetting("PlayerIdentifier", callerUser)
 				playerName = tostring(playerIdentifier)..playerName
 			end
 			statement.qualifiers[qualifierKey] = nil
@@ -349,51 +308,45 @@ function Commands.executeStatement(callerUserId, statement)
 
 	-- This enables the preview modifier if command.autoPreview is true
 	-- or bypasses the preview modifier entirely if the request is from the client
-	if statement.fromClient then
+	if statement.isFromClient then
 		statement.modifiers.preview = nil
 	else
 		for commandName, arguments in pairs(statement.commands) do
 			local command = Commands.getCommand(commandName)
-			if command.autoPreview then
-				statement.modifiers.preview = statement.modifiers.preview or true
+			local previewModifier = statement.modifiers.preview :: any
+			if command and command.autoPreview == true and previewModifier ~= false then
+				statement.modifiers.preview = true :: any
 				break
 			end
 		end
 	end
 
-	-- This handles any present modifiers
-	-- If the modifier preAction value returns false then cancel the execution
-	local Promise = main.modules.Promise
-	local Modifiers = main.modules.Parser.Modifiers
+	-- This handles any preActions within present modifiers
+	-- Also, if the modifier preAction value returns false then cancel the execution
+	local Modifiers = require(parser.Modifiers) :: any -- 'Any' to remove cyclic warning
 	for modifierName, _ in pairs(statement.modifiers) do
 		local modifierItem = Modifiers.get(modifierName)
 		if modifierItem then
 			local continueExecution = modifierItem.preAction(callerUserId, statement)
 			if not continueExecution then
-				return Promise.new(function(resolve)
-					resolve({})
-				end)
+				return {}
 			end
 		end
 	end
 
-	local Args = main.modules.Parser.Args
+	print("Task creation (2)")
+	local Args = require(parser.Args)
 	local promises = {}
-	local jobs = {}
+	local tasks = {}
 	local isPermModifier = statement.modifiers.perm
 	local isGlobalModifier = statement.modifiers.wasGlobal
 	for commandName, arguments in pairs(statement.commands) do
 		
-		local command = Commands.getCommand(commandName)
-		local firstArgName = command.args[1] or ""
-		local executeForEachPlayerFirstArg = Args.executeForEachPlayerArgsDictionary[string.lower(firstArgName)]
-		local JobService = main.services.JobService
-		local properties = JobService.generateRecord()
-		properties.callerUserId = callerUserId
-		properties.commandName = commandName
-		properties.args = arguments or properties.args
-		properties.modifiers = statement.modifiers
-		properties.restrict = statement.restrict
+		local command = Commands.getCommand(commandName) :: Command?
+		if not command or typeof(command.args) ~= "table" then
+			continue
+		end
+
 		-- Its important to split commands into specific users for most cases so that the command can
 		-- be easily reapplied if the player rejoins (for ones where the perm modifier is present)
 		-- The one exception for this is when a global modifier is present. In this scenerio, don't save
@@ -404,6 +357,9 @@ function Commands.executeStatement(callerUserId, statement)
 		-- servers repeatidly
 		local addToPerm = false
 		local splitIntoUsers = false
+		local firstArgName = command.args[1] or ""
+		local lowerFirstArgName = string.lower(firstArgName)
+		local executeForEachPlayerFirstArg = Args.getExecuteForEachPlayerArgsDictionary(lowerFirstArgName)
 		if isPermModifier then
 			if isGlobalModifier then
 				addToPerm = true
@@ -414,31 +370,102 @@ function Commands.executeStatement(callerUserId, statement)
 		else
 			splitIntoUsers = executeForEachPlayerFirstArg
 		end
+
+		-- Define the properties that we'll create the task from arguments
+		local args = (arguments or {}) :: ArgGroup
+		local qualifiers = (statement.qualifiers or {}) :: ArgGroup
+		local modifiers = (statement.modifiers or {}) :: ArgGroup
+		local generateUID = require(modules.Utility.DataUtil.generateUID)
+		local taskUID = statement.taskUID or generateUID(10)
+		local commandNameLower = string.lower(commandName)
+
+		-- Create task wrapper
+		local function createTask(optionalPlayerUserId: number?): Task.Class?
+			
+			-- Setup task properties
+			local properties: Properties = {
+				callerUserId = callerUserId,
+				playerUserId = optionalPlayerUserId,
+				commandName = commandName,
+				commandNameLower = commandNameLower,
+				args = args,
+				modifiers = modifiers,
+				qualifiers = qualifiers,
+				isRestricted = statement.isRestricted,
+				UID = taskUID,
+			}
+
+			-- Revoke commands if already applied to player (if command requires)
+			local runningTasks = Task._getters.getTasksWithCommandNameAndOptionalPlayerUserId(commandName, optionalPlayerUserId)
+			if command.revokeRepeats == true then
+				for _, task in pairs(runningTasks) do
+					task._properties.cooldown = 0
+					task:destroy()
+				end
+				return nil
+			end
+			
+			-- If the command has a cooldown, check if it can be used again
+			local preventRepeatsTri = command.preventRepeats :: TriStateSetting?
+			local preventRepeats = true
+			if preventRepeatsTri == nil or preventRepeatsTri == "Default" then
+				preventRepeats = Config.getSetting("PreventRepeats")
+			elseif preventRepeatsTri == "False" then
+				preventRepeats = false
+			end
+			if preventRepeats and #runningTasks > 0 then
+				local firstRunningTask = runningTasks[1]
+				local firstRunningProps = firstRunningTask._properties
+				local taskCooldownEndTime = firstRunningProps.cooldownEndTime
+				local additionalUserMessage = ""
+				local associatedPlayer = firstRunningProps.player
+				if associatedPlayer then
+					additionalUserMessage = (" on '%s' (@%s)"):format(associatedPlayer.DisplayName, associatedPlayer.Name)
+				end
+				if taskCooldownEndTime then
+					local remainingTime = (math.ceil((taskCooldownEndTime-os.clock())*100))/100
+					warn((`Wait {remainingTime} seconds until command '{commandName}' has cooldown before using again{additionalUserMessage}!`)) --!!!notice
+					return nil
+				end
+				warn((`Wait until command '{commandName}' has finished before using again{additionalUserMessage}!`)) --!!!notice
+				return nil
+			end
+
+			-- Finally all good, now create task
+			local task = Task.new(properties)
+			return task
+
+		end
+
+		-- Tasks are split into separate players (such as those with the 'Player' arg),
+		-- while some do not (such as those with the 'Players' arg, or without any type
+		-- of player arg at all)
 		if not splitIntoUsers then
-			properties.qualifiers = statement.qualifiers or properties.qualifiers
-			local job = main.services.JobService.createJob(addToPerm, properties)
-			if job then
-				table.insert(jobs, job)
+			local task = createTask()
+			if task then
+				table.insert(tasks, task)
 			end
 		else
-			table.insert(promises, Promise.defer(function(resolve)
-				local targetPlayers = Args.get("player"):parse(statement.qualifiers, callerUserId)
+			table.insert(promises, Promise.new(function(resolve)
+				local playerArg = Args.get("Player")
+				local targetPlayers = if playerArg then playerArg:parse(statement.qualifiers, callerUserId) else {}
 				for _, plr in pairs(targetPlayers) do
-					local newProperties = main.modules.TableUtil.copy(properties)
-					newProperties.playerUserId = plr.UserId
-					local job = main.services.JobService.createJob(addToPerm, newProperties)
-					if job then
-						table.insert(jobs, job)
+					local task = createTask()
+					if task then
+						table.insert(tasks, task)
 					end
 				end
 				resolve()
-			end):catch(warn))
+			end::any))
 		end
 	end
-	return Promise.all(promises)
-		:andThen(function()
-			return jobs
-		end)
+
+	-- We now wait until every task has been registered
+	local allPromise = Promise.all(promises) :: any
+	allPromise:await()
+
+	print("Task creation (3)")
+	return tasks
 end
 
 

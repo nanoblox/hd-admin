@@ -19,6 +19,7 @@ local ParserUtility = require(modules.Parser.ParserUtility)
 local requiresUpdating = true
 local sortedNameAndAliasLengthArray = {}
 local lowerCaseDictionary = {}
+local executeForEachPlayerArgsDictionary = {}
 
 
 -- LOCAL FUNCTIONS
@@ -40,6 +41,9 @@ function Args.update()
 		local lowerCaseName = tostring(itemNameOrAlias):lower()
 		lowerCaseDictionary[lowerCaseName] = item
 		table.insert(sortedNameAndAliasLengthArray, tostring(itemNameOrAlias))
+		if item.playerArg and item.executeForEachPlayer then
+			executeForEachPlayerArgsDictionary[lowerCaseName] = true
+		end
 	end
 	table.sort(sortedNameAndAliasLengthArray, function(a: string, b: string): boolean
 		return #a > #b
@@ -55,6 +59,11 @@ end
 function Args.getLowercaseDictionary()
 	Args.update()
 	return lowerCaseDictionary
+end
+
+function Args.getExecuteForEachPlayerArgsDictionary()
+	Args.update()
+	return executeForEachPlayerArgsDictionary
 end
 
 function Args.get(argName: Argument): ArgumentDetail?
