@@ -17,3 +17,8 @@ clientUser.everyone:observe("Test", function(value)
 	print("SERVER TIME (on client) =", value)
 end)
 --]]
+
+
+local Icon = require(modules.Objects.Icon)
+Icon.new()
+	:setLabel("Hello this is HD Test")

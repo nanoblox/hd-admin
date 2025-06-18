@@ -82,3 +82,27 @@ local function testAreValuesEqual()
 	end
 end
 --testAreValuesEqual()
+
+
+
+-- Test config
+-- Test something
+--[[
+local modules = script:FindFirstAncestor("MainModule").Value.Modules
+local Config = require(modules.Config)
+local playerIdentifier = Config.getSetting("PlayerIdentifier")
+local collective = Config.getSetting("Collective")
+local names = {"ForeverHD", "ImAvafe", "ObliviousHD"}
+local selectionText = table.concat(
+    table.create(#names, ""),
+    ""
+)
+for i, name in ipairs(names) do
+    selectionText ..= playerIdentifier .. name
+    if i < #names then
+        selectionText ..= collective .. " "
+    end
+end
+
+print("selectionText =", selectionText)
+--]]

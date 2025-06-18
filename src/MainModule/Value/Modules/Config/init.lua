@@ -7,6 +7,7 @@ local configSettings = require(config.Settings)
 
 
 -- TYPES
+export type PlayerSearch = configSettings.PlayerSearch
 export type SettingType = "Player" | "System"
 export type Setting = keyof<typeof(configSettings.PlayerSettings)> | keyof<typeof(configSettings.SystemSettings)>
 
