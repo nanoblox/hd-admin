@@ -18,7 +18,7 @@ Under this License, you are granted a **limited, non-exclusive, non-transferable
 
 - **You may not use Core package code (including "Commands") in any other software** outside of the official HD Admin model without **explicit permission from the creator**.
 
-- **You may only modify and use modified versions of the Core** within experiences on roblox.com with Privacy set to **“Private”** under Settings within the Roblox Creator Dashboard.
+- **You may only modify and use modified versions of the Core** within experiences on roblox.com with Privacy set to **“Private”** under Settings within the Roblox Creator Dashboard or with **explicit permission from the creator**.
 
 - Any attempt to remove or circumvent these restrictions **automatically revokes** this license.
 
@@ -67,3 +67,8 @@ THIS SOFTWARE IS PROVIDED "AS IS," WITHOUT WARRANTY OF ANY KIND. THE LICENSOR IS
 - **✅ You may configure HD Admin via Settings & Config**
 - **✅ You may use the HD Admin API to extend behavior**
 - **✍️ You must sign a CA before contributing**
+
+-----
+
+### Contact Creator
+Are you interested in modifying the Core Package in a large public experience? Contact the creator directly by joining the [HD Admin Discord server under the official model's Social Links](create.roblox.com/store/asset/857927023/HD-Admin) and send a friend request to ``foreverhd``.
