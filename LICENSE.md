@@ -71,4 +71,4 @@ THIS SOFTWARE IS PROVIDED "AS IS," WITHOUT WARRANTY OF ANY KIND. THE LICENSOR IS
 -----
 
 ### Contact Creator
-Are you interested in modifying the Core Package in a large public experience? Contact the creator directly by joining the [HD Admin Discord server under the official model's Social Links](create.roblox.com/store/asset/857927023/HD-Admin) and send a friend request to ``foreverhd``.
+Are you interested in modifying the Core Package in a large public experience? Contact the creator directly by joining the [HD Admin Community Server](https://discord.gg/MkSVp9Gusu) and send a friend request to ``foreverhd``.
