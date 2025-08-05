@@ -2,8 +2,8 @@
 -- LOCAL
 local dataTemplates = require(script.Parent)
 local modules = script:FindFirstAncestor("MainModule").Value.Modules
-local areValuesEqual = require(modules.Utility.DataUtil.areValuesEqual)
-local deepCopyTable = require(modules.Utility.TableUtil.deepCopyTable)
+local areValuesEqual = require(modules.DataUtil.areValuesEqual)
+local deepCopyTable = require(modules.TableUtil.deepCopyTable)
 local config = modules.Config
 local configSettings = require(config.Settings)
 local User = require(modules.Objects.User)

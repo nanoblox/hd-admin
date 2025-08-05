@@ -1,0 +1,19 @@
+[package]
+name = "1foreverhd/topbarplus"
+description = "Construct dynamic and intuitive topbar icons. Enhance the appearance and behaviour of these icons with features such as themes, dropdowns and menus."
+license = "MPL2"
+version = "3.3.1"
+registry = "https://github.com/UpliftGames/wally-index"
+realm = "shared"
+exclude = [
+    "**",
+]
+include = [
+    "default.project.json",
+    "src",
+    "src/**",
+    "LICENSE",
+    "wally.toml",
+]
+
+[dependencies]

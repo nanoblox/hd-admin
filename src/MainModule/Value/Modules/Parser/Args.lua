@@ -12,8 +12,9 @@ To do:
 -- LOCAL
 local Args = {}
 local modules = script:FindFirstAncestor("MainModule").Value.Modules
+local controllers = modules.Parent.Controllers
 local Config = require(modules.Config)
-local InputObjects = require(modules.UI.InputObjects)
+local InputObjects = require(controllers.UI.InputObjects)
 local Players = game:GetService("Players")
 local ParserUtility = require(modules.Parser.ParserUtility)
 local requiresUpdating = true
@@ -150,7 +151,8 @@ Args.items = {
 				return players
 			end
 			local targetsDict = {}
-			for qualifierName, qualifierArgs in pairs(qualifiers or {}) do
+			local qualifiersTable = qualifiers or {}
+			for qualifierName, qualifierArgs in qualifiersTable do
 				if qualifierName == "" then
 					continue
 				end

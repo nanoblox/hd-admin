@@ -8,6 +8,7 @@
 	3. Future compatibility for Parallel Luau to enhance performance
 
 	Framework Overview:
+	- Services and Controllers are initialized instantly on start, whereas Modules are loaded on demand.
 	- By default, everything under MainModule is categorized as "Shared" and accessible across both the
 	  client and server.
 	- If a "Server" tag is applied to an instance, all its descendants are moved to the server environment, 
@@ -22,6 +23,9 @@
 local Framework = {}
 local APPLICATION_NAME = "HD Admin"
 local appNameClean = APPLICATION_NAME:gsub(" ", "") -- Removes spaces
+local hasStarted = false
+local sharedMainModule = script:FindFirstAncestor("MainModule")
+local sharedValue = sharedMainModule.Value
 
 Framework.applicationName = APPLICATION_NAME
 Framework.appNameClean = appNameClean
@@ -33,7 +37,10 @@ Framework.sharedLocation = "ReplicatedStorage"
 function Framework.initialize(loader)
 	-- To do:
 	-- 1. Check no other MainModule exists
-	-- 2. Perform AutomaticUpdate if Core folder Attribute is not enabled
+	-- 2. Perform AutomaticUpdate
+
+	-- This ensures HD Admin hasn't already been initialized, for example, if there
+	-- are two applications running in the same game
 	local hasLoaded = script:FindFirstChild("HasLoaded")
 	if hasLoaded then
 		return false
@@ -42,6 +49,10 @@ function Framework.initialize(loader)
 	hasLoaded.Value = loader
 	hasLoaded.Name = "HasLoaded"
 	hasLoaded.Parent = script
+
+	-- This now loads the server
+	Framework.startServer()
+
 	return true
 end
 
@@ -53,12 +64,315 @@ function Framework.getLoader()
 	return hasLoaded.Value
 end
 
-function Framework.startAsync()
+function Framework.getSharedContainer(): Instance?
+	local sharedService = game:GetService(Framework.sharedLocation)
+	local sharedContainer = sharedService:FindFirstChild(Framework.sharedName)
+	return sharedContainer
+end
+
+function Framework.getServerContainer(): Instance?
+	local serverService = game:GetService(Framework.serverLocation)
+	local serverContainer = serverService:FindFirstChild(Framework.serverName)
+	return serverContainer
+end
+
+function Framework.getInstance(container: Folder | ModuleScript, instanceName: string): Instance?
+	--[[
+		In most cases instances can be rerieved by just doing ``script[INSTANCE_NAME]``,
+		however, when the *server* wants to access a model under a *shared* module, indexing
+		the instance will return nil or throw an error, because it will be located in the
+		mirrored shared container. This is the same still even when doing...
+		```
+		local sharedValue = script:FindFirstAncestor("MainModule").Value
+		local model = sharedValue.Controllers.ModuleWithAnInstance[INSTANCE_NAME]
+		```
+		... because that model is still being referenced within a mirrored-mock Controller
+		container within ServerStorage instead of its real one in ReplicatedStorage.
+
+		Framework.getInstance(container, instanceName) overcomes this by checking for the asset first
+		in ServerStorage, then ReplicatedStorage. It also checks for descendants until it reaches a
+		non-ModuleScript or non-Folder instance.
+	--]]
+	if not container or not container:IsA("Instance") then
+		return nil
+	end
+	local instance = container:FindFirstChild(instanceName)
+	if instance then
+		return instance
+	end
+	local RunService = game:GetService("RunService")
+	if RunService:IsClient() then
+		return nil
+	end
+	local sharedContainer = Framework.getSharedContainer()
+	if not sharedContainer then
+		return nil
+	end
+	local parents = {}
+	local part = container
+	local serverContainer = Framework.getServerContainer()
+	if not serverContainer then
+		return nil
+	end
+	for i = 1, 100 do
+		table.insert(parents, part.Name)
+		part = part.Parent
+		if part == nil or part == serverContainer then
+			break
+		end
+	end
+	local nextPart = sharedContainer
+	for i = #parents, 1, -1 do
+		nextPart = nextPart:FindFirstChild(parents[i])
+		if not nextPart then
+			return nil
+		end
+	end
+	local function checkChildren(instanceToCheck)
+		if not instanceToCheck or not instanceToCheck:IsA("Instance") then
+			return nil
+		end
+		local foundInstance = instanceToCheck:FindFirstChild(instanceName)
+		if foundInstance then
+			return foundInstance
+		end
+		for _, child in instanceToCheck:GetChildren() do
+			if child:IsA("ModuleScript") or child:IsA("Folder") then
+				foundInstance = checkChildren(child)
+				if foundInstance then
+					return foundInstance
+				end
+			end
+		end
+		return nil
+	end
+	return checkChildren(nextPart)
+end
+
+function Framework.canStart()
+	if hasStarted then
+		return false, "Framework has already started"
+	end
 	local hasLoaded = script:WaitForChild("HasLoaded", 999)
 	if hasLoaded.Value == false then
 		return false, "Another HD Admin was initialized"
 	end
+	hasStarted = true
 	return true
+end
+
+function Framework.requireChildren(container: Instance)
+	for _, child in container:GetChildren() do
+		if child:IsA("ModuleScript") then
+			task.spawn(require, child)
+		end
+	end
+end
+
+function Framework.startClient()
+	-- Only setup if not started already
+	local value = script:FindFirstAncestor("MainModule").Value
+	if Framework.canStart() == false then
+		return
+	end
+
+	-- Destroy all instances with the attribute 'HDAdminServerOnly'
+	-- This is simply for easier browning in Studio because these modules/folders are already
+	-- hollow (placeholders) and don't actually contain any data
+	local function destroyServerOnlyInstances(instance: Instance)
+		for _, child in instance:GetChildren() do
+			if child:GetAttribute("ServerOnly") and child:GetAttribute("HasSharedDescendant") ~= true then
+				child:Destroy()
+			else
+				destroyServerOnlyInstances(child)
+			end
+		end
+	end
+	destroyServerOnlyInstances(value)
+
+	-- Start Controllers
+	Framework.requireChildren(sharedValue.Controllers)
+end
+
+function Framework.startServer()
+	-- Only setup if not started already
+	if Framework.canStart() == false then
+		return
+	end
+
+	-- Merge Loader Config items into the core
+	local modules = sharedValue.Modules
+	local framework = modules.Framework
+	local moduleReference = framework.ModuleReference
+	local referenceBack = framework.ReferenceBack
+	local loader = Framework.getLoader()
+	local loaderConfig = loader:FindFirstChild("Config")
+	local coreConfig = modules.Config
+	if loaderConfig then
+		for _, child in loaderConfig:GetChildren() do
+			local existingInstance = coreConfig:FindFirstChild(child.Name)
+			if child:IsA("ModuleScript") and existingInstance then
+				local originalSettings = require(existingInstance) :: any
+				local newSettings = require(child) :: any
+				local function mergeTablesRecursively(original, new)
+					for key, value in new do
+						if type(value) == "table" and type(original[key]) == "table" then
+							mergeTablesRecursively(original[key], value)
+						else
+							original[key] = value
+						end
+					end
+				end
+				mergeTablesRecursively(originalSettings, newSettings)
+			else
+				
+				if existingInstance then
+					existingInstance:Destroy()
+				end
+				child.Parent = coreConfig
+			end
+		end
+		loaderConfig:Destroy()
+	end
+
+	-- These are the containers in which the Server and Shared sit
+	local function createContainer(containerName: string, location: any): Folder
+		local container = Instance.new("Folder")
+		container.Name = containerName
+		container.Parent = game:GetService(location)
+		return container
+	end
+
+	-- This is the faux server MainModule
+	local serverContainer = createContainer(Framework.serverName, Framework.serverLocation)
+	local serverMainModule = Instance.new("ObjectValue")
+	serverMainModule.Name = sharedMainModule.Name
+	serverMainModule.Value = sharedValue
+	serverMainModule.Parent = serverContainer
+
+	-- These functions build the directories within server and shared
+	local function getServerParentFromPathway(pathway)
+		local serverParent = serverMainModule
+		local sharedParent = sharedMainModule
+		local sharedInstance: Instance? = nil
+		local highestTaggedIndex = 0
+		local nextInstance = sharedParent
+		for i, instanceToCheck in pathway do
+			nextInstance = nextInstance:FindFirstChild(instanceToCheck.Name)
+			if not nextInstance then
+				break
+			end
+			if nextInstance:GetAttribute("Server") == true and nextInstance:IsA("ModuleScript") then
+				highestTaggedIndex = i
+			end
+		end
+		local totalPathway = #pathway
+		for i, instance in pathway do
+			sharedInstance = sharedParent:FindFirstChild(instance.Name)
+			if not sharedInstance then
+				break
+			end
+			local serverInstance = serverParent:FindFirstChild(sharedInstance.Name)
+			if not serverInstance then
+				
+				local sharedInstanceIsModule = sharedInstance:IsA("ModuleScript")
+				local hasSharedDescendant = sharedInstance:GetAttribute("HasSharedDescendant")
+				if i >= highestTaggedIndex and i ~= totalPathway then
+					-- If no descendants contain Server tags, simply move
+					-- the entire container as soon as possible
+					serverInstance = sharedInstance
+					sharedInstance = nil
+
+				elseif sharedInstanceIsModule and sharedInstance:GetAttribute("Server") == true and sharedInstance:GetAttribute("Shared") ~= true then
+					-- We move the real item to the server, then leave an empty
+					-- module behind in its place so that Type Checking still works
+					local moduleReferenceCopy = moduleReference:Clone()
+					moduleReferenceCopy:SetAttribute("HasSharedDescendant", hasSharedDescendant)
+					moduleReferenceCopy:SetAttribute("ServerOnly", true)
+					moduleReferenceCopy.Name = sharedInstance.Name
+					moduleReferenceCopy.Parent = sharedParent
+					for _, child in sharedInstance:GetChildren() do
+						if child:IsA("ModuleScript") or child:IsA("Folder") then
+							child.Parent = moduleReferenceCopy --!!!
+						end
+					end
+					serverInstance = sharedInstance
+					sharedInstance = moduleReferenceCopy
+				elseif sharedInstanceIsModule then
+					local referenceBackCopy = referenceBack:Clone()
+					referenceBackCopy:SetAttribute("HasSharedDescendant", hasSharedDescendant)
+					referenceBackCopy.Name = sharedInstance.Name
+					referenceBackCopy.Parent = sharedParent
+					serverInstance = referenceBackCopy
+				else
+					serverInstance = Instance.new("Folder")
+					serverInstance.Name = sharedInstance.Name
+				end
+				serverInstance.Parent = serverParent
+			end
+			serverParent = serverInstance
+			sharedParent = sharedInstance
+			if not sharedParent then
+				break
+			end
+		end
+		return serverParent
+	end
+
+	local deepCopyTable = require(modules.TableUtil.deepCopyTable)
+	local function setNewParentFromPathway(child, pathway)
+		local newPathway = deepCopyTable(pathway)
+		table.insert(newPathway, child)
+		getServerParentFromPathway(newPathway)
+	end
+
+	-- We move relevant modules and services to the server, but we leave
+	-- behind a module reference so that they are still required correctly
+	local function checkToMoveChildren(parentsharedInstance, pathway, forceToServer)
+		local newPathway = deepCopyTable(pathway)
+		table.insert(newPathway, parentsharedInstance)
+		for _, child in parentsharedInstance:GetChildren() do
+			if not child:IsA("ModuleScript") and not child:IsA("Folder") then
+				continue --!!!
+			end
+			local hasServerTag = child:GetAttribute("Server") == true
+			local childForceToServer = forceToServer
+			if not childForceToServer then
+				childForceToServer = hasServerTag
+			end
+			local hasSharedTag = child:GetAttribute("Shared") == true
+			if hasSharedTag then
+				childForceToServer = nil
+				local parentToCheck = child
+				for i = 1, 100 do
+					-- This tags modules above so that they are not destroyed on the client
+					parentToCheck = parentToCheck.Parent
+					if not parentToCheck or parentToCheck.Name == "Modules" then
+						break
+					end
+					if parentToCheck and parentToCheck:GetAttribute("HasSharedDescendant") ~= true then
+						parentToCheck:SetAttribute("HasSharedDescendant", true)
+					end
+				end
+			end
+			if childForceToServer and not hasServerTag then
+				child:SetAttribute("Server", true)
+			end
+			checkToMoveChildren(child, newPathway, childForceToServer)
+			if childForceToServer then
+				setNewParentFromPathway(child, newPathway)
+			end
+		end
+	end
+	checkToMoveChildren(sharedValue, {})
+
+	-- It's important we do this after moving the modules above, so that
+	-- the client only has access to modules that they need to access
+	local clientContainer = createContainer(Framework.sharedName, Framework.sharedLocation)
+	sharedMainModule.Parent = clientContainer
+
+	-- Start Services
+	Framework.requireChildren(sharedValue.Services)
 end
 
 return Framework

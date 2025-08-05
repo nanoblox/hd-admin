@@ -2,6 +2,7 @@
 -- LOCAL
 local ParserUtility = {}
 local modules = script:FindFirstAncestor("MainModule").Value.Modules
+local services = modules.Parent.Services
 local ParserPatterns = require(modules.Parser.ParserPatterns)
 local Config = require(modules.Config)
 local ParserTypes = require(modules.Parser.ParserTypes)
@@ -273,13 +274,13 @@ function ParserUtility.convertStatementToRealNames(statement: Statement)
 	end
 	statement.isConverted = true
 	local tablesToConvertToRealNames = {
-		["commands"] = {modules.Commands, "getCommand"},
+		["commands"] = {services.Commands, "getCommand"},
 		["modifiers"] = {modules.Parser.Modifiers, "get"},
 	}
 	for tableName, getMethodDetail in pairs(tablesToConvertToRealNames) do
 		local table = statement[tableName]
 		if table then
-			local getModule = getMethodDetail[1]
+			local getModule = getMethodDetail[1] :: any
 			local getReference = require(getModule) :: any
 			local getMethod = getReference[getMethodDetail[2]]
 			local newTable = {}

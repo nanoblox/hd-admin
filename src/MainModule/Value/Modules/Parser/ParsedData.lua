@@ -1,7 +1,8 @@
 --!nocheck
 local ParsedData = {}
 local modules = script:FindFirstAncestor("MainModule").Value.Modules
-local Commands = require(modules.Commands)
+local services = modules.Parent.Services
+local Commands = require(services.Commands)
 local ParserTypes = require(modules.Parser.ParserTypes)
 local Args = require(modules.Parser.Args)
 local Config = require(modules.Config)

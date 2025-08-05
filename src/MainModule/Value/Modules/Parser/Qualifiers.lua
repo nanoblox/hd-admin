@@ -15,6 +15,7 @@
 local Players = game:GetService("Players")
 local Teams = game:GetService("Teams")
 local modules = script:FindFirstAncestor("MainModule").Value.Modules
+local services = modules.Parent.Services
 local Qualifiers = {}
 local User = require(modules.Objects.User)
 local requiresUpdating = true
@@ -74,6 +75,7 @@ function Qualifiers.get(qualifierName: Qualifier): QualifierDetail?
 		end
 		qualifierToBecome = qualifierToBecome :: any
 		for k,v in qualifierToBecome do
+			item = item :: any
 			if not item[k] then
 				item[k] = v
 			end
@@ -191,7 +193,7 @@ Qualifiers.items = {
 			local targets = {}
 			local radius = tonumber(radiusString) or 10
 			local callerPlayer = Players:GetPlayerByUserId(callerUserId)
-			local getHeadPos = require(modules.Utility.PlayerUtil.getHeadPos)
+			local getHeadPos = require(modules.PlayerUtil.getHeadPos)
 			if callerPlayer then
 				local callerHeadPos = getHeadPos(callerPlayer) or Vector3.new(0, 0, 0)
 				for _, plr in (Players:GetPlayers()) do
@@ -268,7 +270,7 @@ Qualifiers.items = {
 			if #roleNames == 0 then
 				return {}
 			end
-			local Roles = require(modules.Roles)
+			local Roles = require(services.Roles)
 			local roles = Roles.getRoles()
 			for _, role in roles do
 				local roleName = string.lower(role.name)
@@ -329,7 +331,7 @@ Qualifiers.items = {
 		getTargets = function(_)
 			local targets = {}
 			local users = User.getUsers()
-			local isStaff = require(modules.Roles.isStaff)
+			local isStaff = require(services.Roles.isStaff)
 			for i, user in users do
 				if isStaff(user) and user.player then
 					table.insert(targets, user.player)
@@ -346,7 +348,7 @@ Qualifiers.items = {
 		getTargets = function(_)
 			local targets = {}
 			local users = User.getUsers()
-			local isStaff = require(modules.Roles.isStaff)
+			local isStaff = require(services.Roles.isStaff)
 			for i, user in users do
 				if isStaff(user) == false and user.player then
 					table.insert(targets, user.player)

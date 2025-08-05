@@ -2,7 +2,8 @@
 -- LOCAL
 local Parser = {}
 local modules = script:FindFirstAncestor("MainModule").Value.Modules
-local Commands = require(modules.Commands)
+local services = modules.Parent.Services
+local Commands = require(services.Commands)
 local User = require(modules.Objects.User)
 local Config = require(modules.Config)
 local ParserTypes = require(script.ParserTypes)
@@ -80,8 +81,9 @@ function Parser.parseMessage(message: string, optionalUser: User.Class?): Parser
 		end
 
 		-- Step 5
-		ParsedData.parseExtraArgumentDescription(parsedData :: any, allParsedDatas, message)
-		table.insert(allParsedDatas, parsedData :: any)
+		parsedData = parsedData :: any
+		ParsedData.parseExtraArgumentDescription(parsedData, allParsedDatas, message)
+		table.insert(allParsedDatas, parsedData)
 		if parsedData.hasTextArgument then
 			break
 		end

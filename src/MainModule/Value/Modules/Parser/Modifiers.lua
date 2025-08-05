@@ -19,6 +19,7 @@
 --!strict
 -- LOCAL
 local modules = script:FindFirstAncestor("MainModule").Value.Modules
+local services = modules.Parent.Services
 local Modifiers = {}
 local Players = game:GetService("Players")
 local User = require(modules.Objects.User)
@@ -79,6 +80,7 @@ function Modifiers.get(modifierName: Modifier): ModifierDetail?
 		end
 		qualifierToBecome = qualifierToBecome :: any
 		for k,v in qualifierToBecome do
+			item = item :: any
 			if not item[k] then
 				item[k] = v
 			end
@@ -159,7 +161,7 @@ Modifiers.items = {
 				-- perm storage achieves the same effect. Merging both together however would create
 				-- a vicious infinite cycle
 				modifiers.global = nil
-				modifiers.wasGlobal = oldGlobal
+				modifiers.wasGlobal = oldGlobal :: any
 			end
 			return true
 		end,
@@ -184,7 +186,7 @@ Modifiers.items = {
 	["Undo"] = register({
 		description = "Revokes all Tasks that match the given command name(s) (and associated player targets if specified). To revoke a task across all servers, the 'global' modifier must be included.",
 		preAction = function(callerUserId, statement)
-			local Commands = require(modules.Commands)
+			local Commands = require(services.Commands)
 			for commandName, _ in pairs(statement.commands) do
 				local command = Commands.getCommand(commandName :: string)
 				--!!! Top priority itemt to complete later

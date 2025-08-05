@@ -1,0 +1,3 @@
+[tools]
+wally = {github = "UpliftGames/wally", version = "0.3.2"}
+wally-package-types = {github = "JohnnyMorganz/wally-package-types", version = "1.5.1"}

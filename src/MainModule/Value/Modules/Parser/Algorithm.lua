@@ -22,11 +22,12 @@ from the information of the commandstatement it appears in.
 
 local Algorithm = {}
 local modules = script:FindFirstAncestor("MainModule").Value.Modules
+local services = modules.Parent.Services
 local parserModules = modules.Parser
 local Modifiers = require(parserModules.Modifiers)
 local Qualifiers = require(parserModules.Qualifiers)
 local ParserPatterns = require(parserModules.ParserPatterns)
-local Commands = require(modules.Commands)
+local Commands = require(services.Commands)
 
 
 function Algorithm.getCommandStatementsFromBatch(batch, prefixUsed)

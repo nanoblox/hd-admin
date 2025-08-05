@@ -281,7 +281,7 @@ function User._loadAndAutoSaveData(self: Class, dataStoreName: string)
 	-- We attempt to load data indefinitely until success or until the player leaves
 	local loadedData: any = nil
 	local realKey = self.realKey
-	local Serializer = require(modules.Utility.Serializer)
+	local Serializer = require(modules.Serializer)
 	local waitTimeRetry = 2
 	local retries = 0
 	local firstSessionLockRejectTime: number? = nil
@@ -334,10 +334,10 @@ function User._loadAndAutoSaveData(self: Class, dataStoreName: string)
 				-- sessionLock not being applied/removed correctly
 				return nil
 			end
-			local savesThisMinute = User._getSavesThisMinute(incomingData)
+			local savesThisMinute = User._getSavesThisMinute(loadedData)
 			if savesThisMinute > MAX_SAVES_PER_MINUTE then
 				-- Block loading if the user has exceeded the maximum saves per minute
-				local nextRefreshTime = incomingData._nextRefreshTime + 1 or timeNow + 3
+				local nextRefreshTime = loadedData._nextRefreshTime + 1 or timeNow + 3
 				dataFailedReason = "Unable to load data as user has exceeded the maximum saves per minute"
 				dataHasLoaded = false
 				customWaitTime = nextRefreshTime - timeNow
@@ -348,10 +348,10 @@ function User._loadAndAutoSaveData(self: Class, dataStoreName: string)
 				-- We only apply session locks for users with associated players, as session hopping
 				-- is only a danger for real players (if data is lost for non-players then that's because
 				-- of incorrect programming)
-				incomingData._sessionLock = jobId
+				loadedData._sessionLock = jobId
 			end
-			User.incrementSavesThisMinute(incomingData)
-			return incomingData
+			User.incrementSavesThisMinute(loadedData)
+			return loadedData
 		end)
 		if dataFailedReason then
 			warning = dataFailedReason
@@ -381,7 +381,8 @@ function User._loadAndAutoSaveData(self: Class, dataStoreName: string)
 
 	-- Deserialize data if was originally serialized
 	if typeof(loadedData) == "table" and loadedData._isSerialized == true then
-		loadedData._isSerialized = nil :: any
+		loadedData = loadedData :: any
+		loadedData._isSerialized = nil
 		loadedData = Serializer.deserialize(loadedData)
 	end
 	

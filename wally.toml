@@ -7,4 +7,4 @@ realm = "shared"
 [dependencies]
 janitor = "1foreverhd/janitor@1.18.12"
 promise = "howmanysmall/typed-promise@4.0.6"
-topbarplus = "1foreverhd/topbarplus@3.2.4"
+topbarplus = "1foreverhd/topbarplus@3.3.1"

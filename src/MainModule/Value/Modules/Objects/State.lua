@@ -25,8 +25,8 @@
 local RunService = game:GetService("RunService")
 local BINDING = "___"
 local modules = script:FindFirstAncestor("MainModule").Value.Modules
-local deepCopyTable = require(modules.Utility.TableUtil.deepCopyTable)
-local Serializer = require(modules.Utility.Serializer)
+local deepCopyTable = require(modules.TableUtil.deepCopyTable)
+local Serializer = require(modules.Serializer)
 local Janitor = require(modules.Objects.Janitor)
 local Players = game:GetService("Players")
 local Remote = require(modules.Objects.Remote)
@@ -378,7 +378,7 @@ function State.replicate(self: Class, player: Player, replicationName: string, p
 			end
 		end
 		local pathwayKey = State.getPathwayKey(pathway)
-		local isWithinMaxSize = require(modules.Utility.VerifyUtil.isWithinMaxSize)
+		local isWithinMaxSize = require(modules.VerifyUtil.isWithinMaxSize)
 		local isValidSize, actualSize = isWithinMaxSize(pathwayKey, 200)
 		if pathwaysToLimitTo == nil then
 			-- We perform additional checks here as a malicious client could flood

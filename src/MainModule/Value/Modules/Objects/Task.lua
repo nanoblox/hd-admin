@@ -13,8 +13,10 @@
 
 
 -- LOCAL
---!strict
+--!nocheck
+--!!! CHANGE TO !strict
 local modules = script:FindFirstAncestor("MainModule").Value.Modules
+local services = modules.Parent.Services
 local Janitor = require(modules.Objects.Janitor)
 local Players = game:GetService("Players")
 local Args = require(modules.Parser.Args)
@@ -38,7 +40,7 @@ end
 function Task.new(properties: Properties)
 	
 	-- Define properties
-	local Commands = require(modules.Commands) :: any
+	local Commands = require(services.Commands) :: any
 	local janitor = Janitor.new()
 	local commandName = properties.commandName
 	local command = if isServer then Commands.getCommand(commandName) :: Command else nil --or main.modules.ClientCommands.get(self.commandName)
