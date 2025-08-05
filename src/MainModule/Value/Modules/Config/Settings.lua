@@ -170,6 +170,9 @@ local Settings = {
 		WarnsToGlobalBan = 5,
 		GlobalBanTime = 172800, -- 2 days
 
+		-- Experimental Features
+		AccountCreationCheck = 7, -- Alt prevention. (If account is below a specific amount of days since creation it gets kicked.)
+
 		-- DataStore
 		DataGroupName = "HD" -- CHANGING THIS WILL RESET ALL DATA. Only change if you wish to reset all saved data within HD Admin. For example, player data with a DataGroupName of 'HD' is structured as 'HDAdmin/HD/PlayerStore/[USER_ID]/Profile'
 
