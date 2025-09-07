@@ -1,5 +1,5 @@
 local HDAdminUI = script.Parent
-local Fusion = require(HDAdminUI.Parent.Fusion)
+local Fusion = require(HDAdminUI.Parent.Parent.Packages.Fusion)
 local Dark = require(HDAdminUI.Themes.DarkTheme)
 
 local Scope = Fusion.scoped(Fusion)

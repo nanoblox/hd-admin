@@ -1,8 +1,8 @@
 local HDAdminUI = script.Parent.Parent
-local Fusion = require(HDAdminUI.Parent.Fusion)
-local OnyxUI = require(HDAdminUI.Parent.OnyxUI)
+local Fusion = require(HDAdminUI.Parent.Parent.Packages.Fusion)
+local OnyxUI = require(HDAdminUI.Parent.Parent.Packages.OnyxUI)
 local Config = require(HDAdminUI.Config)
-local Sift = require(HDAdminUI.Parent.Sift)
+local Sift = require(HDAdminUI.Parent.Parent.Packages.Sift)
 
 local CONFIG = Config:Get()
 

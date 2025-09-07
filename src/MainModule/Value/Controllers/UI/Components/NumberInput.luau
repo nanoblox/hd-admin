@@ -1,6 +1,6 @@
 local HDAdminUI = script.Parent.Parent
-local Fusion = require(HDAdminUI.Parent.Fusion)
-local OnyxUI = require(HDAdminUI.Parent.OnyxUI)
+local Fusion = require(HDAdminUI.Parent.Parent.Packages.Fusion)
+local OnyxUI = require(HDAdminUI.Parent.Parent.Packages.OnyxUI)
 
 local Children = Fusion.Children
 
@@ -47,7 +47,7 @@ return function(Scope: Fusion.Scope<>, Props: Props)
 					local OnFocusEndValue = Fusion.peek(OnFocusEnd)
 					local MinimumValue = Fusion.peek(Minimum)
 					local RoundValue = Fusion.peek(Round)
-					local NewNumber = math.clamp(tonumber(Fusion.peek(TextNumber)) or 0, MinimumValue, math.huge)
+					local NewNumber = math.clamp(tonumber(Fusion.peek(TextNumber)) or 0, MinimumValue or 0, math.huge)
 
 					if RoundValue == true then
 						NewNumber = math.floor(NewNumber)

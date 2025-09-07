@@ -1,11 +1,11 @@
 local RunService = game:GetService("RunService")
 local HDAdminUI = script.Parent.Parent.Parent
-local Fusion = require(HDAdminUI.Parent.Fusion)
-local OnyxUI = require(HDAdminUI.Parent.OnyxUI)
+local Fusion = require(HDAdminUI.Parent.Parent.Packages.Fusion)
+local OnyxUI = require(HDAdminUI.Parent.Parent.Packages.OnyxUI)
 local States = require(HDAdminUI.States)
 local NavigationStateMod = require(HDAdminUI.StateMods.NavigationStateMod)
 local UserInformant = require(HDAdminUI.Utils.UserInformant)
-local Sift = require(HDAdminUI.Parent.Sift)
+local Sift = require(HDAdminUI.Parent.Parent.Packages.Sift)
 
 local Children = Fusion.Children
 

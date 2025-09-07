@@ -1,6 +1,6 @@
 local HDAdminUI = script.Parent.Parent
-local Fusion = require(HDAdminUI.Parent.Fusion)
-local Sift = require(HDAdminUI.Parent.Sift)
+local Fusion = require(HDAdminUI.Parent.Parent.Packages.Fusion)
+local Sift = require(HDAdminUI.Parent.Parent.Packages.Sift)
 local States = require(script.Parent.Parent.States)
 
 local Scope = Fusion.scoped(Fusion)

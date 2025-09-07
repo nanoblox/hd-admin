@@ -1,5 +1,5 @@
 local HDAdminUI = script.Parent.Parent
-local OnyxUI = require(HDAdminUI.Parent.OnyxUI)
+local OnyxUI = require(HDAdminUI.Parent.Parent.Packages.OnyxUI)
 
 return {
 	Colors = {

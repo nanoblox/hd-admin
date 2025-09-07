@@ -1,5 +1,5 @@
 local HDAdminUI = script.Parent
-local Signal = require(HDAdminUI.Parent.Signal)
+local Signal = require(HDAdminUI.Parent.Parent.Packages.Signal)
 
 local COMMAND_RAN: Signal.Signal<string, { any }> = Signal.new()
 local USER_BANNED: Signal.Signal<number> = Signal.new()

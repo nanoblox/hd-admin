@@ -1,5 +1,5 @@
 local HDAdminUI = script.Parent.Parent
-local Fusion = require(HDAdminUI.Parent.Fusion)
+local Fusion = require(HDAdminUI.Parent.Parent.Packages.Fusion)
 local UserInformant = require(HDAdminUI.Utils.UserInformant)
 local States = require(HDAdminUI.States)
 local Signals = require(HDAdminUI.Signals)

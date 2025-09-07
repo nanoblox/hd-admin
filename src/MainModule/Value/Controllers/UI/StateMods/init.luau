@@ -1,5 +1,5 @@
 local HDAdminUI = script.Parent
-local Bootloader = require(HDAdminUI.Parent.Bootloader)
+local Bootloader = require(HDAdminUI.Parent.Parent.Packages.Bootloader)
 
 local function GetModules()
 	local Modules = {}

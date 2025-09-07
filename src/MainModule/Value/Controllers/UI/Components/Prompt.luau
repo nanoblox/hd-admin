@@ -1,6 +1,6 @@
 local HDAdminUI = script.Parent.Parent
-local Fusion = require(HDAdminUI.Parent.Fusion)
-local OnyxUI = require(HDAdminUI.Parent.OnyxUI)
+local Fusion = require(HDAdminUI.Parent.Parent.Packages.Fusion)
+local OnyxUI = require(HDAdminUI.Parent.Parent.Packages.OnyxUI)
 local Config = require(HDAdminUI.Config)
 local States = require(HDAdminUI.States)
 
@@ -144,7 +144,11 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 							local UnixTimeValue = Use(States.UnixTime)
 							local LifetimeValue = Use(Lifetime) * 1000
 
-							return math.clamp(((SpawnTime + LifetimeValue) - UnixTimeValue) / LifetimeValue, 0, 1)
+							return math.clamp(
+								(((SpawnTime + LifetimeValue) - UnixTimeValue) / LifetimeValue) or 0,
+								0,
+								1
+							)
 						end),
 						Color = Theme.Colors.BaseContent.Main,
 						Size = Scope:Computed(function(Use)

@@ -1,6 +1,6 @@
 local HDAdminUI = script.Parent.Parent
-local Fusion = require(HDAdminUI.Parent.Fusion)
-local OnyxUI = require(HDAdminUI.Parent.OnyxUI)
+local Fusion = require(HDAdminUI.Parent.Parent.Packages.Fusion)
+local OnyxUI = require(HDAdminUI.Parent.Parent.Packages.OnyxUI)
 
 local Children = Fusion.Children
 
@@ -46,7 +46,7 @@ return function(Scope: Fusion.Scope<>, Props: Props)
 
 		for _, TimeProperty in TimeProperties do
 			local NumberValue = Fusion.peek(TimeProperty.Value)
-			local ValueInSeconds = math.floor(NumberValue * TimeProperty.Unit)
+			local ValueInSeconds = math.floor(NumberValue or 1 * TimeProperty.Unit)
 
 			TotalTime += ValueInSeconds
 		end
@@ -58,7 +58,7 @@ return function(Scope: Fusion.Scope<>, Props: Props)
 		local TimeLeft = TimeValue
 
 		for _, TimeProperty in TimeProperties do
-			local ValueInUnits = math.floor(TimeLeft / TimeProperty.Unit)
+			local ValueInUnits = math.floor(TimeLeft or 1 / TimeProperty.Unit)
 
 			TimeProperty.Value:set(ValueInUnits)
 

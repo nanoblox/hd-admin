@@ -1,7 +1,7 @@
 local HDAdminUI = script.Parent.Parent
-local OnyxUI = require(HDAdminUI.Parent.OnyxUI)
-local Fusion = require(HDAdminUI.Parent.Fusion)
-local Sift = require(HDAdminUI.Parent.Sift)
+local OnyxUI = require(HDAdminUI.Parent.Parent.Packages.OnyxUI)
+local Fusion = require(HDAdminUI.Parent.Parent.Packages.Fusion)
+local Sift = require(HDAdminUI.Parent.Parent.Packages.Sift)
 local UserInformant = require(HDAdminUI.Utils.UserInformant)
 
 local Children = Fusion.Children
