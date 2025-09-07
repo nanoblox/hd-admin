@@ -60,15 +60,15 @@
               "1039997021": {
                 "$className": "Configuration",
                 "$attributes": {
-				  "GiveRoles": "PackTroll",
+                  "GiveRoles": "PackTroll",
                   "DisplayName": "Example GamePass 1"
                 }
               },
               "1039509747": {
                 "$className": "Configuration",
                 "$attributes": {
-				  "GiveRoles": "Mod",
-				  "DisplayName": "Example GamePass 1" 
+                  "GiveRoles": "Mod",
+                  "DisplayName": "Example GamePass 1"
                 }
               }
             },
@@ -84,7 +84,7 @@
                 "GiveRoles": ""
               }
             },
-			"Individuals": {
+            "Individuals": {
               "$className": "Configuration",
               "82347291": {
                 "$className": "Configuration",
@@ -159,14 +159,14 @@
             },
             "Value": {
               "$className": "Folder",
-			  "Controllers": {
+              "Controllers": {
                 "$path": "src/MainModule/Value/Controllers"
               },
               "Modules": {
                 "$path": "src/MainModule/Value/Modules"
               },
               "Packages": {
-                "$path": "Packages"
+                "$path": "roblox_packages"
               },
               "Services": {
                 "$path": "src/MainModule/Value/Services"
