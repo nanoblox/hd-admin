@@ -1,8 +1,0 @@
-[package]
-name = "evaera/roblox-lua-promise"
-version = "4.0.0"
-author = "evaera"
-content_root = "lib"
-license = "MIT"
-
-[dependencies]

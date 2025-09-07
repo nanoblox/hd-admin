@@ -1,0 +1,5 @@
+std = "roblox"
+
+[config]
+shadowing = { ignore_pattern = "^_|Use|Theme|Scope" }
+unused_variable = { ignore_pattern = "^_|Use|Scope" }
