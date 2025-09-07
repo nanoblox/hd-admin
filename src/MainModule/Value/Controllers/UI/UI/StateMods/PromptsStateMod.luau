@@ -2,8 +2,8 @@ local HttpService = game:GetService("HttpService")
 
 local HDAdminUI = script.Parent.Parent
 local States = require(HDAdminUI.States)
-local Fusion = require(HDAdminUI.Parent.Parent.Packages.Fusion)
-local Sift = require(HDAdminUI.Parent.Parent.Packages.Sift)
+local Fusion = require(HDAdminUI.Parent.Parent.Parent.Packages.Fusion)
+local Sift = require(HDAdminUI.Parent.Parent.Parent.Packages.Sift)
 
 export type Properties = {
 	Title: { string }?,

@@ -1,7 +1,7 @@
 local HDAdminUI = script.Parent.Parent
-local OnyxUI = require(HDAdminUI.Parent.Parent.Packages.OnyxUI)
-local Fusion = require(HDAdminUI.Parent.Parent.Packages.Fusion)
-local ColorUtils = require(HDAdminUI.Parent.Parent.Packages.ColorUtils)
+local OnyxUI = require(HDAdminUI.Parent.Parent.Parent.Packages.OnyxUI)
+local Fusion = require(HDAdminUI.Parent.Parent.Parent.Packages.Fusion)
+local ColorUtils = require(HDAdminUI.Parent.Parent.Parent.Packages.ColorUtils)
 
 export type Props = OnyxUI.ButtonProps & {}
 

@@ -3,7 +3,6 @@
 -- Local
 local main = script:FindFirstAncestor("MainModule")
 local modules = main.Value.Modules
-local UI = require(main.Value.Controllers.UI)
 local Icon = require(modules.Objects.Icon)
 
 local TestController = {}
@@ -22,9 +21,5 @@ end)
 local icon = Icon.new()
 
 icon:setLabel("Test v2")
-icon:bindEvent("deselected", function()
-	UI:ToggleOpen()
-end)
-icon:oneClick()
 
 return TestController

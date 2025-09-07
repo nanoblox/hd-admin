@@ -1,6 +1,6 @@
 local HDAdminUI = script.Parent.Parent
 local States = require(HDAdminUI.States)
-local Fusion = require(HDAdminUI.Parent.Parent.Packages.Fusion)
+local Fusion = require(HDAdminUI.Parent.Parent.Parent.Packages.Fusion)
 
 export type Setting = {
 	Name: string,
