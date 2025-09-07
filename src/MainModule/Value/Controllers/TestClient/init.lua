@@ -1,9 +1,12 @@
 --!strict
 
 -- Local
-local TestController = {}
 local main = script:FindFirstAncestor("MainModule")
 local modules = main.Value.Modules
+local UI = require(main.Value.Controllers.UI)
+local Icon = require(modules.Objects.Icon)
+
+local TestController = {}
 
 -- Test stuff
 --[[
@@ -16,10 +19,12 @@ clientUser.everyone:observe("Test", function(value)
 end)
 --]]
 
-
-local Icon = require(modules.Objects.Icon)
 local icon = Icon.new()
-icon:setLabel("Test v2")
 
+icon:setLabel("Test v2")
+icon:bindEvent("deselected", function()
+	UI:ToggleOpen()
+end)
+icon:oneClick()
 
 return TestController

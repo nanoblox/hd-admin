@@ -7,14 +7,13 @@ To do:
 	  
 --]]
 
-
 --!strict
 -- LOCAL
 local Args = {}
 local modules = script:FindFirstAncestor("MainModule").Value.Modules
 local controllers = modules.Parent.Controllers
 local Config = require(modules.Config)
-local InputObjects = require(controllers.UI.InputObjects)
+local InputObjects = require(controllers.UI.Static.InputObjects)
 local Players = game:GetService("Players")
 local ParserUtility = require(modules.Parser.ParserUtility)
 local requiresUpdating = true
@@ -22,12 +21,10 @@ local sortedNameAndAliasLengthArray = {}
 local lowerCaseDictionary = {}
 local executeForEachPlayerArgsDictionary = {}
 
-
 -- LOCAL FUNCTIONS
 local function register(item: ArgumentDetail): ArgumentDetail
 	return item :: ArgumentDetail -- We do this to support type checking within the table
 end
-
 
 -- FUNCTIONS
 function Args.update()
@@ -83,7 +80,7 @@ function Args.get(argName: Argument): ArgumentDetail?
 		end
 		argToBecome = argToBecome :: any
 		item = item :: any
-		for k,v in argToBecome do
+		for k, v in argToBecome do
 			if not item[k] then
 				item[k] = v
 			end
@@ -102,14 +99,14 @@ function Args.getAll()
 		end
 		Args.get(argName)
 	end
-	local items = Args.items :: {[Argument]: ArgumentDetail}
+	local items = Args.items :: { [Argument]: ArgumentDetail }
 	return items
 end
 
 function Args.becomeAliasOf(argName: Argument, initialTable: any?): ArgumentDetail
 	-- We don't actually create a mirror table here as the data of items will have
 	-- not yet gone into memory. Instead, we record the table as an alias, then
-	-- set it's data once .get is called or 
+	-- set it's data once .get is called or
 	task.defer(function()
 		-- This servers as a warning as opposed to an actual error
 		if not Args.items[argName] then
@@ -123,7 +120,6 @@ function Args.becomeAliasOf(argName: Argument, initialTable: any?): ArgumentDeta
 	return initialTable
 end
 
-
 -- PUBLIC
 Args.items = {
 
@@ -136,14 +132,12 @@ Args.items = {
 		description = "Accepts qualifiers (e.g. 'raza', '@ForeverHD', 'others' from ';paint raza,@ForeverHD,others'), calls the command *for each player*, and returns a single Player instance.",
 		playerArg = true,
 		executeForEachPlayer = true,
-		stringify = function(self, original)
-
-		end,
+		stringify = function(self, original) end,
 		parse = function(self, qualifiers, callerUserId, additional: any)
 			local defaultToMe = qualifiers == nil or ParserUtility.isQualifiersEmpty(qualifiers)
 			local ignoreDefault = (additional and additional.ignoreDefault)
 			if defaultToMe and not ignoreDefault then
-				local players: {Player} = {}
+				local players: { Player } = {}
 				local callerPlayer = Players:GetPlayerByUserId(callerUserId)
 				if callerPlayer then
 					table.insert(players, callerPlayer)
@@ -169,7 +163,7 @@ Args.items = {
 					targetsDict[plr] = true
 				end
 			end
-			local players: {Player} = {}
+			local players: { Player } = {}
 			for plr, _ in pairs(targetsDict) do
 				if typeof(plr) == "Instance" and plr:IsA("Player") then
 					table.insert(players, plr :: Player)
@@ -194,7 +188,9 @@ Args.items = {
 				return nil
 			end
 			local argPlayer = Args.get("Player")
-			local players = if argPlayer then argPlayer:parse(qualifiers, callerUserId, {ignoreDefault = true}) else {}
+			local players = if argPlayer
+				then argPlayer:parse(qualifiers, callerUserId, { ignoreDefault = true })
+				else {}
 			return players
 		end,
 	}),
@@ -212,7 +208,9 @@ Args.items = {
 		executeForEachPlayer = true,
 		parse = function(self, qualifiers, callerUserId)
 			local argPlayer = Args.get("Player")
-			local players = if argPlayer then argPlayer:parse(qualifiers, callerUserId, {ignoreDefault = true}) else {}
+			local players = if argPlayer
+				then argPlayer:parse(qualifiers, callerUserId, { ignoreDefault = true })
+				else {}
 			return players[1]
 		end,
 	}),
@@ -321,7 +319,7 @@ Args.items = {
 			--]]
 		end,
 	}),
-	
+
 	["SingleText"] = register({
 		inputObject = {
 			inputType = "TextInput",
@@ -362,27 +360,32 @@ Args.items = {
 		end,
 	}),
 
-	["Integer"] = Args.becomeAliasOf("Number", register({
-		inputObject = {
-			inputType = "NumberInput",
-			stepAmount = 1,
-		},
-	})),
+	["Integer"] = Args.becomeAliasOf(
+		"Number",
+		register({
+			inputObject = {
+				inputType = "NumberInput",
+				stepAmount = 1,
+			},
+		})
+	),
 
-	["Scale"] = Args.becomeAliasOf("Number", register({
-		inputObject = {
-			inputType = "NumberInput",
-			minValue = 0,
-			maxValue = 5,
-		},
-		description = "Accepts a number and returns a number which is considerate of scale limits.",
-		defaultValue = 1,
-		parse = function(self, stringToParse)
-			--local scaleValue = tonumber(stringToParse)
-			--return scaleValue
-		end,
-		verifyCanUse = function(self, callerUser, valueToParse)
-			--[[
+	["Scale"] = Args.becomeAliasOf(
+		"Number",
+		register({
+			inputObject = {
+				inputType = "NumberInput",
+				minValue = 0,
+				maxValue = 5,
+			},
+			description = "Accepts a number and returns a number which is considerate of scale limits.",
+			defaultValue = 1,
+			parse = function(self, stringToParse)
+				--local scaleValue = tonumber(stringToParse)
+				--return scaleValue
+			end,
+			verifyCanUse = function(self, callerUser, valueToParse)
+				--[[
 			-- Check valid number
 			local scaleValue = tonumber(valueToParse)
 			if not scaleValue then
@@ -398,28 +401,35 @@ Args.items = {
 			end
 			return true
 			--]]
-		end,
-	})),
+			end,
+		})
+	),
 
-	["Speed"] = Args.becomeAliasOf("Number", register({
-		inputObject = {
-			inputType = "NumberSlider",
-			minValue = 0,
-			maxValue = 100,
-			stepAmount = 1
-		},
-		defaultValue = 1,
-	})),
+	["Speed"] = Args.becomeAliasOf(
+		"Number",
+		register({
+			inputObject = {
+				inputType = "NumberSlider",
+				minValue = 0,
+				maxValue = 100,
+				stepAmount = 1,
+			},
+			defaultValue = 1,
+		})
+	),
 
-	["AnimationSpeed"] = Args.becomeAliasOf("Number", register({
-		inputObject = {
-			inputType = "NumberSlider",
-			minValue = 0,
-			maxValue = 5,
-			stepAmount = 0.1
-		},
-		defaultValue = 1,
-	})),
+	["AnimationSpeed"] = Args.becomeAliasOf(
+		"Number",
+		register({
+			inputObject = {
+				inputType = "NumberSlider",
+				minValue = 0,
+				maxValue = 5,
+				stepAmount = 0.1,
+			},
+			defaultValue = 1,
+		})
+	),
 
 	["Degrees"] = register({
 		inputObject = {
@@ -440,7 +450,7 @@ Args.items = {
 		end,
 		--]]
 	}),
-	
+
 	["Duration"] = register({
 		inputObject = {
 			inputType = "DurationSelector",
@@ -493,11 +503,14 @@ Args.items = {
 
 	["Gradient"] = Args.becomeAliasOf("Color"),
 
-	["OptionalColor"] = Args.becomeAliasOf("Color", register({
-		description = "Accepts a color name (such as 'red'), a hex code (such as '#FF0000') or an RGB capsule (such as '[255,0,0]') and returns a Color3.",
-		defaultValue = Color3.fromRGB(255, 255, 255),
-		hidden = true,
-	})),
+	["OptionalColor"] = Args.becomeAliasOf(
+		"Color",
+		register({
+			description = "Accepts a color name (such as 'red'), a hex code (such as '#FF0000') or an RGB capsule (such as '[255,0,0]') and returns a Color3.",
+			defaultValue = Color3.fromRGB(255, 255, 255),
+			hidden = true,
+		})
+	),
 
 	["Bool"] = register({
 		inputObject = {
@@ -531,28 +544,32 @@ Args.items = {
 	["Options"] = register({
 		inputObject = {
 			inputType = "Options",
-			optionsArray = {"Yes", "No"}
+			optionsArray = { "Yes", "No" },
 		},
 		description = "Accepts any value within the optionsArray and returns the value.",
 		defaultValue = false,
-		parse = function(self, stringToParse)
-			
-		end,
+		parse = function(self, stringToParse) end,
 	}),
 
-	["ServersOptions"] = Args.becomeAliasOf("Options", register({
-		inputObject = {
-			inputType = "Options",
-			optionsArray = {"Current", "All"}
-		},
-	})),
+	["ServersOptions"] = Args.becomeAliasOf(
+		"Options",
+		register({
+			inputObject = {
+				inputType = "Options",
+				optionsArray = { "Current", "All" },
+			},
+		})
+	),
 
-	["BanLengthOptions"] = Args.becomeAliasOf("Options", register({
-		inputObject = {
-			inputType = "Options",
-			optionsArray = {"∞", "Time"}
-		},
-	})),
+	["BanLengthOptions"] = Args.becomeAliasOf(
+		"Options",
+		register({
+			inputObject = {
+				inputType = "Options",
+				optionsArray = { "∞", "Time" },
+			},
+		})
+	),
 
 	["Leaderstat"] = register({
 		-- Accepts the names of stats within the player's leaderstats:
@@ -763,9 +780,7 @@ Args.items = {
 			maxItems = 10,
 		},
 	}),
-
-} :: {[string]: ArgumentDetail}
-
+} :: { [string]: ArgumentDetail }
 
 -- TYPES
 export type Argument = keyof<typeof(Args.items)>
@@ -779,6 +794,5 @@ export type ArgumentDetail = {
 	parse: any, --((...any) -> (...any))?,
 	name: string?,
 }
-
 
 return Args

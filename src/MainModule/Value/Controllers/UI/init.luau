@@ -45,4 +45,6 @@ function HDAdminUI:ToggleOpen()
 	States.Menu.Open:set(not Fusion.peek(States.Menu.Open))
 end
 
+HDAdminUI:Start()
+
 return HDAdminUI

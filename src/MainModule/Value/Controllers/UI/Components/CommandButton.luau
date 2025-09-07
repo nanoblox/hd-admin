@@ -1,6 +1,5 @@
-local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local HDAdminUI = script.Parent.Parent
-local ColorUtils = require(ReplicatedStorage.HDAdminUI.Packages.ColorUtils)
+local ColorUtils = require(HDAdminUI.Parent.Parent.Packages.ColorUtils)
 local Fusion = require(HDAdminUI.Parent.Parent.Packages.Fusion)
 local OnyxUI = require(HDAdminUI.Parent.Parent.Packages.OnyxUI)
 local Config = require(HDAdminUI.Config)
