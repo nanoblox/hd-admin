@@ -8,6 +8,8 @@ local CONFIG = Config:Get()
 
 local Children = Fusion.Children
 
+local CustomButton = require(script.Parent.CustomButton)
+
 export type Props = OnyxUI.ButtonProps & {
 	Role: Fusion.UsedAs<string>?,
 	UserId: Fusion.UsedAs<number>?,
@@ -20,16 +22,9 @@ return function(Scope: Fusion.Scope<>, Props: Props)
 	local Role = OnyxUI.Util.Fallback(Props.Role, "Admin")
 	local UserId = OnyxUI.Util.Fallback(Props.UserId, nil)
 
-	return Scope:Badge(OnyxUI.Util.CombineProps(Props, {
+	return Scope:CustomButton(OnyxUI.Util.CombineProps(Props, {
 		Name = script.Name,
-		Padding = {
-			Left = Scope:UDim(0, Theme.Spacing["0.5"]),
-			Right = Scope:UDim(0, Theme.Spacing["0.5"]),
-			Top = Scope:UDim(0, Theme.Spacing["0.25"]),
-			Bottom = Scope:UDim(0, Theme.Spacing["0.25"]),
-		},
 		List = {
-			VerticalAlignment = Enum.VerticalAlignment.Center,
 			Padding = Scope:UDim(0, Theme.Spacing["0.25"]),
 		},
 

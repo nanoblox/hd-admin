@@ -26,6 +26,7 @@ local MENUS = {
 	Users = require(script.Parent.Parent.Pages.UsersPage),
 	Cosmetics = require(script.Parent.Parent.Pages.CosmeticsPage),
 	Booster = require(script.Parent.Parent.Pages.BoosterPage),
+	Roles = require(script.Parent.Parent.Pages.RolesPage),
 }
 
 export type Props = OnyxUI.AutoScalerProps & {}
