@@ -2,6 +2,7 @@ local HDAdminUI = script.Parent.Parent
 local OnyxUI = require(HDAdminUI.Parent.Parent.Parent.Packages.OnyxUI)
 local Fusion = require(HDAdminUI.Parent.Parent.Parent.Packages.Fusion)
 local States = require(HDAdminUI.States)
+local Sift = require(HDAdminUI.Parent.Parent.Parent.Packages.Sift)
 
 local Children = Fusion.Children
 local CommandButton = require(script.Parent.CommandButton)
@@ -58,14 +59,23 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 				},
 
 				[Children] = {
-					Scope:ForValues(Commands, function(Use, Scope, CommandId: string)
-						return OnyxUI.Themer.Theme:is(Use(States.Theme)):during(function()
-							return Scope:CommandButton {
-								Id = CommandId,
-								QuickRun = States.Menu.Pages.Commands.QuickRun,
-							}
-						end)
-					end),
+					Scope:ForValues(
+						Scope:Computed(function(Use)
+							local CommandsValue = Use(Commands)
+
+							return Sift.Array.sort(CommandsValue, function(CommandA, CommandB)
+								return string.byte(CommandA) < string.byte(CommandB)
+							end)
+						end),
+						function(Use, Scope, CommandId: string)
+							return OnyxUI.Themer.Theme:is(Use(States.Theme)):during(function()
+								return Scope:CommandButton {
+									Id = CommandId,
+									QuickRun = States.Menu.Pages.Commands.QuickRun,
+								}
+							end)
+						end
+					),
 				},
 			},
 		},

@@ -32,48 +32,47 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 	local SearchQuery = Scope:Value("")
 	local RankTags = Scope:Value({})
 
-	local SearchCommands = Scope:ForPairs(CONFIG.Commands, function(Use, Scope, CommandId: string, Command)
+	local FilteredCommands = Scope:Computed(function(Use)
 		local SearchQueryValue = Use(SearchQuery)
-
-		if Command and (string.match(Command.Prompt, SearchQueryValue) ~= nil) then
-			return CommandId, Command
-		end
-	end)
-	local RankCategories = Scope:ForValues(CONFIG.Roles, function(Use, Scope, Rank: string)
 		local RankTagsValue = Use(RankTags)
-		local RankTagIds = Sift.Array.map(RankTagsValue, function(RankTag: { string })
-			return RankTag[1]
+
+		return Sift.Dictionary.filter(CONFIG.Commands, function(Command)
+			if #RankTagsValue >= 1 then
+				if table.find(Sift.Array.flatten(RankTagsValue), Command.Rank) == nil then
+					return false
+				end
+			end
+			if utf8.len(SearchQueryValue) >= 1 then
+				if string.find(Command.Prompt, SearchQueryValue) == nil then
+					return false
+				end
+			end
+
+			return true
 		end)
-		local RankCommands = Sift.Dictionary.keys(Sift.Dictionary.filter(CONFIG.Commands, function(Command)
-			return Command.Rank == Rank
-		end))
-
-		if #RankCommands == 0 then
-			return
-		end
-		if (#RankTagIds >= 1) and (table.find(RankTagIds, Rank) == nil) then
-			return
-		end
-
-		return {
-			Label = { Rank },
-			Commands = RankCommands,
-		}
 	end)
-	local ActiveCategories = Scope:Computed(function(Use)
-		local SearchQueryValue = Use(SearchQuery)
-		local SearchCommandsValue = Use(SearchCommands)
-		local RankCategoriesValue = Use(RankCategories)
+	local FilteredCategories = Scope:Computed(function(Use)
+		local FilteredCommandsValue = Use(FilteredCommands)
 
-		if utf8.len(SearchQueryValue) >= 1 then
-			return {
-				{
-					Commands = Sift.Dictionary.keys(SearchCommandsValue),
-				},
-			}
-		else
-			return RankCategoriesValue
-		end
+		return Sift.Array.sort(
+			Sift.Array.filter(
+				Sift.Array.map(CONFIG.Roles, function(Role)
+					return {
+						Label = { Role },
+						Role = Role,
+						Commands = Sift.Dictionary.keys(Sift.Dictionary.filter(FilteredCommandsValue, function(Command)
+							return Command.Rank == Role
+						end)),
+					}
+				end),
+				function(Category)
+					return #Category.Commands > 0
+				end
+			),
+			function(Category1, Category2)
+				return table.find(CONFIG.Roles, Category1.Role) < table.find(CONFIG.Roles, Category2.Role)
+			end
+		)
 	end)
 
 	return Scope:Frame(OnyxUI.Util.CombineProps(Props, {
@@ -166,7 +165,7 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 								},
 							},
 						},
-						Scope:ForValues(ActiveCategories, function(Use, Scope, Category)
+						Scope:ForValues(FilteredCategories, function(Use, Scope, Category)
 							return OnyxUI.Themer.Theme:is(Use(States.Theme)):during(function()
 								return Scope:CommandCategory {
 									Label = Category.Label,
