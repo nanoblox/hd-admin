@@ -83,41 +83,76 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 
 		[Children] = {
 			Scope:Frame {
-				Name = "Options",
 				List = {
-					FillDirection = Enum.FillDirection.Horizontal,
-					VerticalAlignment = Enum.VerticalAlignment.Center,
-					VerticalFlex = Enum.UIFlexAlignment.Fill,
+					FillDirection = Enum.FillDirection.Vertical,
+					HorizontalFlex = Enum.UIFlexAlignment.Fill,
+					Wraps = false,
 					Padding = Scope:UDim(0, Theme.Spacing["0.5"]),
 				},
 
 				[Children] = {
-					Scope:TextInput {
-						Name = "SearchInput",
-						PlaceholderText = "Search",
-						Text = SearchQuery,
-						Flex = {
-							Mode = Enum.UIFlexMode.Fill,
+					Scope:Frame {
+						List = {
+							FillDirection = Enum.FillDirection.Horizontal,
+							Padding = Scope:UDim(0, Theme.Spacing["0.5"]),
+							VerticalAlignment = Enum.VerticalAlignment.Center,
+							VerticalFlex = Enum.UIFlexAlignment.Fill,
+						},
+
+						[Children] = {
+							Scope:TextInput {
+								Name = "SearchInput",
+								PlaceholderText = "Search",
+								Text = SearchQuery,
+								Flex = {
+									Mode = Enum.UIFlexMode.Fill,
+								},
+							},
+							Scope:IconToggle {
+								Name = "CommandBarToggle",
+								Options = { CONFIG.Icons.Terminal, CONFIG.Icons.TerminalFill },
+								Toggled = States.CommandBar.Open,
+								ContentSize = Theme.TextSize["1.125"],
+								Aspect = {
+									Ratio = 1,
+									Type = Enum.AspectType.ScaleWithParentSize,
+								},
+							},
+							Scope:IconToggle {
+								Name = "QuickRunToggle",
+								Options = { CONFIG.Icons.Zap, CONFIG.Icons.ZapFill },
+								Toggled = States.Menu.Pages.Commands.QuickRun,
+								ContentSize = Theme.TextSize["1.125"],
+								Aspect = {
+									Ratio = 1,
+									Type = Enum.AspectType.ScaleWithParentSize,
+								},
+							},
 						},
 					},
-					Scope:IconToggle {
-						Name = "CommandBarToggle",
-						Options = { CONFIG.Icons.Terminal, CONFIG.Icons.TerminalFill },
-						Toggled = States.CommandBar.Open,
-						ContentSize = Theme.TextSize["1.125"],
-						Aspect = {
-							Ratio = 1,
-							Type = Enum.AspectType.ScaleWithParentSize,
+					Scope:Scroller {
+						Name = "Tags",
+						ScrollingDirection = Enum.ScrollingDirection.X,
+						ScrollBarThickness = 0,
+						ScrollBarImageTransparency = 1,
+						CanvasSize = UDim2.fromOffset(0, 0),
+						AutomaticCanvasSize = Enum.AutomaticSize.X,
+						AutomaticSize = Enum.AutomaticSize.Y,
+						Padding = {
+							All = Scope:UDim(0, Theme.StrokeThickness["1"]),
 						},
-					},
-					Scope:IconToggle {
-						Name = "QuickRunToggle",
-						Options = { CONFIG.Icons.Zap, CONFIG.Icons.ZapFill },
-						Toggled = States.Menu.Pages.Commands.QuickRun,
-						ContentSize = Theme.TextSize["1.125"],
-						Aspect = {
-							Ratio = 1,
-							Type = Enum.AspectType.ScaleWithParentSize,
+
+						[Children] = {
+							Scope:Tags {
+								Tags = Sift.Array.map(CONFIG.Roles, function(RankString: string)
+									return { RankString }
+								end),
+								Selection = RankTags,
+								ButtonProps = {
+									SizeVariant = "Large",
+									ContentSize = Theme.TextSize["1"],
+								},
+							},
 						},
 					},
 				},
@@ -140,31 +175,6 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 
 				[Children] = {
 					[Children] = {
-						Scope:Scroller {
-							Name = "Tags",
-							ScrollingDirection = Enum.ScrollingDirection.X,
-							ScrollBarThickness = 0,
-							ScrollBarImageTransparency = 1,
-							CanvasSize = UDim2.fromOffset(0, 0),
-							AutomaticCanvasSize = Enum.AutomaticSize.X,
-							AutomaticSize = Enum.AutomaticSize.Y,
-							Padding = {
-								All = Scope:UDim(0, Theme.StrokeThickness["1"]),
-							},
-
-							[Children] = {
-								Scope:Tags {
-									Tags = Sift.Array.map(CONFIG.Roles, function(RankString: string)
-										return { RankString }
-									end),
-									Selection = RankTags,
-									ButtonProps = {
-										SizeVariant = "Large",
-										ContentSize = Theme.TextSize["1"],
-									},
-								},
-							},
-						},
 						Scope:ForValues(FilteredCategories, function(Use, Scope, Category)
 							return OnyxUI.Themer.Theme:is(Use(States.Theme)):during(function()
 								return Scope:CommandCategory {
