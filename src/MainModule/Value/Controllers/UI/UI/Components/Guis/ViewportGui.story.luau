@@ -22,10 +22,12 @@ return function(Target: Instance)
 		[1] = {
 			UserId = 1,
 			Banned = true,
+			Role = "Admin",
 			Warnings = {},
 		},
 		[2] = {
 			UserId = 1,
+			Role = "Guest",
 			Warnings = { {} },
 		},
 	})

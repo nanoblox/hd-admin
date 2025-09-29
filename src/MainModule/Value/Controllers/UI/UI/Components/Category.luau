@@ -6,6 +6,7 @@ local Children = Fusion.Children
 
 export type Props = OnyxUI.FrameProps & {
 	Label: Fusion.UsedAs<{ string }>?,
+	LabelSize: Fusion.UsedAs<number>?,
 	HorizontalAlignment: Fusion.UsedAs<Enum.HorizontalAlignment>?,
 }
 
@@ -14,6 +15,7 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 	local Theme = OnyxUI.Themer.Theme:now()
 
 	local Label = OnyxUI.Util.Fallback(Props.Label, { "Category" })
+	local LabelSize = OnyxUI.Util.Fallback(Props.LabelSize, Theme.TextSize["1.5"])
 	local HorizontalAlignment = OnyxUI.Util.Fallback(Props.HorizontalAlignment, Enum.HorizontalAlignment.Left)
 
 	local GivenChildren = Props[Children]
@@ -30,7 +32,7 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 			Scope:IconText {
 				Name = "Label",
 				Content = Label,
-				ContentSize = Theme.TextSize["1.5"],
+				ContentSize = LabelSize,
 				ContentFontFace = Scope:Font(Theme.Font.Heading, Theme.FontWeight.Heading),
 			},
 			Scope:Frame {

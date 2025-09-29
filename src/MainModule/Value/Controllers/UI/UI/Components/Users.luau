@@ -8,11 +8,12 @@ local Children = Fusion.Children
 
 local UserCheckButton = require(script.Parent.UserCheckButton)
 local UserCheckbox = require(script.Parent.UserCheckbox)
+local UserButton = require(script.Parent.UserButton)
 
 export type Props = OnyxUI.FrameProps & {
 	UserIds: Fusion.UsedAs<{ number }>?,
 	PinnedUserIds: Fusion.UsedAs<{ number }>?,
-	ButtonType: Fusion.UsedAs<"Checkbox" | "CheckButton">?,
+	ButtonType: Fusion.UsedAs<"Checkbox" | "CheckButton" | "Button">?,
 	Selection: Fusion.Value<{ number }>?,
 	Search: Fusion.UsedAs<string>?,
 	ButtonProps: Fusion.UsedAs<UserCheckButton.Props>?,
@@ -24,7 +25,7 @@ return function(Scope: Fusion.Scope<>, Props: Props)
 
 	local UserIds = OnyxUI.Util.Fallback(Props.UserIds, {})
 	local PinnedUserIds = OnyxUI.Util.Fallback(Props.PinnedUserIds, {})
-	local ButtonType = OnyxUI.Util.Fallback(Props.ButtonType, "Button")
+	local ButtonType = OnyxUI.Util.Fallback(Props.ButtonType, "CheckButton")
 	local Search = OnyxUI.Util.Fallback(Props.Search, "")
 	local ButtonProps = OnyxUI.Util.Fallback(Props.ButtonProps, {})
 
@@ -58,6 +59,8 @@ return function(Scope: Fusion.Scope<>, Props: Props)
 			return UserCheckButton
 		elseif ButtonTypeValue == "Checkbox" then
 			return UserCheckbox
+		elseif ButtonTypeValue == "Button" then
+			return UserButton
 		end
 	end)
 

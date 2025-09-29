@@ -2,6 +2,8 @@ local HDAdminUI = script.Parent.Parent
 local OnyxUI = require(HDAdminUI.Parent.Parent.Parent.Packages.OnyxUI)
 local Fusion = require(HDAdminUI.Parent.Parent.Parent.Packages.Fusion)
 local UserInformant = require(HDAdminUI.Utils.UserInformant)
+local States = require(script.Parent.Parent.States)
+local NavigationStateMod = require(HDAdminUI.StateMods.NavigationStateMod)
 
 local Children = Fusion.Children
 
@@ -32,12 +34,19 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 			HorizontalAlignment = Enum.HorizontalAlignment.Left,
 		},
 		Padding = {
-			Left = Scope:UDim(0, Theme.Spacing["0.75"]),
-			Right = Scope:UDim(0, Theme.Spacing["0.75"]),
+			Left = Scope:UDim(0, Theme.Padding["0.75"]),
+			Right = Scope:UDim(0, Theme.Padding["0.75"]),
 		},
 		Corner = {
 			Radius = Scope:UDim(0, Theme.CornerRadius["1.5"]),
 		},
+
+		OnActivate = function()
+			local UserIdValue = Fusion.peek(UserId)
+
+			States.Menu.Pages.User.UserId:set(UserIdValue)
+			NavigationStateMod:To("User")
+		end,
 
 		[Children] = {
 			Scope:Computed(function(Use)
