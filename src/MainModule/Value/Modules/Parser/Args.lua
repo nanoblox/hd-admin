@@ -7,7 +7,6 @@ To do:
 	  
 --]]
 
-
 --!strict
 -- CONFIG
 local DEFAULT_MAX_CHARACTERS = 100
@@ -18,12 +17,11 @@ local TEXT_MAX_CHARACTERS = 420
 local Args = {}
 local modules = script:FindFirstAncestor("MainModule").Value.Modules
 local controllers = modules.Parent.Controllers
-local InputObjects = require(controllers.UI.InputObjects)
+local InputObjects = require(controllers.UI.UI.Static.InputObjects)
 local Players = game:GetService("Players")
 local requiresUpdating = true
 local sortedNameAndAliasLengthArray = {}
 local lowerCaseDictionary = {}
-
 
 -- LOCAL FUNCTIONS
 local function register(item: ArgumentDetail): ArgumentDetail
@@ -65,7 +63,6 @@ local function becomeArg(item: ArgumentDetail, toBecomeName: string)
 	item.mustCreateAliasOf = nil :: any
 	item.aliasOf = toBecomeName
 end
-
 
 -- FUNCTIONS
 function Args.update()
@@ -139,7 +136,7 @@ function Args.getAll()
 		end
 		Args.get(argName :: any)
 	end
-	local items = Args.items :: {[Argument]: ArgumentDetail}
+	local items = Args.items :: { [Argument]: ArgumentDetail }
 	return items
 end
 
@@ -176,7 +173,6 @@ function Args.createAliasOf(argName: Argument, argumentDetail: ArgumentDetail?):
 	return argumentDetail
 end
 
-
 -- PUBLIC
 local items = {
 
@@ -197,7 +193,7 @@ local items = {
 			local defaultToMe = qualifiers == nil or ParserUtility.isQualifiersEmpty(qualifiers :: any)
 			local ignoreDefault = (additional and additional.ignoreDefault)
 			if defaultToMe and not ignoreDefault then
-				local players: {Player} = {}
+				local players: { Player } = {}
 				local callerPlayer = Players:GetPlayerByUserId(callerUserId)
 				if callerPlayer then
 					table.insert(players, callerPlayer)
@@ -227,7 +223,7 @@ local items = {
 					targetsDict[plr] = true
 				end
 			end
-			local players: {Player} = {}
+			local players: { Player } = {}
 			for plr, _ in pairs(targetsDict) do
 				if typeof(plr) == "Instance" and plr:IsA("Player") then
 					table.insert(players, plr :: Player)
@@ -491,8 +487,9 @@ local items = {
 			end
 			return true
 			--]]
-		end,
-	})),
+			end,
+		})
+	),
 
 	["Speed"] = Args.createAliasOf("Number", register({
 		inputObject = {
@@ -533,7 +530,7 @@ local items = {
 		end),
 		--]]
 	}),
-	
+
 	["Duration"] = register({
 		inputObject = {
 			inputType = "DurationSelector",
@@ -624,7 +621,7 @@ local items = {
 	["Options"] = register({
 		inputObject = {
 			inputType = "Options",
-			optionsArray = {"Yes", "No"}
+			optionsArray = { "Yes", "No" },
 		},
 		description = "Accepts any value within the optionsArray and returns the value.",
 		defaultValue = false,
@@ -876,6 +873,5 @@ export type ArgumentDetail = {
 	defaultValue: any?,
 	maxCharacters: number?,
 }
-
 
 return Args

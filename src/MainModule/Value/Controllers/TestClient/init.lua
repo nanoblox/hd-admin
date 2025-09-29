@@ -1,9 +1,11 @@
 --!strict
 
 -- Local
-local TestController = {}
 local main = script:FindFirstAncestor("MainModule")
 local modules = main.Value.Modules
+local Icon = require(modules.Objects.Icon)
+
+local TestController = {}
 
 -- Test stuff
 --[[
@@ -19,7 +21,7 @@ end)
 
 local Icon = require(modules.Objects.Icon)
 local icon = Icon.new()
-icon:setLabel("Test v2")
 
+icon:setLabel("Test v2")
 
 return TestController

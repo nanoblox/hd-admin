@@ -5,7 +5,6 @@ local modules = script:FindFirstAncestor("MainModule").Value.Modules
 local parser = modules.Parser
 local User = require(modules.Objects.User)
 local ParserTypes = require(parser.ParserTypes)
-local Promise = require(modules.Objects.Promise)
 local Config = require(modules.Config)
 local Task = require(modules.Objects.Task)
 local commandsArray: Task.Commands = {}
@@ -333,7 +332,6 @@ function Commands.executeStatement(callerUserId: number, statement: Statement): 
 	end
 
 	local Args = require(parser.Args)
-	local promises = {}
 	local tasks: {any} = {}
 	local isPermModifier = statement.modifiers.perm
 	local isGlobalModifier = statement.modifiers.wasGlobal
@@ -461,10 +459,6 @@ function Commands.executeStatement(callerUserId: number, statement: Statement): 
 			end
 		end
 	end
-
-	-- We now wait until every task has been registered
-	local allPromise = Promise.all(promises) :: any
-	allPromise:await()
 
 	return tasks :: {Task}
 end

@@ -1,0 +1,40 @@
+name = "avafe/hd_admin_ui"
+version = "0.1.0"
+private = true
+
+[target]
+environment = "roblox"
+lib = "src/init.luau"
+build_files = ["src"]
+
+[indices]
+default = "https://github.com/pesde-pkg/index"
+
+[wally_indices]
+default = "https://github.com/UpliftGames/wally-index"
+
+[scripts]
+roblox_sync_config_generator = ".pesde/scripts/roblox_sync_config_generator.luau"
+sourcemap_generator = ".pesde/scripts/sourcemap_generator.luau"
+
+[dev_dependencies]
+scripts = { name = "pesde/scripts_rojo", version = "^0.1.0", target = "lune" }
+rojo = { name = "pesde/rojo", version = "^7.4.4", target = "lune" }
+selene = { name = "pesde/selene", version = "^0.27.1", target = "lune" }
+
+[dependencies]
+t = { wally = "osyrisrblx/t", version = "^3.1.1" }
+Future = { wally = "red-blox/future", version = "^1.0.1" }
+Fetch = { wally = "red-blox/fetch", version = "^2.0.0" }
+Signal = { wally = "sleitnick/signal", version = "^2.0.1" }
+ColorUtils = { wally = "csqrl/colour-utils", version = "^1.4.1" }
+Stator = { wally = "imavafe/stator", version = "^0.1.1" }
+Sift = { wally = "csqrl/sift", version = "^0.0.9" }
+Bootloader = { wally = "imavafe/bootloader", version = "^0.1.0" }
+
+Fusion = { wally = "elttob/fusion", version = "^0.3.0" }
+OnyxUI = { wally = "imavafe/onyx-ui", version = "^1.0.1" }
+
+Janitor = { wally = "1foreverhd/janitor", version = "^1.18.12" }
+Promise = { wally = "howmanysmall/typed-promise", version = "^4.0.6" }
+TopbarPlus = { wally = "1foreverhd/topbarplus", version = "^3.3.1" }

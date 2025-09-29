@@ -1,0 +1,6 @@
+{
+  "lint": {
+    "*": false
+  },
+  "lintErrors": false
+}

@@ -3,5 +3,6 @@
 	"editor.detectIndentation": false,
 	"luau-lsp.fflags.enableNewSolver": true,
 	"luau-lsp.fflags.enableByDefault": true,
-	"stylua.targetReleaseVersion": "latest"
+	"stylua.targetReleaseVersion": "latest",
+	"luau-lsp.sourcemap.rojoProjectFile": "default.project.json"
 }
