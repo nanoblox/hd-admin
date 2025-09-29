@@ -8,22 +8,60 @@ To do:
 --]]
 
 --!strict
+-- CONFIG
+local DEFAULT_MAX_CHARACTERS = 100
+local TEXT_MAX_CHARACTERS = 420
+
+
 -- LOCAL
 local Args = {}
 local modules = script:FindFirstAncestor("MainModule").Value.Modules
 local controllers = modules.Parent.Controllers
-local Config = require(modules.Config)
 local InputObjects = require(controllers.UI.UI.Static.InputObjects)
 local Players = game:GetService("Players")
-local ParserUtility = require(modules.Parser.ParserUtility)
 local requiresUpdating = true
 local sortedNameAndAliasLengthArray = {}
 local lowerCaseDictionary = {}
-local executeForEachPlayerArgsDictionary = {}
 
 -- LOCAL FUNCTIONS
 local function register(item: ArgumentDetail): ArgumentDetail
 	return item :: ArgumentDetail -- We do this to support type checking within the table
+end
+local function newParse(callback: (...any) -> (...any)): (...any) -> (...any)
+	-- This verifies every string so that they are safe
+	return function(self, stringToParse, ...)
+		local maxCharacters = self.maxCharacters
+		stringToParse = Args.processStringToParse(stringToParse, maxCharacters)
+		return callback(self, stringToParse, ...)
+	end
+end
+local function processDeveloperArg(argumentDetail: ArgumentDetail)
+	-- This ensures that newParse, etc and all relevant properties are set for
+	-- the argumentDetail that is created by the developer
+	if typeof(argumentDetail) ~= "table" then
+		argumentDetail = {} :: ArgumentDetail
+	end
+	local parse = argumentDetail.parse
+	if typeof(parse) == "function" then
+		parse = newParse(parse :: any)
+	end
+	return argumentDetail
+end
+local function becomeArg(item: ArgumentDetail, toBecomeName: string)
+	local argToBecome = Args.items[toBecomeName]
+	local argNameCorrected = item.name
+	if not argToBecome then
+		error(`Args: {argNameCorrected} can not become alias because {toBecomeName} is not a valid argument`)
+	end
+	argToBecome = argToBecome :: any
+	item = item :: any
+	for k,v in argToBecome do
+		if not item[k] then
+			item[k] = v
+		end
+	end
+	item.mustCreateAliasOf = nil :: any
+	item.aliasOf = toBecomeName
 end
 
 -- FUNCTIONS
@@ -39,9 +77,6 @@ function Args.update()
 		local lowerCaseName = tostring(itemNameOrAlias):lower()
 		lowerCaseDictionary[lowerCaseName] = item
 		table.insert(sortedNameAndAliasLengthArray, tostring(itemNameOrAlias))
-		if item.playerArg and item.executeForEachPlayer then
-			executeForEachPlayerArgsDictionary[lowerCaseName] = true
-		end
 	end
 	table.sort(sortedNameAndAliasLengthArray, function(a: string, b: string): boolean
 		return #a > #b
@@ -59,34 +94,36 @@ function Args.getLowercaseDictionary()
 	return lowerCaseDictionary
 end
 
-function Args.getExecuteForEachPlayerArgsDictionary()
-	Args.update()
-	return executeForEachPlayerArgsDictionary
+function Args.processStringToParse(stringToParse: string?, maxCharacters: number?): string
+	-- This ensures the string is not abusive or malicious by capping its length,
+	-- and removing any nan/infinite/non-standard characters that could be abused
+	if typeof(stringToParse) ~= "string" then
+		return ""
+	end
+	local charLimit = if typeof(maxCharacters) == "number" and maxCharacters > 1 then maxCharacters else DEFAULT_MAX_CHARACTERS
+	if #stringToParse > charLimit then
+		stringToParse = string.sub(stringToParse, 1, charLimit)
+	end
+	local isNumberSafe = require(modules.VerifyUtil.isNumberSafe)
+	if tonumber(stringToParse) and not isNumberSafe(stringToParse) then
+		return "0"
+	end
+	return stringToParse
 end
 
-function Args.get(argName: Argument): ArgumentDetail?
+function Args.get(argName: Argument | ArgumentDetail): ArgumentDetail?
+	if typeof(argName) == "table" then
+		return argName :: ArgumentDetail
+	end
 	local argNameLower = tostring(argName):lower()
 	local ourDictionary = Args.getLowercaseDictionary()
 	local item = ourDictionary[argNameLower] :: ArgumentDetail?
 	if not item then
 		return nil
 	end
-	local argNameCorrected = item.name
-	local toBecomeName = item.mustBecomeAliasOf
+	local toBecomeName = item.mustCreateAliasOf
 	if toBecomeName then
-		local argToBecome = Args.items[toBecomeName]
-		if not argToBecome then
-			error(`Args: {argNameCorrected} can not become alias because {toBecomeName} is not a valid argument`)
-		end
-		argToBecome = argToBecome :: any
-		item = item :: any
-		for k, v in argToBecome do
-			if not item[k] then
-				item[k] = v
-			end
-		end
-		item.mustBecomeAliasOf = nil :: any
-		item.aliasOf = toBecomeName
+		becomeArg(item, toBecomeName)
 	end
 	return item :: ArgumentDetail
 end
@@ -97,31 +134,47 @@ function Args.getAll()
 		if not item.name then
 			item.name = argName :: any
 		end
-		Args.get(argName)
+		Args.get(argName :: any)
 	end
 	local items = Args.items :: { [Argument]: ArgumentDetail }
 	return items
 end
 
-function Args.becomeAliasOf(argName: Argument, initialTable: any?): ArgumentDetail
-	-- We don't actually create a mirror table here as the data of items will have
-	-- not yet gone into memory. Instead, we record the table as an alias, then
-	-- set it's data once .get is called or
+function Args.create(argumentDetail: ArgumentDetail)
+	local name = argumentDetail.name
+	processDeveloperArg(argumentDetail)
+	if name then
+		Args.items[name] = argumentDetail :: any
+	end
+	return argumentDetail
+end
+
+function Args.createAliasOf(argName: Argument, argumentDetail: ArgumentDetail?): ArgumentDetail
+	if typeof(argumentDetail) ~= "table" then
+		argumentDetail = {}
+	end
+	argumentDetail = argumentDetail :: ArgumentDetail
 	task.defer(function()
 		-- This servers as a warning as opposed to an actual error
+		-- to let the developer know they inputted an invalid argName
 		if not Args.items[argName] then
 			error(`Args: {argName} is not a valid argument`)
 		end
 	end)
-	if typeof(initialTable) ~= "table" then
-		initialTable = {}
+	if Args.items :: any then
+		processDeveloperArg(argumentDetail)
+		becomeArg(argumentDetail, argName)
+	else
+		-- We don't actually create a mirror table here as the data of items will have
+		-- not yet gone into memory. Instead, we record the table as an alias, then
+		-- set it's data once .get is called or 
+		argumentDetail.mustCreateAliasOf = argName
 	end
-	initialTable.mustBecomeAliasOf = argName
-	return initialTable
+	return argumentDetail
 end
 
 -- PUBLIC
-Args.items = {
+local items = {
 
 	["Player"] = register({
 		inputObject = {
@@ -132,9 +185,12 @@ Args.items = {
 		description = "Accepts qualifiers (e.g. 'raza', '@ForeverHD', 'others' from ';paint raza,@ForeverHD,others'), calls the command *for each player*, and returns a single Player instance.",
 		playerArg = true,
 		executeForEachPlayer = true,
-		stringify = function(self, original) end,
-		parse = function(self, qualifiers, callerUserId, additional: any)
-			local defaultToMe = qualifiers == nil or ParserUtility.isQualifiersEmpty(qualifiers)
+		stringify = function(self, original)
+
+		end,
+		parse = function(self, qualifiers: any, callerUserId, additional: any)
+			local ParserUtility = require(modules.Parser.ParserUtility)
+			local defaultToMe = qualifiers == nil or ParserUtility.isQualifiersEmpty(qualifiers :: any)
 			local ignoreDefault = (additional and additional.ignoreDefault)
 			if defaultToMe and not ignoreDefault then
 				local players: { Player } = {}
@@ -155,7 +211,11 @@ Args.items = {
 				local targets
 				if not qualifierDetail then
 					qualifierDetail = Qualifiers.get("Default")
-					targets = qualifierDetail.getTargets(callerUserId, qualifierName)
+					if qualifierDetail then
+						targets = qualifierDetail.getTargets(callerUserId, qualifierName)
+					else
+						targets = {}
+					end	
 				else
 					targets = qualifierDetail.getTargets(callerUserId, unpack(qualifierArgs :: any))
 				end
@@ -184,34 +244,31 @@ Args.items = {
 		playerArg = true,
 		executeForEachPlayer = false,
 		parse = function(self, qualifiers, callerUserId)
+			local ParserUtility = require(modules.Parser.ParserUtility)
 			if ParserUtility.isQualifiersEmpty(qualifiers) then
 				return nil
 			end
-			local argPlayer = Args.get("Player")
-			local players = if argPlayer
-				then argPlayer:parse(qualifiers, callerUserId, { ignoreDefault = true })
-				else {}
+			local argPlayer = Args.get("Player" :: any)
+			local players = if argPlayer then argPlayer:parse(qualifiers, callerUserId, {ignoreDefault = true}) else {}
 			return players
 		end,
 	}),
 
-	["TargetPlayer"] = register({
+	["SinglePlayer"] = register({
 		inputObject = {
 			inputType = "ItemSelector",
 			pickerName = "Players",
 			getPickerItemsFromServerPlayers = true,
 			onlySelectOne = true,
 		},
-		description = "Accepts qualifiers (e.g. 'raza', '@ForeverHD', 'others' from ';paint raza,@ForeverHD,others') and returns a single Player instance (or false).",
+		description = "Accepts qualifiers (e.g. 'raza', '@ForeverHD', 'others' from ';paint raza,@ForeverHD,others') and returns a single Player instance (or nil).",
 		defaultValue = false,
 		playerArg = true,
 		executeForEachPlayer = true,
 		parse = function(self, qualifiers, callerUserId)
-			local argPlayer = Args.get("Player")
-			local players = if argPlayer
-				then argPlayer:parse(qualifiers, callerUserId, { ignoreDefault = true })
-				else {}
-			return players[1]
+			local argPlayer = Args.get("Player" :: any)
+			local players = if argPlayer then argPlayer:parse(qualifiers, callerUserId, {ignoreDefault = true}) else {}
+			return {players[1]} -- We return as an array as executeForEachPlayer is true
 		end,
 	}),
 
@@ -221,18 +278,19 @@ Args.items = {
 			pickerName = "Players",
 			getPickerItemsFromServerPlayers = true,
 		},
-		description = "Hides the players argument for general use and only displays it within the preview menu.",
+		description = "Hides the players argument for general use and only displays it within the preview menu. If no player specified, defaults to everyone. This is useful for message commands. For example, you can do ;m others Hello World, AND ;m Hello World",
 		playerArg = true,
 		hidden = true,
 		executeForEachPlayer = true,
 		parse = function(self, qualifiers, callerUserId)
-			--[[
-			local defaultToAll = qualifiers == nil or main.modules.TableUtil.isEmpty(qualifiers)
+			local isTableEmpty = require(modules.TableUtil.isTableEmpty)
+			local defaultToAll = qualifiers == nil or isTableEmpty(qualifiers)
 			if defaultToAll then
 				return Players:GetPlayers()
 			end
-			return main.modules.Parser.Args.get("Player"):parse(qualifiers, callerUserId)
-			]]
+			local argPlayer = Args.get("Player" :: any)
+			local players = if argPlayer then argPlayer:parse(qualifiers, callerUserId, {ignoreDefault = true}) else {}
+			return players
 		end,
 	}),
 
@@ -248,10 +306,9 @@ Args.items = {
 		hidden = true,
 		executeForEachPlayer = false,
 		parse = function(self, qualifiers, callerUserId)
-			--[[
-			local players = main.modules.Parser.Args.get("OptionalPlayer"):parse(qualifiers, callerUserId)
+			local argPlayer = Args.get("OptionalPlayer" :: any)
+			local players = if argPlayer then argPlayer:parse(qualifiers, callerUserId) else {}
 			return players
-			--]]
 		end,
 	}),
 
@@ -267,7 +324,7 @@ Args.items = {
 		displayName = "userNameOrId",
 		description = "Accepts an @userName, displayName, userId or qualifier and returns a userId.",
 		defaultValue = false,
-		parse = function(self, stringToParse, callerUserId)
+		parse = newParse(function(self, stringToParse, callerUserId)
 			--[[
 			local callerUser = main.modules.PlayerStore:getUserByUserId(callerUserId)
 			local playersInServer = Args.get("Player"):parse({[stringToParse] = {}}, callerUserId) --ParserUtility.getPlayersFromString(stringToParse, callerUser)
@@ -288,7 +345,7 @@ Args.items = {
 				return finalUserId
 			end
 			--]]
-		end,
+		end),
 	}),
 
 	["Roles"] = register({
@@ -312,14 +369,44 @@ Args.items = {
 		description = "Accepts a string and filters it based upon the caller and target.",
 		defaultValue = "",
 		endlessArg = true,
-		parse = function(self, textToFilter, callerUserId, playerUserId)
-			--[[
-			local _, value = main.modules.ChatUtil.filterText(callerUserId, playerUserId, textToFilter):await()
-			return value
-			--]]
-		end,
+		maxCharacters = TEXT_MAX_CHARACTERS,
+		parse = newParse(function(self, textToFilter, callerUserId, targetUserId: number?)
+			local TextService = game:GetService("TextService")
+			local success, result = pcall(function()
+				return TextService:FilterStringAsync(textToFilter, callerUserId)
+			end)
+			if not success then
+				return "###"
+			end
+			local broadcastFiltered: string? = nil
+			local function filterForBroadcast()
+				if broadcastFiltered then
+					return broadcastFiltered
+				end
+				local success2, filteredText = pcall(function()
+					return result:GetNonChatStringForBroadcastAsync()
+				end)
+				if not success2 then
+					return "#####"
+				end
+				broadcastFiltered = filteredText
+				return filteredText
+			end
+			if not targetUserId then
+				return filterForBroadcast()
+			end
+			local success2, filteredText = pcall(function()
+				return result:GetNonChatStringForUserAsync(targetUserId)
+			end)
+			if not success2 then
+				return filterForBroadcast()
+			end
+			return filteredText
+		end),
 	}),
 
+	["String"] = Args.createAliasOf("Text"),
+	
 	["SingleText"] = register({
 		inputObject = {
 			inputType = "TextInput",
@@ -329,9 +416,9 @@ Args.items = {
 		description = "Accepts a non-endless string (i.e. a string with no whitespace gaps) and filters it based upon the caller and target.",
 		defaultValue = "",
 		endlessArg = false,
-		parse = function(...)
-			--return Args.get("Text").parse(...)
-		end,
+		parse = newParse(function(self, textToFilter)
+			return textToFilter
+		end),
 	}),
 
 	["UnfilteredText"] = register({
@@ -342,12 +429,13 @@ Args.items = {
 		description = "Accepts a string and returns it unfiltered.",
 		defaultValue = "",
 		endlessArg = true,
-		parse = function(self, stringToParse)
+		maxCharacters = TEXT_MAX_CHARACTERS,
+		parse = newParse(function(self, stringToParse)
 			return stringToParse
-		end,
+		end),
 	}),
 
-	["Code"] = Args.becomeAliasOf("UnfilteredText"),
+	["Code"] = Args.createAliasOf("UnfilteredText"),
 
 	["Number"] = register({
 		inputObject = {
@@ -355,37 +443,35 @@ Args.items = {
 		},
 		description = "Accepts a number string and returns a Number",
 		defaultValue = 0,
-		parse = function(self, stringToParse)
+		parse = newParse(function(self, stringToParse)
+			-- The stringToParse is already filtered of dangerous numbers thanks to
+			-- Args.processStringToParse, so we don't need to worry about size limits
+			-- or NaN/Inf values here
 			return tonumber(stringToParse)
-		end,
+		end),
 	}),
 
-	["Integer"] = Args.becomeAliasOf(
-		"Number",
-		register({
-			inputObject = {
-				inputType = "NumberInput",
-				stepAmount = 1,
-			},
-		})
-	),
+	["Integer"] = Args.createAliasOf("Number", register({
+		inputObject = {
+			inputType = "NumberInput",
+			stepAmount = 1,
+		},
+	})),
 
-	["Scale"] = Args.becomeAliasOf(
-		"Number",
-		register({
-			inputObject = {
-				inputType = "NumberInput",
-				minValue = 0,
-				maxValue = 5,
-			},
-			description = "Accepts a number and returns a number which is considerate of scale limits.",
-			defaultValue = 1,
-			parse = function(self, stringToParse)
-				--local scaleValue = tonumber(stringToParse)
-				--return scaleValue
-			end,
-			verifyCanUse = function(self, callerUser, valueToParse)
-				--[[
+	["Scale"] = Args.createAliasOf("Number", register({
+		inputObject = {
+			inputType = "NumberInput",
+			minValue = 0,
+			maxValue = 5,
+		},
+		description = "Accepts a number and returns a number which is considerate of scale limits.",
+		defaultValue = 1,
+		parse = newParse(function(self, stringToParse)
+			--local scaleValue = tonumber(stringToParse)
+			--return scaleValue
+		end),
+		verifyCanUse = function(self, callerUser, valueToParse)
+			--[[
 			-- Check valid number
 			local scaleValue = tonumber(valueToParse)
 			if not scaleValue then
@@ -405,31 +491,25 @@ Args.items = {
 		})
 	),
 
-	["Speed"] = Args.becomeAliasOf(
-		"Number",
-		register({
-			inputObject = {
-				inputType = "NumberSlider",
-				minValue = 0,
-				maxValue = 100,
-				stepAmount = 1,
-			},
-			defaultValue = 1,
-		})
-	),
+	["Speed"] = Args.createAliasOf("Number", register({
+		inputObject = {
+			inputType = "NumberSlider",
+			minValue = 0,
+			maxValue = 100,
+			stepAmount = 1
+		},
+		defaultValue = 1,
+	})),
 
-	["AnimationSpeed"] = Args.becomeAliasOf(
-		"Number",
-		register({
-			inputObject = {
-				inputType = "NumberSlider",
-				minValue = 0,
-				maxValue = 5,
-				stepAmount = 0.1,
-			},
-			defaultValue = 1,
-		})
-	),
+	["AnimationSpeed"] = Args.createAliasOf("Number", register({
+		inputObject = {
+			inputType = "NumberSlider",
+			minValue = 0,
+			maxValue = 5,
+			stepAmount = 0.1
+		},
+		defaultValue = 1,
+	})),
 
 	["Degrees"] = register({
 		inputObject = {
@@ -441,13 +521,13 @@ Args.items = {
 		description = "Accepts a number and returns a value between 0 and 360.",
 		defaultValue = 0,
 		--[[
-		parse = function(self, stringToParse): number?
+		parse = newParse(function(self, stringToParse): number?
 			local number = tonumber(stringToParse)
 			if number then
 				return number % 360
 			end
 			return nil
-		end,
+		end),
 		--]]
 	}),
 
@@ -457,9 +537,9 @@ Args.items = {
 		},
 		description = "Accepts a timestring (such as '5s7d8h') and returns the integer equivalent in seconds. Timestring letters are: seconds(s), minutes(m), hours(h), days(d), weeks(w), months(o) and years(y).",
 		defaultValue = 0,
-		parse = function(self, stringToParse)
+		parse = newParse(function(self, stringToParse)
 			--return main.modules.DataUtil.convertTimeStringToSeconds(tostring(stringToParse))
-		end,
+		end),
 	}),
 
 	["Color"] = register({
@@ -468,7 +548,7 @@ Args.items = {
 		},
 		description = "Accepts a color name (such as 'red'), a hex code (such as '#FF0000') or an RGB capsule (such as '[255,0,0]') and returns a Color3.",
 		defaultValue = false,
-		parse = function(self, stringToParse)
+		parse = newParse(function(self, stringToParse)
 			--[[
 			-- This checks for a predefined color term within SystemSettings.colors, such as 'blue', 'red', etc
 			local lowerCaseColors = main.services.SettingService.getLowerCaseColors()
@@ -496,21 +576,18 @@ Args.items = {
 				end
 			end
 			--]]
-		end,
+		end),
 	}),
 
-	["Colour"] = Args.becomeAliasOf("Color"),
+	["Colour"] = Args.createAliasOf("Color"),
 
-	["Gradient"] = Args.becomeAliasOf("Color"),
+	["Gradient"] = Args.createAliasOf("Color"),
 
-	["OptionalColor"] = Args.becomeAliasOf(
-		"Color",
-		register({
-			description = "Accepts a color name (such as 'red'), a hex code (such as '#FF0000') or an RGB capsule (such as '[255,0,0]') and returns a Color3.",
-			defaultValue = Color3.fromRGB(255, 255, 255),
-			hidden = true,
-		})
-	),
+	["OptionalColor"] = Args.createAliasOf("Color", register({
+		description = "Accepts a color name (such as 'red'), a hex code (such as '#FF0000') or an RGB capsule (such as '[255,0,0]') and returns a Color3.",
+		defaultValue = Color3.fromRGB(255, 255, 255),
+		hidden = true,
+	})),
 
 	["Bool"] = register({
 		inputObject = {
@@ -518,7 +595,7 @@ Args.items = {
 		},
 		description = "Accepts 'true', 'false', 'yes', 'y', 'no' or 'n' and returns a boolean.",
 		defaultValue = false,
-		parse = function(self, stringToParse)
+		parse = newParse(function(self, stringToParse)
 			--[[
 			local trueStrings = {
 				["true"] = true,
@@ -536,10 +613,10 @@ Args.items = {
 				return false
 			end
 			--]]
-		end,
+		end),
 	}),
 
-	["Toggle"] = Args.becomeAliasOf("Bool"),
+	["Toggle"] = Args.createAliasOf("Bool"),
 
 	["Options"] = register({
 		inputObject = {
@@ -548,28 +625,24 @@ Args.items = {
 		},
 		description = "Accepts any value within the optionsArray and returns the value.",
 		defaultValue = false,
-		parse = function(self, stringToParse) end,
+		parse = newParse(function(self, stringToParse)
+			
+		end),
 	}),
 
-	["ServersOptions"] = Args.becomeAliasOf(
-		"Options",
-		register({
-			inputObject = {
-				inputType = "Options",
-				optionsArray = { "Current", "All" },
-			},
-		})
-	),
+	["ServersOptions"] = Args.createAliasOf("Options", register({
+		inputObject = {
+			inputType = "Options",
+			optionsArray = {"Current", "All"}
+		},
+	})),
 
-	["BanLengthOptions"] = Args.becomeAliasOf(
-		"Options",
-		register({
-			inputObject = {
-				inputType = "Options",
-				optionsArray = { "∞", "Time" },
-			},
-		})
-	),
+	["BanLengthOptions"] = Args.createAliasOf("Options", register({
+		inputObject = {
+			inputType = "Options",
+			optionsArray = {"∞", "Time"}
+		},
+	})),
 
 	["Leaderstat"] = register({
 		-- Accepts the names of stats within the player's leaderstats:
@@ -586,13 +659,13 @@ Args.items = {
 		},
 		description = "Accepts a valid stat name and returns the stat (defined in Server/Modules/StatHandler). This requires the 'player' arg as the first argument to work.",
 		defaultValue = false,
-		parse = function(self, stringToParse, _, playerUserId)
+		parse = newParse(function(self, stringToParse, _, targetUserId)
 			--[[
-			local targetPlayer = Players:GetPlayerByUserId(playerUserId)
+			local targetPlayer = Players:GetPlayerByUserId(targetUserId)
 			local stat = (targetPlayer and main.modules.StatHandler.get(targetPlayer, stringToParse))
 			return stat
 			--]]
-		end,
+		end),
 	}),
 
 	["Team"] = register({
@@ -608,7 +681,7 @@ Args.items = {
 		displayName = "TeamName",
 		description = "Accepts a valid team name and returns the team instance.",
 		defaultValue = false,
-		parse = function(self, stringToParse)
+		parse = newParse(function(self, stringToParse)
 			--[[
 			local stringToParseLower = string.lower(stringToParse)
 			if string.len(stringToParseLower) > 0 then
@@ -620,7 +693,7 @@ Args.items = {
 				end
 			end
 			--]]
-		end,
+		end),
 	}),
 
 	["Material"] = register({
@@ -635,14 +708,14 @@ Args.items = {
 		},
 		description = "Accepts a valid material and returns a Material enum.",
 		defaultValue = false,
-		parse = function(self, stringToParse)
+		parse = newParse(function(self, stringToParse)
 			--[[
 			local enumItem = materialEnumNamesLowercase[stringToParse:lower()]
 			if enumItem then
 				return enumItem
 			end
 			--]]
-		end,
+		end),
 	}),
 
 	["Gear"] = register({
@@ -653,7 +726,7 @@ Args.items = {
 		description = "Accepts a gearId (aka a CatalogId) and returns the Tool instance if valid. Do not use the returned Tool instance, clone it instead.",
 		defaultValue = false,
 		--[[
-		parse = function(self, stringToParse)
+		parse = newParse(function(self, stringToParse)
 			local storageDetail = Args.getStorage(self.name)
 			local cachedItem = storageDetail:get(stringToParse)
 			if cachedItem then
@@ -669,7 +742,7 @@ Args.items = {
 			end
 			model:Destroy()
 			return tool
-		end,
+		end),
 		verifyCanUse = function(self, callerUser, valueToParse)
 			-- Check if valid string
 			local stringToParse = tostring(valueToParse)
@@ -701,14 +774,14 @@ Args.items = {
 		description = "Accepts a bundleId and returns a HumanoidDescription associated with that bundle.",
 		defaultValue = false,
 		--[[
-		parse = function(self, stringToParse, _, playerUserId)
-			local humanoid = main.modules.PlayerUtil.getHumanoid(playerUserId)
+		parse = newParse(function(self, stringToParse, _, targetUserId)
+			local humanoid = main.modules.PlayerUtil.getHumanoid(targetUserId)
 			local success, description = main.modules.MorphUtil.getDescriptionFromBundleId(stringToParse, humanoid):await()
 			if not success then
 				return
 			end
 			return description
-		end,
+		end),
 		verifyCanUse = function(self, callerUser, valueToParse)
 			-- Check if valid string
 			local stringToParse = tostring(valueToParse)
@@ -739,8 +812,8 @@ Args.items = {
 		description = "Accepts an @userName, displayName or userId and returns a HumanoidDescription.",
 		defaultValue = false,
 		--[[
-		parse = function(self, stringToParse, callerUserId, playerUserId)
-			local userId = Args.get("userId").parse(self, stringToParse, callerUserId, playerUserId)
+		parse = newParse(function(self, stringToParse, callerUserId, targetUserId)
+			local userId = Args.get("userId").parse(self, stringToParse, callerUserId, targetUserId)
 			if not userId then
 				return
 			end
@@ -756,7 +829,7 @@ Args.items = {
 				return
 			end
 			return description
-		end,
+		end),
 		verifyCanUse = function(self, callerUser, valueToParse, additional)
 			if additional and tostring(additional.argNameOrAlias):lower() == "userdescriptionwithoutverification" then
 				return true
@@ -780,19 +853,25 @@ Args.items = {
 			maxItems = 10,
 		},
 	}),
-} :: { [string]: ArgumentDetail }
+
+}
+Args.items = items
+
 
 -- TYPES
-export type Argument = keyof<typeof(Args.items)>
+export type Argument = keyof<typeof(items)>
 export type ArgumentDetail = {
 	inputObject: InputObjects.InputConfig?,
-	mustBecomeAliasOf: string?,
+	mustCreateAliasOf: string?,
 	aliasOf: string?,
 	description: string?,
 	playerArg: boolean?,
 	executeForEachPlayer: boolean?,
-	parse: any, --((...any) -> (...any))?,
-	name: string?,
+	parse: any?, --((...any) -> (...any))?,
+	name: string?, -- Used for Arg.get(name)
+	displayName: string?, -- The actual name shown within the UI, defaults to name
+	defaultValue: any?,
+	maxCharacters: number?,
 }
 
 return Args

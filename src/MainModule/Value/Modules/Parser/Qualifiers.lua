@@ -67,21 +67,21 @@ function Qualifiers.get(qualifierName: Qualifier): QualifierDetail?
 		return nil
 	end
 	local qualifierNameCorrected = item.name
-	if item.mustBecomeAliasOf then
-		local toBecomeName = item.mustBecomeAliasOf
-		local qualifierToBecome = Qualifiers.items[toBecomeName]
-		if not qualifierToBecome then
-			error(`Qualifiers: {qualifierNameCorrected} can not become alias because {toBecomeName} is not a valid qualifier`)
+	if item.mustCreateAliasOf then
+		local toCreateName = item.mustCreateAliasOf
+		local qualifierToCreate = Qualifiers.items[toCreateName]
+		if not qualifierToCreate then
+			error(`Qualifiers: {qualifierNameCorrected} can not create alias because {toCreateName} is not a valid qualifier`)
 		end
-		qualifierToBecome = qualifierToBecome :: any
-		for k,v in qualifierToBecome do
+		qualifierToCreate = qualifierToCreate :: any
+		for k,v in qualifierToCreate do
 			item = item :: any
 			if not item[k] then
 				item[k] = v
 			end
 		end
-		item.mustBecomeAliasOf = nil :: any
-		item.aliasOf = toBecomeName
+		item.mustCreateAliasOf = nil :: any
+		item.aliasOf = toCreateName
 	end
 	return item :: QualifierDetail
 end
@@ -98,7 +98,7 @@ function Qualifiers.getAll()
 	return items
 end
 
-function Qualifiers.becomeAliasOf(qualifierName: Qualifier, initialTable: any?)
+function Qualifiers.createAliasOf(qualifierName: Qualifier, initialTable: any?)
 	-- We don't actually create a mirror table here as the data of items will have
 	-- not yet gone into memory. Instead, we record the table as an alias, then
 	-- set it's data once .get is called or 
@@ -111,7 +111,7 @@ function Qualifiers.becomeAliasOf(qualifierName: Qualifier, initialTable: any?)
 	if typeof(initialTable) ~= "table" then
 		initialTable = {}
 	end
-	initialTable.mustBecomeAliasOf = qualifierName
+	initialTable.mustCreateAliasOf = qualifierName
 	return initialTable
 end
 
@@ -341,7 +341,7 @@ Qualifiers.items = {
 		end,
 	}),
 
-	["Admins"] = Qualifiers.becomeAliasOf("Staff"),
+	["Admins"] = Qualifiers.createAliasOf("Staff"),
 	
 	["NonStaff"] = register({
 		description = "Selects all player's who are not staff",
@@ -358,7 +358,7 @@ Qualifiers.items = {
 		end,
 	}),
 
-	["NonAdmins"] = Qualifiers.becomeAliasOf("NonStaff"),
+	["NonAdmins"] = Qualifiers.createAliasOf("NonStaff"),
 
 	["Premium"] = register({
 		description = "Players with Roblox Premium membership",
@@ -385,7 +385,7 @@ Qualifiers.items = {
 			return targets
 		end,
 	}),
-		--]]
+	
 }
 
 
@@ -396,7 +396,7 @@ export type QualifierDetail = {
 	getTargets: any, --(callerUserId: number?, stringToParse: string?, useDisplayName: boolean?) -> {Player},
 	aliases: {[Qualifier]: boolean}?,
 	isHidden: boolean?, -- Does this appear within the Commands Preview menu?
-	mustBecomeAliasOf: any?,
+	mustCreateAliasOf: any?,
 	aliasOf: any?,
 	name: any?,
 }

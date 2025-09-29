@@ -128,7 +128,7 @@ function User.getUsers(canBeUnloaded: boolean?): {Class}
 end
 
 function User._getSavesThisMinute(dataTable, andIncrement)
-	local nextRefreshTime = dataTable._nextRefreshTime
+	local nextRefreshTime = dataTable._nextRefreshTime :: number?
 	local timeNow = os.time()
 	if nextRefreshTime == nil or timeNow >= nextRefreshTime then
 		nextRefreshTime = timeNow + 60
@@ -249,7 +249,7 @@ function User._loadAndAutoSaveData(self: Class, dataStoreName: string)
 	}
 	if player and typeof(player) == "Instance" and player:IsA("Player") then
 		local function getPathwaysToLimitTo(dataType)
-			local limiters: {{string}} = {}
+			local limiters: {any} = {}
 			for _, detail in template do
 				detail = detail :: {any}
 				local items = detail[3]
@@ -266,7 +266,7 @@ function User._loadAndAutoSaveData(self: Class, dataStoreName: string)
 					end
 				end
 			end
-			return limiters
+			return limiters :: {{string}}
 		end
 		local permLimiters = getPathwaysToLimitTo("perm")
 		local tempLimiters = getPathwaysToLimitTo("temp")

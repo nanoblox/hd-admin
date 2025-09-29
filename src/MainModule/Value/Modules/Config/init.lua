@@ -30,6 +30,7 @@ function Config.getSetting(settingName: Setting, optionalUser: User.Class?, forc
 	if value ~= nil or forcedSettingType == "Player" then
 		return value
 	end
+	--!!! once SystemUser is fully implemented, also check here first before default settings
 	return configSettings.SystemSettings[settingName]
 end
 

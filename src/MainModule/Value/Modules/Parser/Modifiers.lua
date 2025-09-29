@@ -22,6 +22,9 @@ local modules = script:FindFirstAncestor("MainModule").Value.Modules
 local services = modules.Parent.Services
 local Modifiers = {}
 local Players = game:GetService("Players")
+local Args = require(script.Parent.Args)
+local forEveryCommand = require(script.Parent.Parent.CommandUtil.forEveryCommand)
+local ParserTypes = require(modules.Parser.ParserTypes)
 local User = require(modules.Objects.User)
 local requiresUpdating = true
 local sortedNameAndAliasLengthArray = {}
@@ -72,21 +75,21 @@ function Modifiers.get(modifierName: Modifier): ModifierDetail?
 		return nil
 	end
 	local modifierNameCorrected = item.name
-	if item.mustBecomeAliasOf then
-		local toBecomeName = item.mustBecomeAliasOf
-		local qualifierToBecome = Modifiers.items[toBecomeName]
-		if not qualifierToBecome then
-			error(`Modifiers: {modifierNameCorrected} can not become alias because {toBecomeName} is not a valid qualifier`)
+	if item.mustCreateAliasOf then
+		local toCreateName = item.mustCreateAliasOf
+		local qualifierToCreate = Modifiers.items[toCreateName]
+		if not qualifierToCreate then
+			error(`Modifiers: {modifierNameCorrected} can not create alias because {toCreateName} is not a valid qualifier`)
 		end
-		qualifierToBecome = qualifierToBecome :: any
-		for k,v in qualifierToBecome do
+		qualifierToCreate = qualifierToCreate :: any
+		for k,v in qualifierToCreate do
 			item = item :: any
 			if not item[k] then
 				item[k] = v
 			end
 		end
-		item.mustBecomeAliasOf = nil :: any
-		item.aliasOf = toBecomeName
+		item.mustCreateAliasOf = nil :: any
+		item.aliasOf = toCreateName
 	end
 	return item :: ModifierDetail
 end
@@ -103,7 +106,7 @@ function Modifiers.getAll()
 	return items :: {[string]: ModifierDetail} --:: {[Modifier]: ModifierDetail}
 end
 
-function Modifiers.becomeAliasOf(modifierName: Modifier, initialTable: any?)
+function Modifiers.createAliasOf(modifierName: Modifier, initialTable: any?)
 	-- We don't actually create a mirror table here as the data of items will have
 	-- not yet gone into memory. Instead, we record the table as an alias, then
 	-- set it's data once .get is called or 
@@ -116,7 +119,7 @@ function Modifiers.becomeAliasOf(modifierName: Modifier, initialTable: any?)
 	if typeof(initialTable) ~= "table" then
 		initialTable = {}
 	end
-	initialTable.mustBecomeAliasOf = modifierName
+	initialTable.mustCreateAliasOf = modifierName
 	return initialTable
 end
 
@@ -126,7 +129,7 @@ Modifiers.items = {
 	
 	["Preview"] = register({
 		description = "Displays a menu that previews the command instead of executing it.",
-		preAction = function(callerUserId, statement)
+		preAction = function(callerUserId: number, statement: Statement)
 			local caller = Players:GetPlayerByUserId(callerUserId)
 			if caller then
 				--!!! Have remote fire to player to open preview menu
@@ -169,7 +172,7 @@ Modifiers.items = {
 
 	["Global"] = register({
 		description = "Broadcasts the task to all servers.",
-		preAction = function(callerUserId, statement)
+		preAction = function(callerUserId: number, statement: Statement)
 			--!! Complete this later
 			--[[
 			local CommandService = main.services.CommandService
@@ -177,39 +180,45 @@ Modifiers.items = {
 			local oldGlobal = modifiers.global
 			modifiers.global = nil
 			modifiers.wasGlobal = oldGlobal
-			CommandService.executeStatementGloballySender:fireAllServers(callerUserId, statement)
+			CommandService.executeStatementGloballySender:fireAllServers(callerUserId: number, statement: Statement)
 			--]]
 			return false
 		end,
 	}),
 
 	["Undo"] = register({
-		description = "Revokes all Tasks that match the given command name(s) (and associated player targets if specified). To revoke a task across all servers, the 'global' modifier must be included.",
-		preAction = function(callerUserId, statement)
+		description = "Ends all Tasks that match the given command name(s). To end a task across all servers, the 'global' modifier must be included.",
+		preAction = function(callerUserId: number, statement: Statement)
 			local Commands = require(services.Commands)
-			for commandName, _ in pairs(statement.commands) do
-				local command = Commands.getCommand(commandName :: string)
-				--!!! Top priority itemt to complete later
-				--[[
-				if command then
-					local firstCommandArg = command.args[1]
-					local firstArgItem = Modifiers.get(firstCommandArg)
-					if firstArgItem.playerArg and firstArgItem.executeForEachPlayer then
-						local targets = Modifiers.get("player"):parse(statement.qualifiers, callerUserId)
-						for _, plr in pairs(targets) do
-							main.services.TaskService.removeTasksWithCommandNameAndPlayerUserId(commandName, plr.UserId)
-						end
-					else
-						main.services.TaskService.removeTasksWithCommandName(commandName)
+			for commandName, _ in statement.commands do
+				local command = Commands.getCommand(commandName)
+				if not command then
+					continue
+				end
+				local firstCommandArg = command.args[1]
+				local firstArgItem = Args.get(firstCommandArg :: any)
+				local function endTasks(playerUserId: number?)
+					local Task = require(modules.Objects.Task)
+					local runningTasks = Task.getTasks(commandName, playerUserId)
+					for _, task in runningTasks do
+						task:destroy()
 					end
 				end
-				]]
+				if firstArgItem and firstArgItem.playerArg and firstArgItem.executeForEachPlayer then
+					local playerArg = Args.get("Player")
+					local targets = (playerArg and playerArg:parse(statement.qualifiers, callerUserId)) or {}
+					for _, plr in targets do
+						endTasks(plr.UserId)
+					end
+				else
+					endTasks()
+				end
 			end
 			return false
 		end,
 	}),
 
-	["Un"] = Modifiers.becomeAliasOf("Undo"),
+	["Un"] = Modifiers.createAliasOf("Undo"),
 
 	["Epoch"] = register({
 		description = "Waits until the given epoch time before executing. If the epoch time has already passed, the command will be executed right away. Combine with 'global' and 'perm' for a permanent game effect. Example: ``;globalPermEpoch(3124224000)message(green) Happy new year!``",
@@ -313,18 +322,19 @@ Modifiers.items = {
 		end,
 	}),
 
-	["Until"] = Modifiers.becomeAliasOf("Expire"),
+	["Until"] = Modifiers.createAliasOf("Expire"),
 
 }
 
 
 -- TYPES
+type Statement = ParserTypes.ParsedStatement
 export type Modifier = keyof<typeof(Modifiers.items)>
 export type ModifierDetail = {
 	description: string,
 	aliases: {[Modifier]: boolean}?,
 	name: string?,
-	mustBecomeAliasOf: any?,
+	mustCreateAliasOf: any?,
 	aliasOf: string?,
 }
 

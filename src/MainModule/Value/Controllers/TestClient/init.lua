@@ -10,14 +10,16 @@ local TestController = {}
 -- Test stuff
 --[[
 local clientUser = require(modules.References.clientUser)
-clientUser.perm:observe("Cash", function(value)
-	print("CASH (on client) =", value)
+local someData = clientUser.perm:fetchAsync("SomeSavedTable", "SomeDataInThatTable")
+clientUser.perm:observe("Rank", function(value)
+	print("Rank =", value)
 end)
-clientUser.everyone:observe("Test", function(value)
-	print("SERVER TIME (on client) =", value)
+clientUser.everyone:observe("TotalPlayers", function(value)
+	print("TotalPlayers =", value)
 end)
 --]]
 
+local Icon = require(modules.Objects.Icon)
 local icon = Icon.new()
 
 icon:setLabel("Test v2")

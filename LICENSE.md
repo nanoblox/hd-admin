@@ -70,5 +70,5 @@ THIS SOFTWARE IS PROVIDED "AS IS," WITHOUT WARRANTY OF ANY KIND. THE LICENSOR IS
 
 -----
 
-### Contact Creator
-Are you interested in modifying the Core Package in a large public experience? Contact the creator directly by joining the [HD Admin Community Server](https://discord.gg/MkSVp9Gusu) and send a friend request to ``foreverhd``.
+### Modify Core Package
+Are you interested in modifying the Core Package in a large public experience? Contact us directly by joining the [HD Admin Community Server](https://discord.gg/MkSVp9Gusu) and [opening a Private Inquiry ticket](https://discord.com/channels/372523042275852288/1384583439235420191).

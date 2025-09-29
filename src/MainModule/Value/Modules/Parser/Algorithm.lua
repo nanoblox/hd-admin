@@ -111,6 +111,7 @@ function Algorithm.parseQualifierDescription(qualifierDescription)
 	local qualifierDictionary = Qualifiers.getLowercaseDictionary()
 	for _, match in pairs(qualifiers) do
 		if match ~= "" then
+			match = match :: any
 			if not qualifierDictionary[match:lower()] then
 				table.insert(unrecognizedQualifiers, match)
 			end

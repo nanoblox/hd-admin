@@ -1,0 +1,17 @@
+[package]
+name = "nanoblox/hd-admin"
+version = "2.0.0"
+registry = "https://github.com/UpliftGames/wally-index"
+realm = "shared"
+
+[dependencies]
+Janitor = "1foreverhd/janitor@1.18.12" 
+TopbarPlus = "1foreverhd/topbarplus@3.4.0"
+Fusion = "elttob/fusion@0.3.0"
+OnyxUI = "imavafe/onyx-ui@1.0.1"
+Bootloader = "imavafe/bootloader@0.1.0"
+Sift = "csqrl/sift@0.0.11"
+Stator = "imavafe/stator@0.1.2"
+ColorUtils = "csqrl/colour-utils@^1.4.1"
+Future = "red-blox/future@^1.0.1"
+Signal = "sleitnick/signal@^2.0.1"

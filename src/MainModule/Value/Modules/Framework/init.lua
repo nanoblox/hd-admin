@@ -9,10 +9,10 @@
 
 	Framework Overview:
 	- Services and Controllers are initialized instantly on start, whereas Modules are loaded on demand.
-	- By default, everything under MainModule is categorized as "Shared" and accessible across both the
+	- By default, everything under MainModule is categorized as "Client" and accessible across both the
 	  client and server.
 	- If a "Server" tag is applied to an instance, all its descendants are moved to the server environment, 
-	  unless a descendant instance is tagged as "Shared". In such cases, everything below the "Shared" tag 
+	  unless a descendant instance is tagged as "Client". In such cases, everything below the "Client" tag 
 	  reverts to being shared between the client and server.
 	- Server instances (such as scripts and data) are moved before initialization, so are never
 	  accessible or replicated to the client.
@@ -27,11 +27,31 @@ local hasStarted = false
 local sharedMainModule = script:FindFirstAncestor("MainModule")
 local sharedValue = sharedMainModule.Value
 
+local function convertViewportToFolder(instance: Instance?)
+	-- We use ViewportFrames initially as containers as they 'hide' descendant
+	-- instances when HD Admin is stored in Workspace. This is desirable as it prevents
+	-- clutter when installed via the toolbox, as models are by default added to Workspace.
+	-- This however is not desirable at runtime due to performance impacts (see:
+	-- https://devforum.roblox.com/t/worldmodels-too-costly-due-to-running-in-serial/3952084)
+	-- so we destroy these ViewportFrames and replace them with Folders.
+	if instance and instance:IsA("ViewportFrame") then
+		local folder = Instance.new("Folder")
+		folder.Name = instance.Name
+		for _, child in instance:GetChildren() do
+			child.Parent = folder
+		end
+		folder.Parent = instance.Parent
+		instance:Destroy()
+		return folder
+	end
+	return nil
+end
+
 Framework.applicationName = APPLICATION_NAME
 Framework.appNameClean = appNameClean
-Framework.serverName = `{appNameClean}Server`
+Framework.serverName = APPLICATION_NAME--`{appNameClean}Server`
 Framework.serverLocation = "ServerStorage"
-Framework.sharedName = `{appNameClean}Shared`
+Framework.sharedName = APPLICATION_NAME--`{appNameClean}Shared`
 Framework.sharedLocation = "ReplicatedStorage"
 
 function Framework.initialize(loader)
@@ -137,7 +157,7 @@ function Framework.getInstance(container: Folder | ModuleScript, instanceName: s
 			return foundInstance
 		end
 		for _, child in instanceToCheck:GetChildren() do
-			if child:IsA("ModuleScript") or child:IsA("Folder") then
+			if child:IsA("ModuleScript") or child:IsA("Folder") or child:IsA("Configuration") then
 				foundInstance = checkChildren(child)
 				if foundInstance then
 					return foundInstance
@@ -200,13 +220,56 @@ function Framework.startServer()
 		return
 	end
 
-	-- Merge Loader Config items into the core
+	-- Convert Viewports to Folders
 	local modules = sharedValue.Modules
+	local loader = Framework.getLoader()
+	local loaderConfig = loader:FindFirstChild("Config")
+	sharedValue = convertViewportToFolder(sharedValue)
+	if loaderConfig then
+		for _, child in loaderConfig:GetChildren() do
+			convertViewportToFolder(child)
+		end
+	end
+
+	-- First move Loader Commands from under Config Roles to under the Commands service
+	-- We do this to prevent long pathways being created, and to avoid any merging
+	-- confusions which can occur from the modules being located under Configuration instances
+	local configRoles = loaderConfig and loaderConfig:FindFirstChild("Roles")
+	if configRoles then
+		local forEveryCommand = require(modules.CommandUtil.forEveryCommand)
+		for _, roleConfig in configRoles:GetChildren() do
+			if not roleConfig:IsA("Configuration") then
+				continue
+			end
+			local role = roleConfig.Name
+			for _, commandModule in roleConfig:GetChildren() do
+				if commandModule:IsA("ModuleScript") then
+					local reference = require(commandModule)
+					forEveryCommand(reference, function(command)
+						command.Role = role
+					end)
+					for _, child in commandModule:GetChildren() do
+						-- We set a 'Child' attribute for all child modules named 'Client'
+						-- in case the creator of the command forgets to tag the module
+						-- with the 'Client' attribute (which exposes the instance to the client)
+						if not child:IsA("ModuleScript") then
+							continue
+						end
+						if child.Name:lower() ~= "client" then
+							continue
+						end
+						child:SetAttribute("Client", true)
+					end
+					commandModule.Parent = sharedValue.Services.Commands
+				end
+			end
+		end
+	end
+
+	-- Merge Loader Config items into the core
 	local framework = modules.Framework
 	local moduleReference = framework.ModuleReference
 	local referenceBack = framework.ReferenceBack
-	local loader = Framework.getLoader()
-	local loaderConfig = loader:FindFirstChild("Config")
 	local coreConfig = modules.Config
 	if loaderConfig then
 		for _, child in loaderConfig:GetChildren() do
@@ -238,8 +301,19 @@ function Framework.startServer()
 	-- These are the containers in which the Server and Shared sit
 	local function createContainer(containerName: string, location: any): Folder
 		local container = Instance.new("Folder")
+		local service = game:GetService(location)
+		for _, child in service:GetChildren() do
+			if child.Name == containerName then
+				-- This is just incase the user places the loader in ReplicatedStorage
+				-- or ServerStorage which would have an identical conflicting name
+				child.Parent = nil
+			end
+		end
 		container.Name = containerName
-		container.Parent = game:GetService(location)
+		container.Parent = service
+		local fakeCore = Instance.new("Folder")
+		fakeCore.Name = "Core"
+		fakeCore.Parent = container
 		return container
 	end
 
@@ -248,7 +322,7 @@ function Framework.startServer()
 	local serverMainModule = Instance.new("ObjectValue")
 	serverMainModule.Name = sharedMainModule.Name
 	serverMainModule.Value = sharedValue
-	serverMainModule.Parent = serverContainer
+	serverMainModule.Parent = serverContainer.Core
 
 	-- These functions build the directories within server and shared
 	local function getServerParentFromPathway(pathway)
@@ -283,7 +357,7 @@ function Framework.startServer()
 					serverInstance = sharedInstance
 					sharedInstance = nil
 
-				elseif sharedInstanceIsModule and sharedInstance:GetAttribute("Server") == true and sharedInstance:GetAttribute("Shared") ~= true then
+				elseif sharedInstanceIsModule and sharedInstance:GetAttribute("Server") == true and sharedInstance:GetAttribute("Client") ~= true then
 					-- We move the real item to the server, then leave an empty
 					-- module behind in its place so that Type Checking still works
 					local moduleReferenceCopy = moduleReference:Clone()
@@ -292,8 +366,8 @@ function Framework.startServer()
 					moduleReferenceCopy.Name = sharedInstance.Name
 					moduleReferenceCopy.Parent = sharedParent
 					for _, child in sharedInstance:GetChildren() do
-						if child:IsA("ModuleScript") or child:IsA("Folder") then
-							child.Parent = moduleReferenceCopy --!!!
+						if child:IsA("ModuleScript") or child:IsA("Folder") or child:IsA("Configuration") then
+							child.Parent = moduleReferenceCopy
 						end
 					end
 					serverInstance = sharedInstance
@@ -332,15 +406,15 @@ function Framework.startServer()
 		local newPathway = deepCopyTable(pathway)
 		table.insert(newPathway, parentsharedInstance)
 		for _, child in parentsharedInstance:GetChildren() do
-			if not child:IsA("ModuleScript") and not child:IsA("Folder") then
-				continue --!!!
+			if not child:IsA("ModuleScript") and not child:IsA("Folder") and not child:IsA("Configuration") then
+				continue
 			end
 			local hasServerTag = child:GetAttribute("Server") == true
 			local childForceToServer = forceToServer
 			if not childForceToServer then
 				childForceToServer = hasServerTag
 			end
-			local hasSharedTag = child:GetAttribute("Shared") == true
+			local hasSharedTag = child:GetAttribute("Client") == true
 			if hasSharedTag then
 				childForceToServer = nil
 				local parentToCheck = child
@@ -365,12 +439,12 @@ function Framework.startServer()
 		end
 	end
 	checkToMoveChildren(sharedValue, {})
-
+	
 	-- It's important we do this after moving the modules above, so that
 	-- the client only has access to modules that they need to access
 	local clientContainer = createContainer(Framework.sharedName, Framework.sharedLocation)
-	sharedMainModule.Parent = clientContainer
-
+	sharedMainModule.Parent = clientContainer.Core
+	
 	-- Start Services
 	Framework.requireChildren(sharedValue.Services)
 end

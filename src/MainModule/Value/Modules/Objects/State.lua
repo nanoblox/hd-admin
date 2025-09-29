@@ -6,7 +6,7 @@
 	means that all changes *must* be set with :set(), and that data returned with :get()
 	will not be applied to the state if changed.
 
-	The optional parameter to to create a serialized copy of data is particularly useful
+	The optional parameter to create a serialized copy of data is particularly useful
 	as it allows for data to be validated as soon as :set() is called, preventing any unsafe
 	datastore data from ever reaching the datastore, and enabling the incorrect code to be
 	flagged right away.

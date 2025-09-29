@@ -12,15 +12,10 @@ https://create.roblox.com/store/asset/857927023/HD-Admin
 https://devforum.roblox.com/t/-/3446058
 
 Getting Started:
-    - We recommend storing HD Admin in 'ServerScriptService'
-	- Receive automatic updates by going to Core -> PackageLink and enabling 'AutoUpdate'
-	- The Core cannot be changed otherwise HD Admin will stop functioning
-	- You can configure Ranks, Gamepasses, etc in the 'Settings' module
-	- You can add your own commands under Config -> Commands
+    - Keep HD Admin in 'Workspace' or 'ServerScriptService'
+	- The model's name 'HD Admin' is used by commands - be careful not to change!
+	- All commands are now located under Config -> Roles -> [Role]
 	- You can delete 'ThumbnailCamera' - this is used to give the model an image
-	- You are automatically given the rank Owner
-	- To sell gamepasses via HD Admin 'ThirdPartySales' must be enabled:
-		- Go to Home (on the Studio topbar) -> Game Settings -> Security -> Tick 'Allow Third Party Sales' and Save
 
 --]]
 
