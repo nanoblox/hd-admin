@@ -3,8 +3,6 @@
 local ParserUtility = {}
 local modules = script:FindFirstAncestor("MainModule").Value.Modules
 local services = modules.Parent.Services
-local ParserPatterns = require(modules.Parser.ParserPatterns)
-local Config = require(modules.Config)
 local ParserTypes = require(modules.Parser.ParserTypes)
 local User = require(modules.Objects.User)
 
@@ -21,6 +19,7 @@ function ParserUtility.getPlayersFromString(playerString: string, optionalUser: 
 	local selectedPlayers = {}
 	local players = game:GetService("Players"):GetPlayers()
 
+	local Config = require(modules.Config)
 	local playerIdentifier = Config.getSetting("PlayerIdentifier", optionalUser)
 	local playerDefinedSearch: PlayerSearch = Config.getSetting("PlayerDefinedSearch", optionalUser)
 	local playerUndefinedSearch: PlayerSearch = Config.getSetting("PlayerUndefinedSearch", optionalUser)
@@ -78,6 +77,7 @@ function ParserUtility.verifyAndParseUsername(callerUser, usernameString: string
 	if not callerUser or not usernameString then
 		return false, nil
 	end
+	local Config = require(modules.Config)
 	local playerIdentifier = Config.getSetting("PlayerIdentifier", callerUser)
 
 	if string.sub(usernameString, 1, 1) == playerIdentifier then
@@ -181,6 +181,7 @@ function ParserUtility.getCapsuleCaptures(source, sortedKeywords)
 		local alreadyFound = false
 
 		-- Captures with argument capsules are stripped away from the source
+		local ParserPatterns = require(modules.Parser.ParserPatterns)
 		source = string.gsub(
 			source,
 			string.format("(%s)%s", keyword, ParserPatterns.capsuleFromKeyword),
@@ -298,7 +299,6 @@ function ParserUtility.convertStatementToRealNames(statement: Statement)
 			statement[tableName] = newTable
 		end
 	end
-	print("requested statement: ", statement)
 end
 
 

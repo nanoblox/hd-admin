@@ -2,8 +2,7 @@
 -- all nested tables will also get copied.
 local function deepCopyTable(t): {any}
 	assert(type(t) == "table", "First argument must be a table")
-	return {}
-	--[[local tCopy = table.create(#t)
+	local tCopy = table.create(#t)
 	for k,v in (t) do
 		if (type(v) == "table") then
 			tCopy[k] = deepCopyTable(v)
@@ -11,7 +10,6 @@ local function deepCopyTable(t): {any}
 			tCopy[k] = v
 		end
 	end
-	return {}
-	--return tCopy :: {any}--]]
+	return tCopy :: {any}
 end
 return deepCopyTable

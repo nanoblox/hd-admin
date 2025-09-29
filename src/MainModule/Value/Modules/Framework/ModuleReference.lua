@@ -20,7 +20,7 @@ local serverLocation = Framework.serverLocation
 local serverName = Framework.serverName
 local location = game:GetService(serverLocation)
 local container = location:WaitForChild(serverName, 999)
-local newMain = container.MainModule
+local newMain = container.Core.MainModule
 local ourNewModule = newMain
 for _, instanceName in modulePath do
 	ourNewModule = ourNewModule:WaitForChild(instanceName, 999)

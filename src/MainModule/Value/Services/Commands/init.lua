@@ -8,11 +8,11 @@ local ParserTypes = require(parser.ParserTypes)
 local Promise = require(modules.Objects.Promise)
 local Config = require(modules.Config)
 local Task = require(modules.Objects.Task)
-local commandsArray: {Command} = {}
+local commandsArray: Task.Commands = {}
 local lowerCaseNameAndAliasCommandsDictionary: {[string]: Command} = {}
-local sortedNameAndAliasLengthArray: {string} = {}
+local sortedNameAndAliasWithOverrideLengthArray: {string} = {}
 local commandsRequireUpdating = true
-local commandPrefixes = {}
+local commandPrefixes: {[string]: boolean} = {}
 
 
 -- TYPES
@@ -20,10 +20,11 @@ type User = User.Class
 type Batch = ParserTypes.ParsedBatch
 type Statement = ParserTypes.ParsedStatement
 type ArgGroup = {[string]: {string}}
-export type Command = Task.Command -- Moved under 'Task' to prevent cyclical warning
-export type ClientCommand = Task.ClientCommand -- Moved under 'Task' to prevent cyclical warning
-export type TriStateSetting = Task.TriStateSetting
-export type Properties = Task.Properties
+type Task = Task.Class
+type Command = Task.Command -- Moved under 'Task' to prevent cyclical warning
+type ClientCommand = Task.ClientCommand -- Moved under 'Task' to prevent cyclical warning
+type TriStateSetting = Task.TriStateSetting
+type Properties = Task.Properties
 
 
 -- FUNCTIONS
@@ -34,53 +35,77 @@ function Commands.updateCommands()
 	commandsRequireUpdating = false
 	commandsArray = {}
 	lowerCaseNameAndAliasCommandsDictionary = {}
-	sortedNameAndAliasLengthArray = {}
-	for _, container in pairs(script:GetChildren()) do
-		if not container:IsA("ModuleScript") then
+	sortedNameAndAliasWithOverrideLengthArray = {}
+	commandPrefixes = {}
+	local forEveryCommand = require(modules.CommandUtil.forEveryCommand)
+	for _, commandModule in pairs(script:GetChildren()) do
+		if not commandModule:IsA("ModuleScript") then
 			continue
 		end
-		local commandsInside = require(container) :: {Command}
-		if typeof(commandsInside) ~= "table" then
-			continue
-		end
-		for _, command in pairs(commandsInside) do
+		local commandsInside = require(commandModule) :: any
+		forEveryCommand(commandsInside, function(command: any)
 			local prefixes = command.prefixes
-			if prefixes then
-				for _, prefix in pairs(prefixes) do
+			local commandName = command.name
+			-- If command contains a custom prefix
+			if typeof(prefixes) == "table" then
+				for _, prefix in prefixes do
 					if typeof(prefix) == "string" then
 						commandPrefixes[prefix] = true
 					end
 				end
 			end
-			table.insert(commandsArray, command)
-			local function registerNameOrAlias(nameOrAlias: string)
+			table.insert(commandsArray, command :: Command)
+			local function registerNameOrAlias(nameOrAlias: string, isOverride: boolean?)
 				if typeof(nameOrAlias) ~= "string" then
 					return false
 				end
+				local writeTo = lowerCaseNameAndAliasCommandsDictionary
 				local nameOrAliasLower = nameOrAlias:lower()
-				lowerCaseNameAndAliasCommandsDictionary[nameOrAliasLower] = command
-				table.insert(sortedNameAndAliasLengthArray, nameOrAliasLower)
+				local firstTime = writeTo[nameOrAliasLower] == nil
+				if not isOverride then
+					writeTo[nameOrAliasLower] = command
+				end
+				if firstTime then
+					table.insert(sortedNameAndAliasWithOverrideLengthArray, nameOrAliasLower)
+				end
 				return true
 			end
-			registerNameOrAlias(command.name)
-			if typeof(command.aliases) == "table" then
-				for _, alias in pairs(command.aliases) do
-					registerNameOrAlias(alias)
+			registerNameOrAlias(commandName)
+			local function registerAliases(array)
+				if typeof(array) == "table" then
+					for _, alias in array do
+						registerNameOrAlias(alias)
+					end
 				end
 			end
-		end
+			registerAliases(command.aliases)
+			registerAliases(command.undoAliases)
+			-- If command is an override (e.g. it's name contains a validPrefix, e.g. /helicopter)
+			local firstChar = string.sub(commandName, 1, 1)
+			local isValidPrefix = require(modules.CommandUtil.isValidPrefix)
+			if isValidPrefix(firstChar) then
+				local overrideName = string.sub(commandName, 2)
+				commandPrefixes[firstChar] = true
+				registerNameOrAlias(overrideName, true) -- Also register override so that it can be detected in parser
+			end
+		end)
 	end
-	table.sort(sortedNameAndAliasLengthArray, function(a: string, b: string): boolean
+	table.sort(sortedNameAndAliasWithOverrideLengthArray, function(a: string, b: string): boolean
 		return #a > #b
 	end)
 	return true
 end
 
-function Commands.getCommand(nameOrAlias: string): Command?
+function Commands.getCommand(nameOrAlias: string, overridePrefix: string?): (Command?, boolean?)
 	Commands.updateCommands()
 	local lowerNameOrAlias = nameOrAlias:lower()
 	local command = lowerCaseNameAndAliasCommandsDictionary[lowerNameOrAlias] :: Command?
-	return command
+	if not command and typeof(overridePrefix) == "string" and #overridePrefix == 1 then
+		local newAlias = overridePrefix..lowerNameOrAlias
+		command = lowerCaseNameAndAliasCommandsDictionary[newAlias] :: Command?
+		return command, true
+	end
+	return command, false
 end
 
 function Commands.getCommandsArray()
@@ -88,14 +113,9 @@ function Commands.getCommandsArray()
 	return commandsArray
 end
 
-function Commands.getLowerCaseNameAndAliasToCommandDictionary()
-	Commands.updateCommands()
-	return lowerCaseNameAndAliasCommandsDictionary
-end
-
 function Commands.getSortedNameAndAliasLengthArray()
 	Commands.updateCommands()
-	return sortedNameAndAliasLengthArray
+	return sortedNameAndAliasWithOverrideLengthArray
 end
 
 function Commands.getCommandPrefixes()
@@ -103,60 +123,40 @@ function Commands.getCommandPrefixes()
 	return commandPrefixes
 end
 
-function Commands.processStatementAsync(callerUser: User, statement: Statement): (boolean, string | {any})
+function Commands.processStatementAsync(callerUser: User, statement: Statement): (boolean, string | {Task})
 	-- This verifies and executes the statement (if permitted)
-	local approved, reason = Commands.verifyStatementAsync(callerUser, statement)
+	local ParserUtility = require(parser.ParserUtility)
+	ParserUtility.convertStatementToRealNames(statement)
+	local approved, warning = Commands.verifyStatementAsync(callerUser, statement)
 	if not approved then
-		return false, reason or "Statement denied"
+		return false, (warning or "Statement denied")
 	end
 	local callerUserId = callerUser.userId :: number
 	local tasks = Commands.executeStatement(callerUserId, statement)
 	return true, tasks
 end
 
-function Commands.processBatchAsync(callerUser: User, batch: Batch): (boolean, {{boolean | string}}, {any}?)
+function Commands.processBatchAsync(callerUser: User, batch: Batch): (boolean, {{boolean | string}}, {Task}?)
 	-- This verifies and executes the statements within the batch (if permitted)
 	if type(batch) ~= "table" then
 		return false, {{false, "The batch must be a table!"}}, nil
 	end
-	local approvedPromises = {}
-	local reasons = {}
-	for _, statement in pairs(batch) do
-		if type(statement) ~= "table" then
-			return false, {{false, "Statements must be a table!"}}, nil
-		end
-
-		table.insert(approvedPromises, Promise.new(function(resolve, reject)
-			local approved, reason = Commands.verifyStatementAsync(callerUser, statement)
-			if approved == false and typeof(reason) == "string" then
-				table.insert(reasons, {approved, reason})
-			end
-			if approved then
-				resolve(reason)
-			else
-				reject(reason)
-			end
-		end::any))
-
-	end
-	local promises = Promise.all(approvedPromises) :: any
-	local approvedAllStatements = promises:await()
-	if not approvedAllStatements then
-		return false, reasons, nil
-	end
-	local collectiveTasks = {}
-	local callerUserId = callerUser.userId :: number
-	local success = false
-	for _, statement in pairs(batch) do
-		local tasks = Commands.executeStatement(callerUserId, statement)
-		if typeof(tasks) == "table" then
-			for _, task in pairs(tasks :: any) do
-				success = true
+	local collectiveTasks: {any} = {}
+	local collectiveNotices = {}
+	local atLeastOneSuccess = false
+	for _, statement in batch do
+		local success, tasksOrWarning = Commands.processStatementAsync(callerUser, statement)
+		if success and typeof(tasksOrWarning) == "table" then
+			for _, task in tasksOrWarning do
+				atLeastOneSuccess = true
 				table.insert(collectiveTasks, task)
 			end
 		end
+		if not success and typeof(tasksOrWarning) == "string" then
+			table.insert(collectiveNotices, {false, tasksOrWarning})
+		end
 	end
-	return success, reasons, collectiveTasks
+	return atLeastOneSuccess, collectiveNotices, collectiveTasks :: {Task}
 end
 
 function Commands.verifyStatementAsync(callerUser: User, statement: Statement)--: (approved: boolean, reason: string?)
@@ -230,8 +230,8 @@ function Commands.verifyStatementAsync(callerUser: User, statement: Statement)--
 
 		-- Does the caller have permission to use the associated arguments of the command
 		local argStringIndex = 0
-		for _, argNameOrAlias in pairs(command.args) do
-			local argItem = Args.get(argNameOrAlias)
+		for _, argNameOrAliasOrDetail in command.args do
+			local argItem = Args.get(argNameOrAliasOrDetail)
 			if argStringIndex == 0 and argItem.playerArg then
 				continue
 			end
@@ -276,9 +276,8 @@ function Commands.verifyStatementAsync(callerUser: User, statement: Statement)--
 	return true, nil
 end
 
-function Commands.executeStatement(callerUserId: number, statement: Statement): {any}
+function Commands.executeStatement(callerUserId: number, statement: Statement): {Task}
 
-	print("Task creation (1)")
 	-- This enables restrictions to be bypassed if customized
 	-- This is useful for fake server users for example
 	if statement.isRestricted == nil then
@@ -290,7 +289,6 @@ function Commands.executeStatement(callerUserId: number, statement: Statement): 
 	end
 	
 	-- If 'player' instance detected within qualifiers, convert to player.Name
-	--ParserUtility.convertStatementToRealNames(statement) -- Don't do anymore
 	local ParserTypes = require(parser.ParserTypes)
 	for qualifierKey, qualifierTable in pairs(statement.qualifiers) do
 		if typeof(qualifierKey) == "Instance" and qualifierKey:IsA("Player") then
@@ -334,10 +332,9 @@ function Commands.executeStatement(callerUserId: number, statement: Statement): 
 		end
 	end
 
-	print("Task creation (2)")
 	local Args = require(parser.Args)
 	local promises = {}
-	local tasks = {}
+	local tasks: {any} = {}
 	local isPermModifier = statement.modifiers.perm
 	local isGlobalModifier = statement.modifiers.wasGlobal
 	for commandName, arguments in pairs(statement.commands) do
@@ -357,18 +354,18 @@ function Commands.executeStatement(callerUserId: number, statement: Statement): 
 		-- servers repeatidly
 		local addToPerm = false
 		local splitIntoUsers = false
-		local firstArgName = command.args[1] or ""
-		local lowerFirstArgName = string.lower(firstArgName)
-		local executeForEachPlayerFirstArg = Args.getExecuteForEachPlayerArgsDictionary(lowerFirstArgName)
+		local firstArgNameOrDetail = command.args[1]
+		local firstArg = Args.get(firstArgNameOrDetail)
+		local executeForEachPlayer = if firstArg then firstArg.executeForEachPlayer else false
 		if isPermModifier then
 			if isGlobalModifier then
 				addToPerm = true
-			elseif executeForEachPlayerFirstArg then
+			elseif executeForEachPlayer then
 				addToPerm = true
 				splitIntoUsers = true
 			end
 		else
-			splitIntoUsers = executeForEachPlayerFirstArg
+			splitIntoUsers = executeForEachPlayer
 		end
 
 		-- Define the properties that we'll create the task from arguments
@@ -380,12 +377,12 @@ function Commands.executeStatement(callerUserId: number, statement: Statement): 
 		local commandNameLower = string.lower(commandName)
 
 		-- Create task wrapper
-		local function createTask(optionalPlayerUserId: number?): Task.Class?
+		local function createTask(optionalTargetUserId: number?): Task?
 			
 			-- Setup task properties
 			local properties: Properties = {
 				callerUserId = callerUserId,
-				playerUserId = optionalPlayerUserId,
+				targetUserId = optionalTargetUserId,
 				commandName = commandName,
 				commandNameLower = commandNameLower,
 				args = args,
@@ -395,39 +392,48 @@ function Commands.executeStatement(callerUserId: number, statement: Statement): 
 				UID = taskUID,
 			}
 
-			-- Revoke commands if already applied to player (if command requires)
-			local runningTasks = Task._getters.getTasksWithCommandNameAndOptionalPlayerUserId(commandName, optionalPlayerUserId)
-			if command.revokeRepeats == true then
+			-- Undo taks if already applied to player (or server level)
+			local runningTasks = Task.getTasks(commandName, optionalTargetUserId)
+			local hasACooldown = typeof(command.cooldown) == "number" and command.cooldown > 0
+			if not hasACooldown then
 				for _, task in pairs(runningTasks) do
-					task._properties.cooldown = 0
 					task:destroy()
 				end
-				return nil
 			end
-			
-			-- If the command has a cooldown, check if it can be used again
-			local preventRepeatsTri = command.preventRepeats :: TriStateSetting?
-			local preventRepeats = true
-			if preventRepeatsTri == nil or preventRepeatsTri == "Default" then
-				preventRepeats = Config.getSetting("PreventRepeats")
-			elseif preventRepeatsTri == "False" then
-				preventRepeats = false
+
+			-- Undo tasks if they contain the same group as any groups from this command
+			local ourGroups = command.groups
+			if optionalTargetUserId and typeof(ourGroups) == "table" then
+				local allPlayerTasks = Task.getTasks(nil, optionalTargetUserId)
+				for _, task in allPlayerTasks do
+					local dictOfGroupsLower = task.dictOfGroupsLower
+					for _, groupName in ourGroups do
+						local nameLower = string.lower(groupName)
+						if dictOfGroupsLower[nameLower] then
+							task:destroy()
+							break
+						end
+					end
+				end
 			end
-			if preventRepeats and #runningTasks > 0 then
-				local firstRunningTask = runningTasks[1]
-				local firstRunningProps = firstRunningTask._properties
-				local taskCooldownEndTime = firstRunningProps.cooldownEndTime
+
+			-- Block the command from running if a cooldown is already active
+			if hasACooldown and #runningTasks > 0 then
+				local activeTask = runningTasks[1]
+				local endTime = activeTask.cooldownEndTime
 				local additionalUserMessage = ""
-				local associatedPlayer = firstRunningProps.player
+				local associatedPlayer = activeTask.target
 				if associatedPlayer then
-					additionalUserMessage = (" on '%s' (@%s)"):format(associatedPlayer.DisplayName, associatedPlayer.Name)
+					additionalUserMessage = ` on {associatedPlayer.DisplayName}' (@{associatedPlayer.Name})`
 				end
-				if taskCooldownEndTime then
-					local remainingTime = (math.ceil((taskCooldownEndTime-os.clock())*100))/100
-					warn((`Wait {remainingTime} seconds until command '{commandName}' has cooldown before using again{additionalUserMessage}!`)) --!!!notice
-					return nil
+				local warningNotice
+				if endTime then
+					local remainingTime = (math.ceil((endTime-os.clock())*100))/100
+					warningNotice = `Wait {remainingTime} seconds until using '{commandName}' again{additionalUserMessage}!`
+				else
+					warningNotice = `Wait until '{commandName}' has finished before using again{additionalUserMessage}!`
 				end
-				warn((`Wait until command '{commandName}' has finished before using again{additionalUserMessage}!`)) --!!!notice
+				warn(warningNotice) --!!!notice
 				return nil
 			end
 
@@ -446,17 +452,13 @@ function Commands.executeStatement(callerUserId: number, statement: Statement): 
 				table.insert(tasks, task)
 			end
 		else
-			table.insert(promises, Promise.new(function(resolve)
-				local playerArg = Args.get("Player")
-				local targetPlayers = if playerArg then playerArg:parse(statement.qualifiers, callerUserId) else {}
-				for _, plr in pairs(targetPlayers) do
-					local task = createTask()
-					if task then
-						table.insert(tasks, task)
-					end
+			local targetPlayers = if firstArg then firstArg:parse(statement.qualifiers, callerUserId) else {}
+			for _, plr in targetPlayers do
+				local task = createTask(plr.UserId)
+				if task then
+					table.insert(tasks, task)
 				end
-				resolve()
-			end::any))
+			end
 		end
 	end
 
@@ -464,8 +466,7 @@ function Commands.executeStatement(callerUserId: number, statement: Statement): 
 	local allPromise = Promise.all(promises) :: any
 	allPromise:await()
 
-	print("Task creation (3)")
-	return tasks
+	return tasks :: {Task}
 end
 
 

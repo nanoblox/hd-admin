@@ -3,8 +3,8 @@
   "emitLegacyScripts": false,
   "tree": {
     "$className": "DataModel",
-    "ServerScriptService": {
-      "$className": "ServerScriptService",
+    "Workspace": {
+      "$className": "Workspace",
       "HD Admin": {
         "$className": "Folder",
         "READ_ME": {
@@ -13,135 +13,11 @@
         "Config": {
           "$className": "Configuration",
           "$path": "src/Loader/Config",
-          "Settings": {
-            "$path": "src/MainModule/Value/Modules/Config/Settings.lua"
-          },
-          "Bans": {
-            "$className": "Folder",
-            "Player1": {
-              "$className": "Configuration",
-              "$attributes": {
-                "Reason": "Ban via Name"
-              }
-            },
-            "176841666": {
-              "$className": "Configuration",
-              "$attributes": {
-                "Reason": "Ban via UserId"
-              }
-            }
-          },
-          "Givers": {
-            "$className": "Folder",
-            "Groups": {
-              "$className": "Configuration",
-              "4676369": {
-                "$className": "Configuration",
-                "$attributes": {
-                  "DisplayName": "HD Admin"
-                },
-                "255": {
-                  "$className": "Configuration",
-                  "$attributes": {
-                    "GiveRoles": ""
-                  }
-                },
-                "1": {
-                  "$className": "Configuration",
-                  "$attributes": {
-                    "DisplayName": "Everyone",
-                    "GiveRoles": ""
-                  }
-                }
-              }
-            },
-            "Passes": {
-              "$className": "Configuration",
-              "1039997021": {
-                "$className": "Configuration",
-                "$attributes": {
-				  "GiveRoles": "PackTroll",
-                  "DisplayName": "Example GamePass 1"
-                }
-              },
-              "1039509747": {
-                "$className": "Configuration",
-                "$attributes": {
-				  "GiveRoles": "Mod",
-				  "DisplayName": "Example GamePass 1" 
-                }
-              }
-            },
-            "Everyone": {
-              "$className": "Configuration",
-              "$attributes": {
-                "GiveRoles": ""
-              }
-            },
-            "PrivateServerOwner": {
-              "$className": "Configuration",
-              "$attributes": {
-                "GiveRoles": ""
-              }
-            },
-			"Individuals": {
-              "$className": "Configuration",
-              "82347291": {
-                "$className": "Configuration",
-                "$attributes": {
-                  "GiveRoles": ""
-                }
-              },
-              "Builderman": {
-                "$className": "Configuration",
-                "$attributes": {
-                  "GiveRoles": "Mod, Admin"
-                }
-              }
-            },
-            "FriendsOf": {
-              "$className": "Configuration",
-              "82347291": {
-                "$className": "Configuration",
-                "$attributes": {
-                  "GiveRoles": ""
-                }
-              },
-              "Builderman": {
-                "$className": "Configuration",
-                "$attributes": {
-                  "GiveRoles": ""
-                }
-              }
-            }
-          },
           "Roles": {
-            "$className": "Folder",
-            "Owner": {
-              "$className": "Configuration",
-              "$attributes": {
-                "Rank": 255
-              }
-            },
-            "Admin": {
-              "$className": "Configuration",
-              "$attributes": {
-                "Rank": 254
-              }
-            },
-            "Mod": {
-              "$className": "Configuration",
-              "$attributes": {
-                "Rank": 150
-              }
-            },
-            "PackTroll": {
-              "$className": "Configuration",
-              "$attributes": {
-                "Rank": 3,
-                "DisplayName": "Troll Commands"
-              }
-            }
+            "$path": "src/Commands"
+          },
+		  "Settings": {
+            "$path": "src/MainModule/Value/Modules/Config/Settings.lua"
           }
         },
         "Core": {
@@ -158,7 +34,7 @@
               "$path": "src/MainModule/LICENSE.lua"
             },
             "Value": {
-              "$className": "Folder",
+              "$className": "ViewportFrame",
 			  "Controllers": {
                 "$path": "src/MainModule/Value/Controllers"
               },

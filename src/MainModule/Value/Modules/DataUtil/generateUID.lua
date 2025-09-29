@@ -25,7 +25,7 @@ local function getListForLimiter(limiter: Limiter?)
 	return validCharacters
 end
 
-return function (length: number, limiter: Limiter?): string
+return function (length: number?, limiter: Limiter?): string
 	length = length or 8
 	local UID = ""
 	local list = getListForLimiter(limiter)

@@ -17,8 +17,9 @@ type ParsedBatch = ParserTypes.ParsedBatch
 
 
 -- FUNCTIONS
-function ParsedData.generateEmptyParsedData()
+function ParsedData.generateEmptyParsedData(givenPrefix: string?)
 	return {
+		givenPrefix = givenPrefix,
 		commandStatement = nil,
 
 		commandDescription = nil,
@@ -41,14 +42,17 @@ function ParsedData.generateEmptyParsedData()
 	}
 end
 
-function ParsedData.requiresQualifier(commandName): ParserTypes.QualifierRequired
-	local commandsDictionary = Commands.getLowerCaseNameAndAliasToCommandDictionary()
-	local commandArgs = commandsDictionary[commandName].args
+function ParsedData.requiresQualifier(commandName, givenPrefix): ParserTypes.QualifierRequired
+	local command = Commands.getCommand(commandName, givenPrefix)
+	if not command then
+		return "Never"
+	end
+	local commandArgs = command.args
 	if #commandArgs == 0 then
 		return "Never"
 	end
-	local firstArgName = commandArgs[1]:lower() --!!! re-do this
-	local firstArg = Args.get(firstArgName)
+	local firstArgNameOrDetail = commandArgs[1]
+	local firstArg = Args.get(firstArgNameOrDetail)
 	if firstArg == nil or firstArg.playerArg ~= true then
 		return "Never"
 	else
@@ -63,10 +67,10 @@ end
 function ParsedData.parsedDataSetRequiresQualifierFlag(parsedData, optionalUser)
 	
 	local parsedDataRequiresQualifier: QualifierRequired = "Sometimes"
-
-	for _, capture in pairs(parsedData.commandCaptures) do
-		for commandName, _ in pairs(capture) do
-			local commandRequiresQualifier = ParsedData.requiresQualifier(commandName)
+	local givenPrefix = parsedData.givenPrefix
+	for _, capture in parsedData.commandCaptures do
+		for commandName, _ in capture do
+			local commandRequiresQualifier = ParsedData.requiresQualifier(commandName, givenPrefix)
 			if commandRequiresQualifier == "Always" then
 				parsedDataRequiresQualifier = "Always"
 				break
@@ -91,7 +95,7 @@ function ParsedData.parsedDataSetRequiresQualifierFlag(parsedData, optionalUser)
 			local players = game:GetService("Players"):GetPlayers()
 			local userNames = {}
 
-			for _, player in pairs(players) do
+			for _, player in players do
 				table.insert(userNames, player.Name:lower())
 			end
 			
@@ -99,7 +103,7 @@ function ParsedData.parsedDataSetRequiresQualifierFlag(parsedData, optionalUser)
 			local playerDefinedSearch: PlayerSearch = Config.getSetting("PlayerDefinedSearch", optionalUser)
 			local playerUndefinedSearch: PlayerSearch = Config.getSetting("PlayerUndefinedSearch", optionalUser)
 
-			for _, qualifier in pairs(parsedData.unrecognizedQualifiers) do
+			for _, qualifier in parsedData.unrecognizedQualifiers do
 				local qualifierHasPlayerIdentifier = (qualifier:sub(1, 1) == playerIdentifier)
 				local qualifierWithoutIdentifier = utilityModule.ternary(
 					qualifierHasPlayerIdentifier,
@@ -132,23 +136,26 @@ function ParsedData.parsedDataSetRequiresQualifierFlag(parsedData, optionalUser)
 	end
 end
 
-function ParsedData.hasEndlessArgument(commandName)
-	local argsDictionary = Args.getAll()
-	local commandsDictionary = Commands.getLowerCaseNameAndAliasToCommandDictionary()
-	local commandArgs = commandsDictionary[commandName].args
+function ParsedData.hasEndlessArgument(commandName, givenPrefix)
+	local command = Commands.getCommand(commandName, givenPrefix)
+	if not command then
+		return false
+	end
+	local commandArgs = command.args
 	if #commandArgs == 0 then
 		return false
 	end
-	local lastArgName = commandArgs[#commandArgs]:lower()
-	local lastArg = argsDictionary[lastArgName] :: any
+	local lastArgNameOrDetail = commandArgs[#commandArgs]
+	local lastArg = Args.get(lastArgNameOrDetail) :: any
 	local bool = if lastArg and lastArg.endlessArg == true then true else false
 	return bool
 end
 
 function ParsedData.parsedDataSetHasEndlessArgumentFlag(parsedData)
-	for _, capture in pairs(parsedData.commandCaptures) do
-		for commandName, _ in pairs(capture) do
-			if ParsedData.hasEndlessArgument(commandName) then
+	local givenPrefix = parsedData.givenPrefix
+	for _, capture in parsedData.commandCaptures do
+		for commandName, _ in capture do
+			if ParsedData.hasEndlessArgument(commandName, givenPrefix) then
 				parsedData.hasEndlessArgument = true
 				return
 			end
@@ -191,9 +198,14 @@ function ParsedData.parsedDataUpdateIsValidFlag(parsedData, parserRejection: Par
 	end
 end
 
+function ParsedData.invalidateStatement(statement: any, errorMessage: string)
+	statement.isValid = false
+	statement.errorMessage = errorMessage
+end
+
 function ParsedData.generateOrganizedParsedData(allParsedData)
 	local parsedBatch: ParsedBatch = {}
-	for _, parsedData in pairs(allParsedData) do
+	for _, parsedData in allParsedData do
 
 		local parsedStatement: ParserTypes.ParsedStatement = {
 			isValid = true,
@@ -206,26 +218,25 @@ function ParsedData.generateOrganizedParsedData(allParsedData)
 		}
 
 		if parsedData.isValid then
-			for _, capture in pairs(parsedData.commandCaptures) do
-				for command, arguments in pairs(capture) do
+			for _, capture in parsedData.commandCaptures do
+				for command, arguments in capture do
 					parsedStatement.commands[command] = arguments
 				end
 			end
-			for _, capture in pairs(parsedData.modifierCaptures) do
-				for modifier, arguments in pairs(capture) do
+			for _, capture in parsedData.modifierCaptures do
+				for modifier, arguments in capture do
 					parsedStatement.modifiers[modifier] = arguments
 				end
 			end
-			for _, capture in pairs(parsedData.qualifierCaptures) do
-				for qualifier, arguments in pairs(capture) do
+			for _, capture in parsedData.qualifierCaptures do
+				for qualifier, arguments in capture do
 					parsedStatement.qualifiers[qualifier] = arguments
 				end
 			end
 
 		else
-
-			parsedStatement.isValid = false
-			parsedStatement.errorMessage = parsedData.errorMessage or parsedData.parserRejection
+			local errorMessage = parsedData.errorMessage or parsedData.parserRejection
+			ParsedData.invalidateStatement(parsedStatement, errorMessage)
 		end
 
 		table.insert(parsedBatch, parsedStatement)
@@ -291,15 +302,16 @@ end
 
 ]]
 function ParsedData.parseExtraArgumentDescription(parsedData, allParsedDatas, originalMessage)
+	local givenPrefix = parsedData.givenPrefix
 	if not parsedData.hasEndlessArgument then
 		if not parsedData.requiresQualifier then
 			table.insert(parsedData.extraArgumentDescription, parsedData.qualifierDescription)
 			parsedData.qualifierDescription = nil
 		end
 
-		for _, extraArgument in pairs(parsedData.extraArgumentDescription) do
-			for _, capture in pairs(parsedData.commandCaptures) do
-				for _, arguments in pairs(capture) do
+		for _, extraArgument in parsedData.extraArgumentDescription do
+			for _, capture in parsedData.commandCaptures do
+				for _, arguments in capture do
 					table.insert(arguments, extraArgument)
 				end
 			end
@@ -318,17 +330,17 @@ function ParsedData.parseExtraArgumentDescription(parsedData, allParsedDatas, or
 		end
 
 		local extraArgumentsBeforeText = math.huge
-		local commandsDictionary = Commands.getLowerCaseNameAndAliasToCommandDictionary()
-		for _, capture in pairs(parsedData.commandCaptures) do
-			for commandName, arguments in pairs(capture) do
-				local commandArgumentNames = commandsDictionary[commandName].args
+		for _, capture in parsedData.commandCaptures do
+			for commandName, arguments in capture do
+				local command = Commands.getCommand(commandName, givenPrefix)
+				local commandArgumentNames = command.args
 
-				local firstArgumentName = commandArgumentNames[1]:lower()
-				local firstArgument = Args.get(firstArgumentName)
+				local firstArgumentNameOrDetail = commandArgumentNames[1]
+				local firstArgument = Args.get(firstArgumentNameOrDetail)
 				local isPlayerArgument = firstArgument.playerArg == true
 
-				local lastArgumentName = commandArgumentNames[#commandArgumentNames]:lower()
-				local lastArgument = Args.get(lastArgumentName)
+				local lastArgumentNameOrDetail = commandArgumentNames[#commandArgumentNames]
+				local lastArgument = Args.get(lastArgumentNameOrDetail)
 				local hasEndlessArgument = lastArgument.endlessArg == true
 
 				local commandArguments = #commandArgumentNames
@@ -357,8 +369,8 @@ function ParsedData.parseExtraArgumentDescription(parsedData, allParsedDatas, or
 		end
 
 		local extraArgument = foundIndex and string.sub(originalMessage, foundIndex :: any) or nil
-		for _, capture in pairs(parsedData.commandCaptures) do
-			for _, arguments in pairs(capture) do
+		for _, capture in parsedData.commandCaptures do
+			for _, arguments in capture do
 				for counter = 1, extraArgumentsBeforeText do
 					table.insert(arguments, parsedData.extraArgumentDescription[counter])
 				end

@@ -69,7 +69,7 @@ local function testAreValuesEqual()
 		{Color3.fromRGB(255, 0, 0), Color3.fromRGB(94, 255, 0), false},
 	}
 
-	for _, testCase in ipairs(testCases) do
+	for _, testCase in pairs(testCases) do
 		local v1, v2, expected = unpack(testCase)
 		local result = areValuesEqual(v1, v2)
 		assert(result == expected, `Expected {v1} and {v2} to be {expected}, but got {result}`)
