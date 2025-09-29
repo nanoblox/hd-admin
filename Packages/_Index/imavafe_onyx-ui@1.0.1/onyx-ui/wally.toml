@@ -1,0 +1,14 @@
+[dependencies]
+ColorUtils = "csqrl/colour-utils@^1.4.1"
+Fusion = "elttob/fusion@^0.3.0"
+
+[package]
+authors = ["Avafe"]
+license = "MIT"
+name = "imavafe/onyx-ui"
+realm = "shared"
+registry = "https://github.com/UpliftGames/wally-index"
+version = "1.0.1"
+
+exclude = ["**"]
+include = ["src", "src/*", "default.project.json", "wally.lock", "wally.toml"]

@@ -1,0 +1,8 @@
+[package]
+name = "red-blox/future"
+version = "1.0.1"
+registry = "https://github.com/UpliftGames/wally-index"
+realm = "shared"
+
+[dependencies]
+Spawn = "red-blox/spawn@1.0.0"
