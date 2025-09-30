@@ -1,8 +1,10 @@
-local HDAdminUI = script.Parent.Parent
-local Fusion = require(HDAdminUI.Parent.Parent.Parent.Packages.Fusion)
-local OnyxUI = require(HDAdminUI.Parent.Parent.Parent.Packages.OnyxUI)
-local Pages = require(HDAdminUI.Static.Pages)
-local NavigationStateMod = require(HDAdminUI.StateMods.NavigationStateMod)
+local Main = script:FindFirstAncestor("MainModule")
+local Packages = Main.Value.Packages
+local UI = Main.Value.Controllers.UI
+local Fusion = require(Packages.Fusion)
+local OnyxUI = require(Packages.OnyxUI)
+local Pages = require(UI.Static.Pages)
+local NavigationStateMod = require(UI.StateMods.NavigationStateMod)
 
 local Children = Fusion.Children
 

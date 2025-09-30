@@ -4,5 +4,8 @@
 	"luau-lsp.fflags.enableNewSolver": true,
 	"luau-lsp.fflags.enableByDefault": true,
 	"stylua.targetReleaseVersion": "latest",
-	"luau-lsp.sourcemap.rojoProjectFile": "default.project.json"
+	"luau-lsp.sourcemap.rojoProjectFile": "default.project.json",
+    
+	"luau-lsp.diagnostics.workspace": false,
+	"luau-lsp.diagnostics.pullOnChange": true
 }

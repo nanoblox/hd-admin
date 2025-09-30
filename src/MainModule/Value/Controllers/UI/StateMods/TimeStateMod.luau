@@ -1,7 +1,8 @@
 local RunService = game:GetService("RunService")
 
-local HDAdminUI = script.Parent.Parent
-local States = require(HDAdminUI.States)
+local Main = script:FindFirstAncestor("MainModule")
+local UI = Main.Value.Controllers.UI
+local States = require(UI.States)
 
 local TimeStateMod = {
 	Updater = RunService.RenderStepped:Connect(function()

@@ -1,14 +1,16 @@
 local MarketplaceService = game:GetService("MarketplaceService")
 local Players = game:GetService("Players")
 
-local HDAdminUI = script.Parent.Parent
-local OnyxUI = require(HDAdminUI.Parent.Parent.Parent.Packages.OnyxUI)
-local Fusion = require(HDAdminUI.Parent.Parent.Parent.Packages.Fusion)
-local Future = require(HDAdminUI.Parent.Parent.Parent.Packages.Future)
-local CosmeticsStateMod = require(HDAdminUI.StateMods.CosmeticsStateMod)
-local Config = require(HDAdminUI.Config)
-local States = require(HDAdminUI.States)
-local ColorUtils = require(HDAdminUI.Parent.Parent.Parent.Packages.ColorUtils)
+local Main = script:FindFirstAncestor("MainModule")
+local Packages = Main.Value.Packages
+local UI = Main.Value.Controllers.UI
+local OnyxUI = require(Packages.OnyxUI)
+local Fusion = require(Packages.Fusion)
+local Future = require(Packages.Future)
+local CosmeticsStateMod = require(UI.StateMods.CosmeticsStateMod)
+local Config = require(UI.Config)
+local States = require(UI.States)
+local ColorUtils = require(Packages.ColorUtils)
 
 local CONFIG = Config:Get()
 

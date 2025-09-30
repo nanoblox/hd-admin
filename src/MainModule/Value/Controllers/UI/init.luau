@@ -3,22 +3,26 @@ local States = require(script.States)
 local StateMods = require(script.StateMods)
 local DarkTheme = require(script.Themes.DarkTheme)
 local Main = script:FindFirstAncestor("MainModule")
-local Packages = Main.Packages
-local Modules = Main.Modules
-local Fusion = require(script.Parent.Parent.Parent.Packages.Fusion)
+local Packages = Main.Value.Packages
+local Modules = Main.Value.Modules
+local Fusion = require(Packages.Fusion)
 local ScreenGui = require(script.Components.Guis.ScreenGui)
 local Config = require(script.Config)
 local Signals = require(script.Signals)
 
-local HDAdminUI = {
+local UI = {
 	Started = false,
 	Signals = Signals,
 }
 
 local function start()
-	assert(HDAdminUI.Started == false, "Frontend cannot be started twice!")
+	assert(UI.Started == false, "Frontend cannot be started twice!")
 
-	require(Modules.References.appIcon)
+	local appIcon = require(Modules.References.appIcon)
+	appIcon:bindEvent("toggled", function()
+		UI.toggleOpen()
+	end)
+
 	States.Theme:set(DarkTheme)
 	StateMods:Initialize()
 
@@ -33,23 +37,23 @@ local function start()
 	})
 end
 
-function HDAdminUI.configure(Configuration: typeof(Config:Get()))
+function UI.configure(Configuration: typeof(Config:Get()))
 	assert(typeof(Configuration) == "table", "Config must be of type table!")
-	assert(HDAdminUI.Started == false, "Frontend cannot be configured after starting!")
+	assert(UI.Started == false, "Frontend cannot be configured after starting!")
 
 	Config:Update(function()
 		return Configuration
 	end)
 end
 
-function HDAdminUI.setOpen(Open: boolean)
+function UI.setOpen(Open: boolean)
 	States.Menu.Open:set(Open)
 end
 
-function HDAdminUI.toggleOpen()
+function UI.toggleOpen()
 	States.Menu.Open:set(not Fusion.peek(States.Menu.Open))
 end
 
 task.defer(start)
 
-return HDAdminUI
+return UI

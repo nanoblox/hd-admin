@@ -1,8 +1,9 @@
-local HDAdminUI = script.Parent.Parent
-local Sift = require(HDAdminUI.Parent.Parent.Parent.Packages.Sift)
-local OnyxUI = require(HDAdminUI.Parent.Parent.Parent.Packages.OnyxUI)
+local Main = script:FindFirstAncestor("MainModule")
+local Packages = Main.Value.Packages
+local Sift = require(Packages.Sift)
+local OnyxUI = require(Packages.OnyxUI)
 local BaseTheme = require(script.Parent.BaseTheme)
-local Fusion = require(HDAdminUI.Parent.Parent.Parent.Packages.Fusion)
+local Fusion = require(Packages.Fusion)
 
 local Scope = Fusion.scoped(Fusion)
 

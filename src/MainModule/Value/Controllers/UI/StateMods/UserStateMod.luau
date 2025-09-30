@@ -1,8 +1,10 @@
-local HDAdminUI = script.Parent.Parent
-local Fusion = require(HDAdminUI.Parent.Parent.Parent.Packages.Fusion)
-local UserInformant = require(HDAdminUI.Utils.UserInformant)
-local States = require(HDAdminUI.States)
-local Signals = require(HDAdminUI.Signals)
+local Main = script:FindFirstAncestor("MainModule")
+local Packages = Main.Value.Packages
+local UI = Main.Value.Controllers.UI
+local Fusion = require(Packages.Fusion)
+local UserInformant = require(UI.Utils.UserInformant)
+local States = require(UI.States)
+local Signals = require(UI.Signals)
 
 local Scope = Fusion.scoped(Fusion)
 

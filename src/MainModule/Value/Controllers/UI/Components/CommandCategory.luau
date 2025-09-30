@@ -1,8 +1,10 @@
-local HDAdminUI = script.Parent.Parent
-local OnyxUI = require(HDAdminUI.Parent.Parent.Parent.Packages.OnyxUI)
-local Fusion = require(HDAdminUI.Parent.Parent.Parent.Packages.Fusion)
-local States = require(HDAdminUI.States)
-local Sift = require(HDAdminUI.Parent.Parent.Parent.Packages.Sift)
+local Main = script:FindFirstAncestor("MainModule")
+local Packages = Main.Value.Packages
+local UI = Main.Value.Controllers.UI
+local OnyxUI = require(Packages.OnyxUI)
+local Fusion = require(Packages.Fusion)
+local States = require(UI.States)
+local Sift = require(Packages.Sift)
 
 local Children = Fusion.Children
 local CommandButton = require(script.Parent.CommandButton)

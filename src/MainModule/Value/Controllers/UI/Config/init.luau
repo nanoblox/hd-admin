@@ -1,5 +1,6 @@
-local HDAdminUI = script.Parent
-local Stator = require(HDAdminUI.Parent.Parent.Parent.Packages.Stator)
+local Main = script:FindFirstAncestor("MainModule")
+local Packages = Main.Value.Packages
+local Stator = require(Packages.Stator)
 
 local DEFAULT_CONFIG = {
 	Icons = require(script.Icons),

@@ -29,8 +29,9 @@ local commands: Task.Commands = {
 	{
 		name = "/Helicopter",
 		args = {"Player"},
-		run = function(task, args: {any})
+		run = function(task: Task.Class, args: {any})
 			print("helicopter (B)")
+			
 		end
 	},
 

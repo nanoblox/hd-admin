@@ -1,10 +1,11 @@
 local Players = game:GetService("Players")
 local UserService = game:GetService("UserService")
 
-local HDAdminUI = script.Parent.Parent
-local Fusion = require(HDAdminUI.Parent.Parent.Parent.Packages.Fusion)
-local Future = require(HDAdminUI.Parent.Parent.Parent.Packages.Future)
-local Sift = require(HDAdminUI.Parent.Parent.Parent.Packages.Sift)
+local Main = script:FindFirstAncestor("MainModule")
+local Packages = Main.Value.Packages
+local Fusion = require(Packages.Fusion)
+local Future = require(Packages.Future)
+local Sift = require(Packages.Sift)
 
 local Scope = Fusion.scoped(Fusion)
 

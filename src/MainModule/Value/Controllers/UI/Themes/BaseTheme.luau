@@ -1,5 +1,6 @@
-local HDAdminUI = script.Parent.Parent
-local OnyxUI = require(HDAdminUI.Parent.Parent.Parent.Packages.OnyxUI)
+local Main = script:FindFirstAncestor("MainModule")
+local Packages = Main.Value.Packages
+local OnyxUI = require(Packages.OnyxUI)
 
 return {
 	Colors = {

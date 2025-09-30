@@ -1,6 +1,8 @@
-local HDAdminUI = script.Parent
-local Fusion = require(HDAdminUI.Parent.Parent.Parent.Packages.Fusion)
-local Dark = require(HDAdminUI.Themes.DarkTheme)
+local Main = script:FindFirstAncestor("MainModule")
+local Packages = Main.Value.Packages
+local UI = Main.Value.Controllers.UI
+local Fusion = require(Packages.Fusion)
+local Dark = require(UI.Themes.DarkTheme)
 
 local Scope = Fusion.scoped(Fusion)
 

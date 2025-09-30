@@ -16,8 +16,7 @@ local TEXT_MAX_CHARACTERS = 420
 -- LOCAL
 local Args = {}
 local modules = script:FindFirstAncestor("MainModule").Value.Modules
-local controllers = modules.Parent.Controllers
-local InputObjects = require(controllers.UI.UI.Static.InputObjects)
+local InputObjects = require(modules.Parser.InputObjects)
 local Players = game:GetService("Players")
 local requiresUpdating = true
 local sortedNameAndAliasLengthArray = {}

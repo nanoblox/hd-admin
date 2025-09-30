@@ -1,8 +1,10 @@
 local Workspace = game:GetService("Workspace")
 
-local HDAdminUI = script.Parent.Parent
-local Fusion = require(HDAdminUI.Parent.Parent.Parent.Packages.Fusion)
-local States = require(script.Parent.Parent.States)
+local Main = script:FindFirstAncestor("MainModule")
+local Packages = Main.Value.Packages
+local UI = Main.Value.Controllers.UI
+local Fusion = require(Packages.Fusion)
+local States = require(UI.States)
 
 local Out = Fusion.Out
 

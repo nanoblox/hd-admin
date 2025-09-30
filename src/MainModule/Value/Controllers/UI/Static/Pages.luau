@@ -1,5 +1,6 @@
-local HDAdminUI = script.Parent.Parent
-local Config = require(HDAdminUI.Config)
+local Main = script:FindFirstAncestor("MainModule")
+local UI = Main.Value.Controllers.UI
+local Config = require(UI.Config)
 
 local CONFIG = Config:Get()
 

@@ -1,7 +1,9 @@
-local HDAdminUI = script.Parent.Parent
-local States = require(HDAdminUI.States)
-local Fusion = require(HDAdminUI.Parent.Parent.Parent.Packages.Fusion)
-local Signals = require(HDAdminUI.Signals)
+local Main = script:FindFirstAncestor("MainModule")
+local Packages = Main.Value.Packages
+local UI = Main.Value.Controllers.UI
+local States = require(UI.States)
+local Fusion = require(Packages.Fusion)
+local Signals = require(UI.Signals)
 
 local CosmeticsStateMod = {}
 
