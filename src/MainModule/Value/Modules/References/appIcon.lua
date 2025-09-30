@@ -9,12 +9,16 @@
 ]]
 
 local main = script:FindFirstAncestor("MainModule")
+local UI = require(main.Value.Controllers.UI)
 local Icon = require(main.Value.Modules.Objects.Icon)
+
 return Icon.new()
 	:setImage(139559302589584, "deselected")
 	:setImage(90888779036359, "selected")
 	:setImageScale(0.45, "deselected")
 	:setImageScale(0.45, "selected")
-	--:bindToggleItem(mainFrame)
+	:bindEvent("toggled", function()
+		UI:ToggleOpen()
+	end)
 	:setOrder(0)
 	:setEnabled(false)
