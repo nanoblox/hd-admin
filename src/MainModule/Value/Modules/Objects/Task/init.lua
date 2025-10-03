@@ -769,6 +769,8 @@ export type Command = {
 	contributors: {string}?,
 	args: {Args.Argument | Args.ArgumentDetail},
 	run: ((Class, {any}) -> () | any)?,
+	displayName: string?, -- custom display name
+	displayPrefix: string?, -- custom display prefix, useful for overrides
 }
 
 export type Commands = {Command}

@@ -5,7 +5,7 @@ local commands: Task.Commands = {
 
     --------------------
 	{
-		name = "fly",
+		name = script.Name,
 		aliases = {},
 		args = {"Player", "Speed"},
 		run = function(task: Task.Class, args)

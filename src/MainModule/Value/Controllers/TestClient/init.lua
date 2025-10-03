@@ -4,24 +4,26 @@
 local main = script:FindFirstAncestor("MainModule")
 local modules = main.Value.Modules
 local Icon = require(modules.Objects.Icon)
-
 local TestController = {}
 
--- Test stuff
---[[
+
+-- Show data
 local clientUser = require(modules.References.clientUser)
-local someData = clientUser.perm:fetchAsync("SomeSavedTable", "SomeDataInThatTable")
-clientUser.perm:observe("Rank", function(value)
-	print("Rank =", value)
-end)
-clientUser.everyone:observe("TotalPlayers", function(value)
-	print("TotalPlayers =", value)
-end)
---]]
+local everyone = clientUser.everyone
 
-local Icon = require(modules.Objects.Icon)
-local icon = Icon.new()
+local success, array: any = everyone:fetchAsync("Commands")
+print("commands (previews) = ", array)
 
-icon:setLabel("Test v2")
+local firstCommandName = array[1].name
+local success, info = everyone:fetchAsync("CommandInfo", firstCommandName)
+print("firstCommand =", info)
+
+local secondCommandName = array[2].name
+local success, info = everyone:fetchAsync("CommandInfo", secondCommandName)
+print("secondCommand =", info)
+
+everyone:fetchAsync("CommandInfo", "Message")
+print("allDataOnClient =", everyone._data)
+
 
 return TestController

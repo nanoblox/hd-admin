@@ -28,11 +28,14 @@ local modules = script:FindFirstAncestor("MainModule").Value.Modules
 local deepCopyTable = require(modules.TableUtil.deepCopyTable)
 local Serializer = require(modules.Serializer)
 local Janitor = require(modules.Objects.Janitor)
+local Signal = require(modules.Objects.Signal)
 local Players = game:GetService("Players")
 local Remote = require(modules.Objects.Remote)
 local stateReplication: Remote.Class?, stateReplicationRequest: Remote.Class? = nil, nil
 local replicationHandlers = {}
+local hasFirstFetchRequested = false
 local State = {}
+State.firstFetchRequested = Signal.new()
 State.__index = State
 
 
@@ -341,6 +344,10 @@ function State.replicate(self: Class, player: Player, replicationName: string, p
 			if not replicationHandler then
 				return false, "Replication handler does not exist"
 			end
+			if not hasFirstFetchRequested then
+				hasFirstFetchRequested = true
+				State.firstFetchRequested:fire()
+			end
 			return replicationHandler(player, ...)
 		end)
 	end
@@ -518,7 +525,7 @@ function State.fetchAsync(self: Class, ...: string): (boolean, string | {any})
 	if not success then
 		return false, approved
 	end
-	if not approved then
+	if not approved or value == nil then
 		return false, value
 	end
 	successfulBindings[pathwayKey] = true

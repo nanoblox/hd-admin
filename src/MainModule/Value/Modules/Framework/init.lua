@@ -246,7 +246,7 @@ function Framework.startServer()
 				if commandModule:IsA("ModuleScript") then
 					local reference = require(commandModule)
 					forEveryCommand(reference, function(command)
-						command.Role = role
+						command.role = role
 					end)
 					for _, child in commandModule:GetChildren() do
 						-- We set a 'Child' attribute for all child modules named 'Client'

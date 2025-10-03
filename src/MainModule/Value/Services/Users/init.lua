@@ -4,6 +4,7 @@ local Players = game:GetService("Players")
 local modules = script:FindFirstAncestor("MainModule").Value.Modules
 local services = modules.Parent.Services
 
+
 -- Setup player user objects (and their data saving and replication)
 local User = require(modules.Objects.User)
 local function playerAdded(player: Player)
@@ -31,6 +32,15 @@ Players.PlayerAdded:Connect(playerAdded)
 for _, player in Players:GetPlayers() do
 	playerAdded(player)
 end
+
+
+-- Setup commands if the client makes a request before the server needs to update
+-- This is essential for example to ensure data fetched via User.everyone is accurate
+local State = require(modules.Objects.State)
+State.firstFetchRequested:connect(function()
+	local Commands = require(services.Commands)
+	Commands.updateCommands()
+end)
 
 
 return Users

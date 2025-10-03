@@ -1,4 +1,15 @@
 --!strict
+-- CONFIG
+local CLIENT_PROPERTIES_TO_EXCLUDE = {
+	"run",
+}
+
+local CLIENT_PROPERTIES_TO_PREVIEW = {
+	"name",
+	"tags",
+}
+
+
 -- LOCAL
 local Commands = {}
 local modules = script:FindFirstAncestor("MainModule").Value.Modules
@@ -12,6 +23,8 @@ local lowerCaseNameAndAliasCommandsDictionary: {[string]: Command} = {}
 local sortedNameAndAliasWithOverrideLengthArray: {string} = {}
 local commandsRequireUpdating = true
 local commandPrefixes: {[string]: boolean} = {}
+local clientDataCommands: {any} = {}
+local clientDataCommandInfo: {[string]: any} = {}
 
 
 -- TYPES
@@ -36,6 +49,8 @@ function Commands.updateCommands()
 	lowerCaseNameAndAliasCommandsDictionary = {}
 	sortedNameAndAliasWithOverrideLengthArray = {}
 	commandPrefixes = {}
+	clientDataCommands = {}
+	clientDataCommandInfo = {}
 	local forEveryCommand = require(modules.CommandUtil.forEveryCommand)
 	for _, commandModule in pairs(script:GetChildren()) do
 		if not commandModule:IsA("ModuleScript") then
@@ -45,6 +60,10 @@ function Commands.updateCommands()
 		forEveryCommand(commandsInside, function(command: any)
 			local prefixes = command.prefixes
 			local commandName = command.name
+			if typeof(commandName) ~= "string" then
+				return
+			end
+
 			-- If command contains a custom prefix
 			if typeof(prefixes) == "table" then
 				for _, prefix in prefixes do
@@ -54,7 +73,7 @@ function Commands.updateCommands()
 				end
 			end
 			table.insert(commandsArray, command :: Command)
-			local function registerNameOrAlias(nameOrAlias: string, isOverride: boolean?)
+			local function registerNameOrAlias(nameOrAlias: string?, isOverride: boolean?)
 				if typeof(nameOrAlias) ~= "string" then
 					return false
 				end
@@ -85,13 +104,36 @@ function Commands.updateCommands()
 			if isValidPrefix(firstChar) then
 				local overrideName = string.sub(commandName, 2)
 				commandPrefixes[firstChar] = true
+				command.displayPrefix = firstChar
 				registerNameOrAlias(overrideName, true) -- Also register override so that it can be detected in parser
 			end
+			-- Register info so can be retrieved by client
+			local commandPreview = {}
+			local commandInfo = {}
+			for _, propertyName in CLIENT_PROPERTIES_TO_PREVIEW do
+				local propertyValue = command[propertyName]
+				if typeof(propertyValue) ~= nil then
+					commandPreview[propertyName] = propertyValue
+				end
+			end
+			for k,v in command do
+				if CLIENT_PROPERTIES_TO_EXCLUDE[k] then
+					continue
+				end
+				if typeof(v) == "function" then
+					continue
+				end
+				commandInfo[k] = v
+			end
+			table.insert(clientDataCommands, commandPreview)
+			clientDataCommandInfo[commandName] = commandInfo
 		end)
 	end
 	table.sort(sortedNameAndAliasWithOverrideLengthArray, function(a: string, b: string): boolean
 		return #a > #b
 	end)
+	User.everyone:set("Commands", clientDataCommands)
+	User.everyone:set("CommandInfo", clientDataCommandInfo)
 	return true
 end
 
