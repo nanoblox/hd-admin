@@ -130,10 +130,13 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 				Content = Scope:Computed(function(Use)
 					local SafeCommandValue = Use(SafeCommand)
 					local QuickRunEnabledValue = Use(QuickRunEnabled)
+					local ArgumentsAreOptionalValue = Use(ArgumentsAreOptional)
 
 					return {
 						`{Use(States.Settings.Prefix)}{SafeCommandValue.Prompt}`,
-						QuickRunEnabledValue and CONFIG.Icons.ZapFill or "",
+						(QuickRunEnabledValue and CONFIG.Icons.ZapFill)
+							or (ArgumentsAreOptionalValue and CONFIG.Icons.Zap)
+							or "",
 					}
 				end),
 				ContentColor = Scope:Spring(ContentColor, Theme.SpringSpeed["1"], Theme.SpringDampening["1.5"]),
