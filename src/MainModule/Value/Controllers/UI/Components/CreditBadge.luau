@@ -44,11 +44,20 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 		},
 
 		OnActivate = function()
-			States.Menu.Pages.About.SelectedCredit:set({
-				Name = Fusion.peek(Label),
-				Image = Fusion.peek(Image),
-				Link = Fusion.peek(Link),
-			})
+			local SelectedCreditValue = Fusion.peek(States.Menu.Pages.About.SelectedCredit)
+			local LinkValue = Fusion.peek(Link)
+
+			if (SelectedCreditValue ~= nil) and (SelectedCreditValue.Link == Link) then
+				States.Menu.Pages.About.SelectedCredit:set({
+					Link = "",
+				})
+			else
+				States.Menu.Pages.About.SelectedCredit:set({
+					Name = Fusion.peek(Label),
+					Image = Fusion.peek(Image),
+					Link = Link,
+				})
+			end
 		end,
 
 		[Children] = {
