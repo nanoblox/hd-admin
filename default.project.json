@@ -16,7 +16,7 @@
           "Roles": {
             "$path": "src/Commands"
           },
-		  "Settings": {
+          "Settings": {
             "$path": "src/MainModule/Value/Modules/Config/Settings.lua"
           }
         },
@@ -35,14 +35,14 @@
             },
             "Value": {
               "$className": "ViewportFrame",
-			  "Controllers": {
+              "Controllers": {
                 "$path": "src/MainModule/Value/Controllers"
               },
               "Modules": {
                 "$path": "src/MainModule/Value/Modules"
               },
               "Packages": {
-                "$path": "Packages"
+                "$path": "roblox_packages"
               },
               "Services": {
                 "$path": "src/MainModule/Value/Services"
