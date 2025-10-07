@@ -31,8 +31,8 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 		Menu = {
 			Component = Menu,
 			Props = {
-				AnchorPoint = Vector2.new(0.5, 0.5),
-				Position = UDim2.fromScale(0.5, 0.5),
+				AnchorPoint = Vector2.new(1, 0.5),
+				Position = UDim2.fromScale(1, 0.5) + UDim2.fromOffset(-20, 0),
 			},
 		},
 	}

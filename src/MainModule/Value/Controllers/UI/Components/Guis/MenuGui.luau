@@ -84,6 +84,7 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 		Name = script.Name,
 		BaseResolution = Vector2.new(700, 500),
 		MaxScale = 1,
+		MinScale = 0.6,
 		Visible = Enabled,
 
 		[Children] = {
