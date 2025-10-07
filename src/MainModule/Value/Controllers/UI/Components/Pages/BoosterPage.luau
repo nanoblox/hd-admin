@@ -31,7 +31,7 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 
 		[Children] = {
 			Scope:IconText {
-				Content = { CONFIG.Icons.LogoGlyph, "Booster" },
+				Content = { CONFIG.Icons.LogoGlyph, "Commands" },
 				ContentSize = Theme.TextSize["1.5"],
 				ContentFontFace = Scope:Font(Theme.Font.Heading, Theme.FontWeight.Heading),
 				List = {

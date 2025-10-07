@@ -59,7 +59,7 @@ local PAGES = {
 		Id = "Cosmetics",
 	},
 	Booster = {
-		Id = "Booster",
+		Id = "Unlock",
 	},
 }
 
