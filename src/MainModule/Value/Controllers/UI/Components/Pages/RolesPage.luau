@@ -15,6 +15,7 @@ local Users = require(script.Parent.Parent.Users)
 local RoleButton = require(script.Parent.Parent.RoleButton)
 local Category = require(script.Parent.Parent.Category)
 local UserButton = require(script.Parent.Parent.UserButton)
+local RoleBadge = require(script.Parent.Parent.RoleBadge)
 
 export type Props = OnyxUI.FrameProps & {}
 
@@ -24,6 +25,7 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 		RoleButton = RoleButton,
 		UserButton = UserButton,
 		Category = Category,
+		RoleBadge = RoleBadge,
 	})
 	local Theme = OnyxUI.Themer.Theme:now()
 
@@ -125,6 +127,17 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 											Scope:Users {
 												UserIds = Category.Users,
 												ButtonType = "Button",
+												ButtonProps = function(UserId)
+													return {
+														[Children] = {
+															Scope:RoleBadge {
+																UserId = UserId,
+																Role = "Admin",
+																LayoutOrder = 4,
+															},
+														},
+													}
+												end,
 											},
 										},
 									}

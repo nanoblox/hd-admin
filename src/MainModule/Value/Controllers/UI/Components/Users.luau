@@ -29,7 +29,9 @@ return function(Scope: Fusion.Scope<>, Props: Props)
 	local PinnedUserIds = OnyxUI.Util.Fallback(Props.PinnedUserIds, {})
 	local ButtonType = OnyxUI.Util.Fallback(Props.ButtonType, "CheckButton")
 	local Search = OnyxUI.Util.Fallback(Props.Search, "")
-	local ButtonProps = OnyxUI.Util.Fallback(Props.ButtonProps, {})
+	local ButtonProps = OnyxUI.Util.Fallback(Props.ButtonProps, function()
+		return {}
+	end)
 
 	local Selection = Scope:EnsureValue(OnyxUI.Util.Fallback(Props.Selection, {}))
 
@@ -99,7 +101,7 @@ return function(Scope: Fusion.Scope<>, Props: Props)
 				return OnyxUI.Themer.Theme:is(Theme):during(function()
 					return ComponentValue(
 						Scope,
-						OnyxUI.Util.CombineProps(ButtonProps, {
+						OnyxUI.Util.CombineProps(ButtonProps(UserInfo.UserId), {
 							UserId = UserInfo.UserId,
 							Checked = Checked,
 							LayoutOrder = Scope:Computed(function(Use)
