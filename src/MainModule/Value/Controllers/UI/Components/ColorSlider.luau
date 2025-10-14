@@ -16,6 +16,10 @@ local PROPERTIES = {
 		Icon = CONFIG.Icons.Color,
 	},
 	{
+		Name = "Saturation",
+		Icon = CONFIG.Icons.LightBulbOutline,
+	},
+	{
 		Name = "Brightness",
 		Icon = CONFIG.Icons.BrightnessHigh,
 	},
@@ -30,14 +34,18 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 	local Theme = OnyxUI.Themer.Theme:now()
 
 	local Hue = Scope:Value(1)
+	local Saturation = Scope:Value(1)
 	local Brightness = Scope:Value(1)
 	local Color = Scope:EnsureValue(OnyxUI.Util.Fallback(Props.Color, Color3.fromHex("FFFFFF")))
 
 	local function UpdateColor()
-		Color:set(Color3.fromHSV(Fusion.peek(Hue), Fusion.peek(Brightness), 1))
+		Color:set(Color3.fromHSV(Fusion.peek(Hue), Fusion.peek(Saturation), Fusion.peek(Brightness)))
 	end
 
 	Scope:Observer(Hue):onChange(function()
+		UpdateColor()
+	end)
+	Scope:Observer(Saturation):onChange(function()
 		UpdateColor()
 	end)
 	Scope:Observer(Brightness):onChange(function()
@@ -49,10 +57,17 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 			FillDirection = Enum.FillDirection.Horizontal,
 			HorizontalFlex = Enum.UIFlexAlignment.Fill,
 			VerticalAlignment = Enum.VerticalAlignment.Center,
+			Padding = Scope:UDim(0, Theme.Spacing["0.5"]),
 		},
 
 		[Children] = {
 			Scope:ForValues(PROPERTIES, function(Use, Scope, Property: typeof(PROPERTIES[1]))
+				local PropertyValues = {
+					Hue = Hue,
+					Saturation = Saturation,
+					Brightness = Brightness,
+				}
+
 				return OnyxUI.Themer.Theme:is(Use(States.Theme)):during(function()
 					return Scope:Frame {
 						Name = Property.Name,
@@ -60,7 +75,7 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 							FillDirection = Enum.FillDirection.Horizontal,
 							HorizontalFlex = Enum.UIFlexAlignment.Fill,
 							VerticalAlignment = Enum.VerticalAlignment.Bottom,
-							Padding = Scope:UDim(0, Theme.Spacing["0.5"]),
+							Padding = Scope:UDim(0, Theme.Spacing["0.25"]),
 						},
 
 						[Children] = {
@@ -72,7 +87,7 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 								},
 							},
 							Scope:Slider {
-								Value = ((Property.Name == "Hue") and Hue) or Brightness,
+								Value = PropertyValues[Property.Name],
 								Color = Color,
 							},
 						},
