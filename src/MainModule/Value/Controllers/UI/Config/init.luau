@@ -10,7 +10,7 @@ local DEFAULT_CONFIG = {
 	FeaturedCosmetics = require(script.FeaturedCosmetics),
 	DonationProducts = require(script.DonationProducts),
 	Donators = require(script.Donators),
-	Roles = require(script.Ranks),
+	Roles = require(script.Roles),
 	Version = require(script.Version),
 }
 

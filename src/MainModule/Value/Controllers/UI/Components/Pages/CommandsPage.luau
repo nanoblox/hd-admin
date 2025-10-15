@@ -146,8 +146,8 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 
 						[Children] = {
 							Scope:Tags {
-								Tags = Sift.Array.map(CONFIG.Roles, function(RankString: string)
-									return { RankString }
+								Tags = Sift.Array.map(CONFIG.Roles, function(RoleString: string)
+									return { RoleString }
 								end),
 								Selection = RankTags,
 								ButtonProps = {

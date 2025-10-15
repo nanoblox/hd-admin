@@ -1,4 +1,4 @@
-local Ranks = require(script.Parent.Ranks)
+local Roles = require(script.Parent.Roles)
 
 export type Argument = {
 	Name: string,
@@ -10,7 +10,7 @@ export type Argument = {
 export type Command = {
 	Prompt: string,
 	Arguments: { Argument },
-	Rank: Ranks.Rank,
+	Rank: Roles.Rank,
 }
 
 local COMMANDS = {
