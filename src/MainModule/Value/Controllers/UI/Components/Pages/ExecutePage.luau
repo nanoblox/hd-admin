@@ -7,6 +7,7 @@ local States = require(UI.States)
 local Config = require(UI.Config)
 local Sift = require(Packages.Sift)
 local Signals = require(UI.Signals)
+local PanelsStateMod = require(UI.StateMods.PanelsStateMod)
 
 local CONFIG = Config:Get()
 
@@ -23,9 +24,10 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 		CustomButton = CustomButton,
 	})
 	local Theme = OnyxUI.Themer.Theme:now()
+	local Panel = PanelsStateMod.Panel:now()
 
 	local Command = Scope:Computed(function(Use)
-		local IdValue = Use(States.Menu.Pages.Execute.CommandId)
+		local IdValue = Use(Panel.PagesData.Execute.CommandId)
 
 		return CONFIG.Commands[IdValue]
 	end)
@@ -122,7 +124,7 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 
 						OnActivate = function()
 							Signals.CommandRan:Fire(
-								Fusion.peek(States.Menu.Pages.Execute.CommandId),
+								Fusion.peek(Panel.PagesData.Execute.CommandId),
 								Fusion.peek(ArgumentSettingValues)
 							)
 						end,

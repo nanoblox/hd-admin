@@ -6,7 +6,7 @@ local OnyxUI = require(Packages.OnyxUI)
 local States = require(UI.States)
 local Config = require(UI.Config)
 local Signals = require(UI.Signals)
-local NavigationStateMod = require(UI.StateMods.NavigationStateMod)
+local PanelsStateMod = require(UI.StateMods.PanelsStateMod)
 
 local CONFIG = Config:Get()
 
@@ -21,6 +21,7 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 		PageButton = PageButton,
 	})
 	local Theme = OnyxUI.Themer.Theme:now()
+	local Panel = PanelsStateMod.Panel:now()
 
 	return Scope:Frame(OnyxUI.Util.CombineProps(Props, {
 		Name = script.Name,
@@ -112,8 +113,8 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 						SizeVariant = "ExtraLarge",
 
 						OnActivate = function()
-							States.Menu.Pages.Commands.ActiveTag:set("Booster")
-							NavigationStateMod:To("Commands")
+							Panel.PagesData.Commands.ActiveTag:set("Booster")
+							PanelsStateMod.ToPage(Panel, "Commands")
 						end,
 					},
 				},

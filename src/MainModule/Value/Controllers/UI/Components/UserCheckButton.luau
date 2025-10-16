@@ -6,7 +6,7 @@ local Fusion = require(Packages.Fusion)
 local States = require(UI.States)
 local UserInformant = require(UI.Utils.UserInformant)
 local Sift = require(Packages.Sift)
-local NavigationStateMod = require(UI.StateMods.NavigationStateMod)
+local PanelsStateMod = require(UI.StateMods.PanelsStateMod)
 
 local Children = Fusion.Children
 
@@ -24,6 +24,7 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 		CustomButton = CustomButton,
 	})
 	local Theme = OnyxUI.Themer.Theme:now()
+	local Panel = PanelsStateMod.Panel:now()
 
 	local UserId = OnyxUI.Util.Fallback(Props.UserId, 1)
 	local Checked = Scope:EnsureValue(OnyxUI.Util.Fallback(Props.Checked, false))
@@ -69,8 +70,8 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 		},
 
 		OnActivate = function()
-			States.Menu.Pages.User.UserId:set(Fusion.peek(UserId))
-			NavigationStateMod:To("User")
+			Panel.PagesData.User.UserId:set(Fusion.peek(UserId))
+			PanelsStateMod.ToPage(Panel, "User")
 		end,
 
 		[Children] = {

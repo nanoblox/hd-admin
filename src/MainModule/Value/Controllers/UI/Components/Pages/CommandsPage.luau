@@ -6,6 +6,7 @@ local OnyxUI = require(Packages.OnyxUI)
 local States = require(UI.States)
 local Config = require(UI.Config)
 local Sift = require(Packages.Sift)
+local PanelsStateMod = require(UI.StateMods.PanelsStateMod)
 
 local CONFIG = Config:Get()
 
@@ -30,6 +31,7 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 		Tags = Tags,
 	})
 	local Theme = OnyxUI.Themer.Theme:now()
+	local Panel = PanelsStateMod.Panel:now()
 
 	local SearchQuery = Scope:Value("")
 	local RankTags = Scope:Value({})
@@ -123,7 +125,7 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 							Scope:IconToggle {
 								Name = "QuickRunToggle",
 								Options = { CONFIG.Icons.Zap, CONFIG.Icons.ZapFill },
-								Toggled = States.Menu.Pages.Commands.QuickRun,
+								Toggled = Panel.PagesData.Commands.QuickRun,
 								ContentSize = Theme.TextSize["1.125"],
 								Aspect = {
 									Ratio = 1,

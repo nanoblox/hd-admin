@@ -4,11 +4,15 @@ local Main = script:FindFirstAncestor("MainModule")
 local Packages = Main.Value.Packages
 local Fusion = require(Packages.Fusion)
 local States = require(script.Parent.Parent.States)
+local Sift = require(Packages.Sift)
 
 export type PanelEntry = {
 	Id: string,
-	Position: Vector2,
-	Page: string,
+	Open: Fusion.Value<boolean>,
+	Position: Fusion.Value<Vector2>,
+	Page: Fusion.Value<string>,
+	PageHistory: Fusion.Value<{ string }>,
+	PageUndoHistory: Fusion.Value<{ string }>,
 	PagesData: {
 		Execute: {
 			CommandId: Fusion.Value<string?>,
@@ -35,7 +39,9 @@ local NewPanel = function(Scope: Fusion.Scope<typeof(Fusion)>): PanelEntry
 		Id = HttpService:GenerateGUID(false),
 		Open = Scope:Value(true),
 		Position = Scope:Value(Vector2.new(0.005, 0.005)),
-		Page = "Dashboard",
+		Page = Scope:Value("Dashboard"),
+		PageHistory = Scope:Value({}),
+		PageUndoHistory = Scope:Value({}),
 		PagesData = {
 			Execute = {
 				CommandId = Scope:Value(nil),
@@ -71,12 +77,61 @@ local PanelsStateMod = {
 	Panel = Fusion.Contextual(NewPanel(Scope)),
 }
 
+function PanelsStateMod.Undo(PanelEntry: PanelEntry)
+	PanelsStateMod.Update(PanelEntry, function(Panel)
+		local PageHistoryValue = Fusion.peek(Panel.PageHistory)
+
+		if #PageHistoryValue >= 2 then
+			PanelsStateMod.ToPage(PanelEntry, PageHistoryValue[#PageHistoryValue - 1], true)
+
+			Panel.PageHistory:set(Sift.Array.pop(PageHistoryValue, 1))
+		end
+	end)
+end
+
+function PanelsStateMod.Redo(PanelEntry: PanelEntry)
+	PanelsStateMod.Update(PanelEntry, function(Panel)
+		local UndoHistoryValue = Fusion.peek(Panel.PageUndoHistory)
+
+		if #UndoHistoryValue >= 2 then
+			PanelsStateMod.ToPage(PanelEntry, UndoHistoryValue[#UndoHistoryValue - 1], true)
+
+			Panel.PageUndoHistory:set(Sift.Array.pop(UndoHistoryValue, 1))
+		end
+	end)
+end
+
+function PanelsStateMod.ToPage(PanelEntry: PanelEntry, Page: string, Undo: boolean)
+	PanelsStateMod.Update(PanelEntry.Id, function(Panel)
+		Panel.Page:set(Page)
+
+		if not Undo then
+			PanelsStateMod.RecordPage(Panel, Page)
+			Panel.PageUndoHistory:set({})
+		end
+	end)
+end
+
+function PanelsStateMod.RecordPage(PanelEntry: PanelEntry, Page: string)
+	PanelsStateMod.Update(PanelEntry.Id, function(Panel)
+		local HistoryValue = Fusion.peek(Panel.PageHistory)
+
+		Panel.PageHistory:set(Sift.Array.append(HistoryValue, Page))
+	end)
+end
+
 function PanelsStateMod.SetOpen(PanelEntry: PanelEntry, Open: boolean)
+	PanelsStateMod.Update(PanelEntry.Id, function(Panel)
+		Panel.Open:set(Open)
+	end)
+end
+
+function PanelsStateMod.Update(PanelId: string, Update: (PanelEntry) -> PanelEntry)
 	local PanelsValue = Fusion.peek(States.Panels)
 
-	for OtherKey, OtherPanel in PanelsValue do
-		if OtherPanel.Id == PanelEntry.Id then
-			OtherPanel.Open = Open
+	for _, OtherPanel in PanelsValue do
+		if OtherPanel.Id == PanelId then
+			Update(OtherPanel)
 		end
 	end
 

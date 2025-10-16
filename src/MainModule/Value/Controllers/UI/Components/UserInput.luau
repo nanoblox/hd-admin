@@ -3,10 +3,10 @@ local Packages = Main.Value.Packages
 local UI = Main.Value.Controllers.UI
 local OnyxUI = require(Packages.OnyxUI)
 local Fusion = require(Packages.Fusion)
-local NavigationStateMod = require(UI.StateMods.NavigationStateMod)
 local States = require(UI.States)
 local UserInformant = require(UI.Utils.UserInformant)
 local Sift = require(Packages.Sift)
+local PanelsStateMod = require(UI.StateMods.PanelsStateMod)
 
 local Children = Fusion.Children
 
@@ -16,6 +16,7 @@ export type Props = OnyxUI.BaseButtonProps & {
 
 return function(Scope: Fusion.Scope<any>, Props: Props)
 	local Scope = Fusion.innerScope(Scope, Fusion, OnyxUI.Util, OnyxUI.Components)
+	local Panel = PanelsStateMod.Panel:now()
 
 	local UserIds = Scope:EnsureValue(OnyxUI.Util.Fallback(Props.UserIds, {}))
 	local UserInfos = Scope:Value({})
@@ -69,10 +70,10 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 
 			Text:set("")
 
-			States.Menu.Pages.Users.Selected:set(UserIdsValue)
-			NavigationStateMod:To("Users")
+			Panel.PagesData.Users.Selected:set(UserIdsValue)
+			PanelsStateMod.ToPage(Panel, "Users")
 
-			States.Menu.Pages.Users.SelectedCallback:set(function(SelectedUserIds: { number })
+			Panel.PagesData.Users.SelectedCallback:set(function(SelectedUserIds: { number })
 				UserIds:set(SelectedUserIds or {})
 			end)
 		end,

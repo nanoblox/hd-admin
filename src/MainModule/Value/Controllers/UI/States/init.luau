@@ -9,30 +9,6 @@ local Scope = Fusion.scoped(Fusion)
 local States = {
 	Theme = Scope:Value(nil),
 	Panels = Scope:Value({}),
-	Menu = {
-		Open = Scope:Value(false),
-		Page = Scope:Value("Dashboard"),
-		Position = Scope:Value(Vector2.new(0.005, 0.005)),
-		Pages = {
-			Execute = {
-				CommandId = Scope:Value(nil),
-			},
-			Commands = {
-				QuickRun = Scope:Value(false),
-				ActiveTag = Scope:Value(nil),
-			},
-			User = {
-				UserId = Scope:Value(1),
-			},
-			Users = {
-				Selected = Scope:Value({}),
-				SelectedCallback = Scope:Value(nil),
-			},
-			About = {
-				SelectedCredit = Scope:Value(nil),
-			},
-		},
-	},
 	Prompts = {
 		Prompts = Scope:Value({}),
 	},

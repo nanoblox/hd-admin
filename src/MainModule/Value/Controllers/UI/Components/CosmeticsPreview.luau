@@ -4,7 +4,7 @@ local UI = Main.Value.Controllers.UI
 local Fusion = require(Packages.Fusion)
 local OnyxUI = require(Packages.OnyxUI)
 local Config = require(UI.Config)
-local NavigationStateMod = require(UI.StateMods.NavigationStateMod)
+local PanelsStateMod = require(UI.StateMods.PanelsStateMod)
 
 local CONFIG = Config:Get()
 
@@ -19,6 +19,7 @@ return function(Scope: Fusion.Scope<>, Props: Props)
 		CosmeticButton = CosmeticButton,
 	})
 	local Theme = OnyxUI.Themer.Theme:now()
+	local Panel = PanelsStateMod.Panel:now()
 
 	return Scope:Frame(OnyxUI.Util.CombineProps(Props, {
 		Name = "Cosmetics",
@@ -69,7 +70,7 @@ return function(Scope: Fusion.Scope<>, Props: Props)
 				SizeVariant = "ExtraLarge",
 
 				OnActivate = function()
-					NavigationStateMod:To("Cosmetics")
+					PanelsStateMod.ToPage(Panel, "Cosmetics")
 				end,
 			},
 		},

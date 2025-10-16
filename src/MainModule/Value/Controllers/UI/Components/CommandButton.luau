@@ -7,7 +7,6 @@ local OnyxUI = require(Packages.OnyxUI)
 local Config = require(UI.Config)
 local Sift = require(Packages.Sift)
 local States = require(UI.States)
-local NavigationStateMod = require(UI.StateMods.NavigationStateMod)
 local Signals = require(UI.Signals)
 
 local CONFIG = Config:Get()
@@ -15,6 +14,7 @@ local CONFIG = Config:Get()
 local Children = Fusion.Children
 
 local CustomButton = require(script.Parent.CustomButton)
+local PanelsStateMod = require(script.Parent.Parent.StateMods.PanelsStateMod)
 
 export type Props = OnyxUI.ButtonProps & {
 	Id: Fusion.UsedAs<string>?,
@@ -26,6 +26,7 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 		CustomButton = CustomButton,
 	})
 	local Theme = OnyxUI.Themer.Theme:now()
+	local Panel = PanelsStateMod.Panel:now()
 
 	local Id = OnyxUI.Util.Fallback(Props.Id, "Command")
 	local QuickRun = OnyxUI.Util.Fallback(Props.QuickRun, false)
@@ -101,8 +102,8 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 
 					Signals.CommandRan:Fire(IdValue, {})
 				else
-					States.Menu.Pages.Execute.CommandId:set(IdValue)
-					NavigationStateMod:To("Execute")
+					Panel.PagesData.Execute.CommandId:set(IdValue)
+					PanelsStateMod.ToPage(Panel, "Execute")
 				end
 			end
 		end,

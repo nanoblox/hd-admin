@@ -6,7 +6,6 @@ local OnyxUI = require(Packages.OnyxUI)
 local States = require(UI.States)
 local Pages = require(UI.Static.Pages)
 local Config = require(UI.Config)
-local NavigationStateMod = require(UI.StateMods.NavigationStateMod)
 local Sift = require(Packages.Sift)
 
 local CONFIG = Config:Get()
@@ -43,12 +42,12 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 	local Panel = PanelsStateMod.Panel:now()
 
 	local Page = Scope:Computed(function(Use)
-		return Pages[Use(States.Menu.Page)]
+		return Pages[Use(Panel.Page)]
 	end)
 	local PageHistory = Scope:Computed(function(Use)
 		local PageValue = Use(Page)
-		local UndoHistoryValue = Use(NavigationStateMod.UndoHistory)
-		local HistoryValue = Use(NavigationStateMod.History)
+		local UndoHistoryValue = Use(Panel.PageUndoHistory)
+		local HistoryValue = Use(Panel.PageHistory)
 
 		return Sift.Array.merge(UndoHistoryValue, HistoryValue)
 	end)
@@ -72,12 +71,12 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 			task.cancel(OpenCloseThread)
 		end
 
-		local OpenValue = Fusion.peek(States.Menu.Open)
+		local OpenValue = Fusion.peek(Panel.Open)
 
 		Enabled:set(OpenValue)
 	end
 
-	Scope:Observer(States.Menu.Open):onChange(function()
+	Scope:Observer(Panel.Open):onChange(function()
 		TransitionOpenClose()
 	end)
 	TransitionOpenClose()
@@ -99,7 +98,7 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 				AutomaticSize = Enum.AutomaticSize.Y,
 				GroupTransparency = Scope:Spring(
 					Scope:Computed(function(Use)
-						return Use(States.Menu.Open) and 0 or 1
+						return Use(Panel.Open) and 0 or 1
 					end),
 					Theme.SpringSpeed["1"],
 					Theme.SpringDampening["1.5"]
@@ -122,7 +121,7 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 					Scope:TitleBar2 {
 						Content = Scope:Computed(function(Use)
 							local PageValue = Use(Page)
-							local PageIdValue = Use(States.Menu.Page)
+							local PageIdValue = Use(Panel.Page)
 
 							if PageIdValue == "Dashboard" then
 								return { CONFIG.Icons.LogoGlyph, PageValue.Name or PageValue.Id or PageIdValue }
@@ -132,18 +131,18 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 						end),
 
 						OnDrag = function(DeltaPosition: Vector2)
-							local MenuPositionValue = Fusion.peek(States.Menu.Position)
+							local MenuPositionValue = Fusion.peek(Panel.Position)
 							local ScreenResolutionValue = Fusion.peek(States.Screen.Resolution)
 
 							MenuPositionValue += (DeltaPosition / ScreenResolutionValue)
 
-							States.Menu.Position:set(MenuPositionValue)
+							Panel.Position:set(MenuPositionValue)
 						end,
 					},
 					Scope:Frame {
 						Size = Scope:Spring(
 							Scope:Computed(function(Use)
-								if Use(States.Menu.Open) then
+								if Use(Panel.Open) then
 									return UDim2.fromOffset(0, Use(Theme.Sizing["24"]))
 								else
 									return UDim2.fromOffset(0, 0)
@@ -172,7 +171,7 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 											return table.find(LastPageHistoryValue, Name) or 0
 										end)
 										local Open = Scope:Computed(function(Use)
-											local PageValue = Use(States.Menu.Page)
+											local PageValue = Use(Panel.Page)
 
 											if PageValue == Name then
 												return true

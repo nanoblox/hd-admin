@@ -7,6 +7,7 @@ local States = require(UI.States)
 local Config = require(UI.Config)
 local UserInformant = require(UI.Utils.UserInformant)
 local Sift = require(Packages.Sift)
+local PanelsStateMod = require(UI.StateMods.PanelsStateMod)
 
 local CONFIG = Config:Get()
 
@@ -62,8 +63,9 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 		RolesReel = RolesReel,
 	})
 	local Theme = OnyxUI.Themer.Theme:now()
+	local Panel = PanelsStateMod.Panel:now()
 
-	local UserId = States.Menu.Pages.User.UserId
+	local UserId = Panel.PagesData.User.UserId
 	local UserInfo = Scope:Value({})
 
 	local function UpdateUserInfo()

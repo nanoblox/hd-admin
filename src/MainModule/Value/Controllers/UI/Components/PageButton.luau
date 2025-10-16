@@ -4,7 +4,7 @@ local UI = Main.Value.Controllers.UI
 local Fusion = require(Packages.Fusion)
 local OnyxUI = require(Packages.OnyxUI)
 local Pages = require(UI.Static.Pages)
-local NavigationStateMod = require(UI.StateMods.NavigationStateMod)
+local PanelsStateMod = require(UI.StateMods.PanelsStateMod)
 
 local Children = Fusion.Children
 
@@ -19,6 +19,7 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 		CustomButton = CustomButton,
 	})
 	local Theme = OnyxUI.Themer.Theme:now()
+	local Panel = PanelsStateMod.Panel:now()
 
 	local Id = OnyxUI.Util.Fallback(Props.Id, nil)
 	local Padding = OnyxUI.Util.Fallback(Props.Padding, Scope:UDim(0, Theme.Padding["1"]))
@@ -51,7 +52,7 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 		},
 
 		OnActivate = function()
-			NavigationStateMod:To(Fusion.peek(Id))
+			PanelsStateMod.ToPage(Panel, Fusion.peek(Id))
 		end,
 
 		[Children] = {

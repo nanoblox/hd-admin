@@ -37,9 +37,6 @@ return function(Target: Instance)
 		},
 	})
 
-	States.Menu.Open:set(true)
-	-- States.Menu.Page:set("Moderation")
-
 	States.Theme:set(DarkTheme)
 
 	Scope:Viewport {
@@ -55,7 +52,7 @@ return function(Target: Instance)
 		end),
 
 		OnActivate = function()
-			States.Menu.Open:set(not Fusion.peek(States.Menu.Open))
+			Panel.Open:set(not Fusion.peek(Panel.Open))
 		end,
 	}
 

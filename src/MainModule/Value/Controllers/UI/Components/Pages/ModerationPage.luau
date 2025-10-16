@@ -7,7 +7,7 @@ local Config = require(UI.Config)
 local Sift = require(Packages.Sift)
 local UserInformant = require(UI.Utils.UserInformant)
 local States = require(UI.States)
-local NavigationStateMod = require(UI.StateMods.NavigationStateMod)
+local PanelsStateMod = require(UI.StateMods.PanelsStateMod)
 
 local CONFIG = Config:Get()
 
@@ -26,6 +26,7 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 		Users = Users,
 	})
 	local Theme = OnyxUI.Themer.Theme:now()
+	local Panel = PanelsStateMod.Panel:now()
 
 	local TabMode = Scope:Value(1)
 	local SearchQuery = Scope:Value("")
@@ -130,8 +131,8 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 
 									local TabModeCommand = { "Ban", "Warn" }
 
-									NavigationStateMod:To("Execute")
-									States.Menu.Pages.Execute.CommandId:set(TabModeCommand[TabModeValue])
+									PanelsStateMod.ToPage(Panel, "Execute")
+									Panel.PagesData.Execute.CommandId:set(TabModeCommand[TabModeValue])
 								end,
 							},
 						},
