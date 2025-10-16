@@ -1,7 +1,9 @@
 local Main = script:FindFirstAncestor("MainModule")
 local Packages = Main.Value.Packages
+local UI = Main.Value.Controllers.UI
 local Fusion = require(Packages.Fusion)
 local OnyxUI = require(Packages.OnyxUI)
+local PanelsStateMod = require(UI.StateMods.PanelsStateMod)
 
 local Children = Fusion.Children
 
@@ -16,6 +18,7 @@ return function(Scope: Fusion.Scope<>, Props: Props)
 		NumberInput = NumberInput,
 	})
 	local Theme = OnyxUI.Themer.Theme:now()
+	local Panel = PanelsStateMod.Panel:now()
 
 	local Time = Scope:EnsureValue(OnyxUI.Util.Fallback(Props.Time, 0))
 
@@ -90,33 +93,35 @@ return function(Scope: Fusion.Scope<>, Props: Props)
 				end)
 
 				return OnyxUI.Themer.Theme:is(Theme):during(function()
-					return Scope:Frame {
-						Name = "TimeInput",
-						List = {
-							HorizontalFlex = Enum.UIFlexAlignment.Fill,
-							Padding = Scope:UDim(0, Theme.Spacing["0.5"]),
-						},
-
-						[Children] = {
-							Scope:NumberInput {
-								Number = Number,
-								Minimum = 0,
-								Round = true,
-								AutomaticSize = Enum.AutomaticSize.Y,
-								ClearTextOnFocus = true,
-								OnFocusEnd = function(NewNumber: number)
-									TimeProperty.Value:set(NewNumber)
-
-									UpdateTotalTime()
-								end,
+					return PanelsStateMod.Panel:is(Panel):during(function()
+						return Scope:Frame {
+							Name = "TimeInput",
+							List = {
+								HorizontalFlex = Enum.UIFlexAlignment.Fill,
+								Padding = Scope:UDim(0, Theme.Spacing["0.5"]),
 							},
-							Scope:Text {
-								Text = TimeProperty.Name,
-								TextColor3 = Theme.Colors.NeutralContent.Dark,
-								TextXAlignment = Enum.TextXAlignment.Center,
+
+							[Children] = {
+								Scope:NumberInput {
+									Number = Number,
+									Minimum = 0,
+									Round = true,
+									AutomaticSize = Enum.AutomaticSize.Y,
+									ClearTextOnFocus = true,
+									OnFocusEnd = function(NewNumber: number)
+										TimeProperty.Value:set(NewNumber)
+
+										UpdateTotalTime()
+									end,
+								},
+								Scope:Text {
+									Text = TimeProperty.Name,
+									TextColor3 = Theme.Colors.NeutralContent.Dark,
+									TextXAlignment = Enum.TextXAlignment.Center,
+								},
 							},
-						},
-					}
+						}
+					end)
 				end)
 			end),
 		},

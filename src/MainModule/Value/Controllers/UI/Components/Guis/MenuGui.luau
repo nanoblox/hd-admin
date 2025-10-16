@@ -7,13 +7,13 @@ local States = require(UI.States)
 local Pages = require(UI.Static.Pages)
 local Config = require(UI.Config)
 local Sift = require(Packages.Sift)
+local PanelsStateMod = require(UI.StateMods.PanelsStateMod)
 
 local CONFIG = Config:Get()
 
 local Children = Fusion.Children
 
 local PageButton = require(script.Parent.Parent.PageButton)
-local PanelsStateMod = require(script.Parent.Parent.Parent.StateMods.PanelsStateMod)
 local TitleBar2 = require(script.Parent.Parent.TitleBar2)
 
 local MENUS = {

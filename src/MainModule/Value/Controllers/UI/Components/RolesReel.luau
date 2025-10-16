@@ -1,7 +1,9 @@
 local Main = script:FindFirstAncestor("MainModule")
 local Packages = Main.Value.Packages
+local UI = Main.Value.Controllers.UI
 local OnyxUI = require(Packages.OnyxUI)
 local Fusion = require(Packages.Fusion)
+local PanelsStateMod = require(UI.StateMods.PanelsStateMod)
 
 local Children = Fusion.Children
 
@@ -21,6 +23,7 @@ return function(Scope: Fusion.Scope<>, Props: Props)
 		CustomButton = CustomButton,
 	})
 	local Theme = OnyxUI.Themer.Theme:now()
+	local Panel = PanelsStateMod.Panel:now()
 
 	local Roles = OnyxUI.Util.Fallback(Props.Roles, {})
 	local UserId = OnyxUI.Util.Fallback(Props.UserId, nil)
@@ -64,10 +67,12 @@ return function(Scope: Fusion.Scope<>, Props: Props)
 		[Children] = {
 			Scope:ForValues(ShownRoles, function(Use, Scope, Role: string)
 				return OnyxUI.Themer.Theme:is(Theme):during(function()
-					return Scope:RoleBadge(OnyxUI.Util.CombineProps(BadgeProps, {
-						Role = Role,
-						UserId = UserId,
-					}))
+					return PanelsStateMod.Panel:is(Panel):during(function()
+						return Scope:RoleBadge(OnyxUI.Util.CombineProps(BadgeProps, {
+							Role = Role,
+							UserId = UserId,
+						}))
+					end)
 				end)
 			end),
 			Scope:Computed(function(Use)

@@ -1,6 +1,7 @@
 local Main = script:FindFirstAncestor("MainModule")
 local Packages = Main.Value.Packages
 local UI = Main.Value.Controllers.UI
+local PanelsStateMod = require(UI.StateMods.PanelsStateMod)
 local Fusion = require(Packages.Fusion)
 local OnyxUI = require(Packages.OnyxUI)
 local UserInformant = require(UI.Utils.UserInformant)
@@ -24,6 +25,7 @@ export type Props = OnyxUI.FrameProps & {
 return function(Scope: Fusion.Scope<>, Props: Props)
 	local Scope = Fusion.innerScope(Scope, Fusion, OnyxUI.Components, OnyxUI.Util)
 	local Theme = OnyxUI.Themer.Theme:now()
+	local Panel = PanelsStateMod.Panel:now()
 
 	local UserIds = OnyxUI.Util.Fallback(Props.UserIds, {})
 	local PinnedUserIds = OnyxUI.Util.Fallback(Props.PinnedUserIds, {})
@@ -99,38 +101,40 @@ return function(Scope: Fusion.Scope<>, Props: Props)
 				UpdateChecked()
 
 				return OnyxUI.Themer.Theme:is(Theme):during(function()
-					return ComponentValue(
-						Scope,
-						OnyxUI.Util.CombineProps(ButtonProps(UserInfo.UserId), {
-							UserId = UserInfo.UserId,
-							Checked = Checked,
-							LayoutOrder = Scope:Computed(function(Use)
-								local SelectionValue = Use(Selection)
-								local PinnedUserIdsValue = Use(PinnedUserIds)
-								local SelectionIndex = table.find(SelectionValue, UserInfo.UserId)
-								local PinnedIndex = table.find(PinnedUserIdsValue, UserInfo.UserId)
+					return PanelsStateMod.Panel:is(Panel):during(function()
+						return ComponentValue(
+							Scope,
+							OnyxUI.Util.CombineProps(ButtonProps(UserInfo.UserId), {
+								UserId = UserInfo.UserId,
+								Checked = Checked,
+								LayoutOrder = Scope:Computed(function(Use)
+									local SelectionValue = Use(Selection)
+									local PinnedUserIdsValue = Use(PinnedUserIds)
+									local SelectionIndex = table.find(SelectionValue, UserInfo.UserId)
+									local PinnedIndex = table.find(PinnedUserIdsValue, UserInfo.UserId)
 
-								if PinnedIndex ~= nil then
-									return PinnedIndex
-								else
-									return #PinnedUserIdsValue + string.byte(tostring(UserInfo.DisplayName))
-								end
-							end),
+									if PinnedIndex ~= nil then
+										return PinnedIndex
+									else
+										return #PinnedUserIdsValue + string.byte(tostring(UserInfo.DisplayName))
+									end
+								end),
 
-							OnCheck = function()
-								local UserSelectionValue = Fusion.peek(Selection)
+								OnCheck = function()
+									local UserSelectionValue = Fusion.peek(Selection)
 
-								local Index = table.find(UserSelectionValue, UserInfo.UserId)
-								if Index ~= nil then
-									table.remove(UserSelectionValue, Index)
-								else
-									table.insert(UserSelectionValue, UserInfo.UserId)
-								end
+									local Index = table.find(UserSelectionValue, UserInfo.UserId)
+									if Index ~= nil then
+										table.remove(UserSelectionValue, Index)
+									else
+										table.insert(UserSelectionValue, UserInfo.UserId)
+									end
 
-								Selection:set(UserSelectionValue)
-							end,
-						})
-					)
+									Selection:set(UserSelectionValue)
+								end,
+							})
+						)
+					end)
 				end)
 			end),
 		},

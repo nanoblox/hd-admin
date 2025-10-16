@@ -63,10 +63,6 @@ local NewPanel = function(Scope: Fusion.Scope<typeof(Fusion)>): Panel
 		},
 	}
 
-	local PanelsValue = Fusion.peek(States.Panels)
-	table.insert(PanelsValue, Panel)
-	States.Panels:set(PanelsValue)
-
 	return Panel
 end
 
@@ -136,6 +132,10 @@ function PanelsStateMod.New(Scope: Fusion.Scope)
 	local Scope = Fusion.innerScope(Scope, Fusion)
 
 	local Panel = NewPanel(Scope)
+
+	local PanelsValue = Fusion.peek(States.Panels)
+	table.insert(PanelsValue, Panel)
+	States.Panels:set(PanelsValue)
 
 	PanelsStateMod.RecordPage(Panel, Fusion.peek(Panel.Page))
 

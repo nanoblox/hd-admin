@@ -1,7 +1,9 @@
 local Main = script:FindFirstAncestor("MainModule")
 local Packages = Main.Value.Packages
+local UI = Main.Value.Controllers.UI
 local OnyxUI = require(Packages.OnyxUI)
 local Fusion = require(Packages.Fusion)
+local PanelsStateMod = require(UI.StateMods.PanelsStateMod)
 
 local Children = Fusion.Children
 
@@ -116,6 +118,7 @@ export type Props = OnyxUI.BaseButtonProps & {
 return function(Scope: Fusion.Scope<any>, Props: Props)
 	local Scope = Fusion.innerScope(Scope, Fusion, OnyxUI.Util, OnyxUI.Components)
 	local Theme = OnyxUI.Themer.Theme:now()
+	local Panel = PanelsStateMod.Panel:now()
 
 	local Label = OnyxUI.Util.Fallback(Props.Label, "Setting")
 	local Type = OnyxUI.Util.Fallback(Props.Type, "boolean")

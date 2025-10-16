@@ -1,8 +1,10 @@
 local Main = script:FindFirstAncestor("MainModule")
 local Packages = Main.Value.Packages
+local UI = Main.Value.Controllers.UI
 local Fusion = require(Packages.Fusion)
 local OnyxUI = require(Packages.OnyxUI)
 local Sift = require(Packages.Sift)
+local PanelsStateMod = require(UI.StateMods.PanelsStateMod)
 
 local Children = Fusion.Children
 
@@ -19,6 +21,7 @@ return function(Scope: Fusion.Scope<>, Props: Props)
 		CheckItem = CheckItem,
 	})
 	local Theme = OnyxUI.Themer.Theme:now()
+	local Panel = PanelsStateMod.Panel:now()
 
 	local Items = OnyxUI.Util.Fallback(Props.Items, {})
 	local Selection = Scope:EnsureValue(OnyxUI.Util.Fallback(Props.Selection, {}))
@@ -45,28 +48,30 @@ return function(Scope: Fusion.Scope<>, Props: Props)
 				UpdateChecked()
 
 				return OnyxUI.Themer.Theme:is(Theme):during(function()
-					return Scope:CheckItem(OnyxUI.Util.CombineProps(ButtonProps, {
-						Content = Content,
-						Checked = Checked,
-						LayoutOrder = Scope:Computed(function(Use)
-							local SelectionValue = Use(Selection)
+					return PanelsStateMod.Panel:is(Panel):during(function()
+						return Scope:CheckItem(OnyxUI.Util.CombineProps(ButtonProps, {
+							Content = Content,
+							Checked = Checked,
+							LayoutOrder = Scope:Computed(function(Use)
+								local SelectionValue = Use(Selection)
 
-							return string.byte(tostring(Content))
-						end),
+								return string.byte(tostring(Content))
+							end),
 
-						OnCheck = function()
-							local SelectionValue = Fusion.peek(Selection)
-							local Index = table.find(SelectionValue, Content)
+							OnCheck = function()
+								local SelectionValue = Fusion.peek(Selection)
+								local Index = table.find(SelectionValue, Content)
 
-							if Index ~= nil then
-								table.remove(SelectionValue, Index)
-							else
-								table.insert(SelectionValue, Content)
-							end
+								if Index ~= nil then
+									table.remove(SelectionValue, Index)
+								else
+									table.insert(SelectionValue, Content)
+								end
 
-							Selection:set(SelectionValue)
-						end,
-					}))
+								Selection:set(SelectionValue)
+							end,
+						}))
+					end)
 				end)
 			end),
 		},

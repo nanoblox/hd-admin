@@ -181,10 +181,12 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 					[Children] = {
 						Scope:ForValues(FilteredCategories, function(Use, Scope, Category)
 							return OnyxUI.Themer.Theme:is(Use(States.Theme)):during(function()
-								return Scope:CommandCategory {
-									Label = Category.Label,
-									Commands = Category.Commands,
-								}
+								return PanelsStateMod.Panel:is(Panel):during(function()
+									return Scope:CommandCategory {
+										Label = Category.Label,
+										Commands = Category.Commands,
+									}
+								end)
 							end)
 						end),
 					},

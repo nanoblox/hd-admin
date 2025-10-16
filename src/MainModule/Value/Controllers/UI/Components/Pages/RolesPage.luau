@@ -6,6 +6,7 @@ local OnyxUI = require(Packages.OnyxUI)
 local Sift = require(Packages.Sift)
 local States = require(UI.States)
 local Config = require(UI.Config)
+local PanelsStateMod = require(UI.StateMods.PanelsStateMod)
 
 local CONFIG = Config:Get()
 
@@ -28,6 +29,7 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 		RoleBadge = RoleBadge,
 	})
 	local Theme = OnyxUI.Themer.Theme:now()
+	local Panel = PanelsStateMod.Panel:now()
 
 	local ActiveTab = Scope:Value(1)
 
@@ -99,9 +101,11 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 								[Children] = {
 									Scope:ForValues(CONFIG.Roles, function(Use, Scope, Role)
 										return OnyxUI.Themer.Theme:is(Theme):during(function()
-											return Scope:RoleButton {
-												Role = Role,
-											}
+											return PanelsStateMod.Panel:is(Panel):during(function()
+												return Scope:RoleButton {
+													Role = Role,
+												}
+											end)
 										end)
 									end),
 								},
@@ -109,38 +113,43 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 						elseif ActiveTabValue == 2 then
 							return Scope:ForValues(MemberCategories, function(Use, Scope, Category)
 								return OnyxUI.Themer.Theme:is(Theme):during(function()
-									return Scope:Frame {
-										List = {
-											Padding = Scope:UDim(0, Theme.Spacing["0.75"]),
-											HorizontalFlex = Enum.UIFlexAlignment.Fill,
-										},
+									return PanelsStateMod.Panel:is(Panel):during(function()
+										return Scope:Frame {
+											List = {
+												Padding = Scope:UDim(0, Theme.Spacing["0.75"]),
+												HorizontalFlex = Enum.UIFlexAlignment.Fill,
+											},
 
-										[Children] = {
-											Scope:IconText {
-												Content = Category.Label,
-												ContentSize = Theme.TextSize["1.125"],
-												ContentFontFace = Scope:Computed(function(Use)
-													return Font.new(Use(Theme.Font.Body), Use(Theme.FontWeight.Bold))
-												end),
-												ContentWrapped = false,
-											},
-											Scope:Users {
-												UserIds = Category.Users,
-												ButtonType = "Button",
-												ButtonProps = function(UserId)
-													return {
-														[Children] = {
-															Scope:RoleBadge {
-																UserId = UserId,
-																Role = "Admin",
-																LayoutOrder = 4,
+											[Children] = {
+												Scope:IconText {
+													Content = Category.Label,
+													ContentSize = Theme.TextSize["1.125"],
+													ContentFontFace = Scope:Computed(function(Use)
+														return Font.new(
+															Use(Theme.Font.Body),
+															Use(Theme.FontWeight.Bold)
+														)
+													end),
+													ContentWrapped = false,
+												},
+												Scope:Users {
+													UserIds = Category.Users,
+													ButtonType = "Button",
+													ButtonProps = function(UserId)
+														return {
+															[Children] = {
+																Scope:RoleBadge {
+																	UserId = UserId,
+																	Role = "Admin",
+																	LayoutOrder = 4,
+																},
 															},
-														},
-													}
-												end,
+														}
+													end,
+												},
 											},
-										},
-									}
+										}
+									end)
 								end)
 							end)
 						end

@@ -5,6 +5,7 @@ local Fusion = require(Packages.Fusion)
 local OnyxUI = require(Packages.OnyxUI)
 local Config = require(UI.Config)
 local States = require(UI.States)
+local PanelsStateMod = require(UI.StateMods.PanelsStateMod)
 
 local CONFIG = Config:Get()
 
@@ -32,6 +33,7 @@ export type Props = OnyxUI.FrameProps & {
 return function(Scope: Fusion.Scope<any>, Props: Props)
 	local Scope = Fusion.innerScope(Scope, Fusion, OnyxUI.Components, OnyxUI.Util)
 	local Theme = OnyxUI.Themer.Theme:now()
+	local Panel = PanelsStateMod.Panel:now()
 
 	local Hue = Scope:Value(1)
 	local Saturation = Scope:Value(1)
@@ -69,29 +71,31 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 				}
 
 				return OnyxUI.Themer.Theme:is(Use(States.Theme)):during(function()
-					return Scope:Frame {
-						Name = Property.Name,
-						List = {
-							FillDirection = Enum.FillDirection.Horizontal,
-							HorizontalFlex = Enum.UIFlexAlignment.Fill,
-							VerticalAlignment = Enum.VerticalAlignment.Bottom,
-							Padding = Scope:UDim(0, Theme.Spacing["0.25"]),
-						},
+					return PanelsStateMod.Panel:is(Panel):during(function()
+						return Scope:Frame {
+							Name = Property.Name,
+							List = {
+								FillDirection = Enum.FillDirection.Horizontal,
+								HorizontalFlex = Enum.UIFlexAlignment.Fill,
+								VerticalAlignment = Enum.VerticalAlignment.Bottom,
+								Padding = Scope:UDim(0, Theme.Spacing["0.25"]),
+							},
 
-						[Children] = {
-							Scope:Icon {
-								Image = Property.Icon,
-								Size = Scope:UDim2Offset(Theme.TextSize["1.25"], Theme.TextSize["1.25"]),
-								Aspect = {
-									Ratio = 1,
+							[Children] = {
+								Scope:Icon {
+									Image = Property.Icon,
+									Size = Scope:UDim2Offset(Theme.TextSize["1.25"], Theme.TextSize["1.25"]),
+									Aspect = {
+										Ratio = 1,
+									},
+								},
+								Scope:Slider {
+									Value = PropertyValues[Property.Name],
+									Color = Color,
 								},
 							},
-							Scope:Slider {
-								Value = PropertyValues[Property.Name],
-								Color = Color,
-							},
-						},
-					}
+						}
+					end)
 				end)
 			end),
 		},

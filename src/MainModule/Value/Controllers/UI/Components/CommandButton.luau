@@ -8,13 +8,13 @@ local Config = require(UI.Config)
 local Sift = require(Packages.Sift)
 local States = require(UI.States)
 local Signals = require(UI.Signals)
+local PanelsStateMod = require(UI.StateMods.PanelsStateMod)
 
 local CONFIG = Config:Get()
 
 local Children = Fusion.Children
 
 local CustomButton = require(script.Parent.CustomButton)
-local PanelsStateMod = require(script.Parent.Parent.StateMods.PanelsStateMod)
 
 export type Props = OnyxUI.ButtonProps & {
 	Id: Fusion.UsedAs<string>?,

@@ -73,10 +73,12 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 						end),
 						function(Use, Scope, CommandId: string)
 							return OnyxUI.Themer.Theme:is(Use(States.Theme)):during(function()
-								return Scope:CommandButton {
-									Id = CommandId,
-									QuickRun = Panel.PagesData.Commands.QuickRun,
-								}
+								return PanelsStateMod.Panel:is(Panel):during(function()
+									return Scope:CommandButton {
+										Id = CommandId,
+										QuickRun = Panel.PagesData.Commands.QuickRun,
+									}
+								end)
 							end)
 						end
 					),

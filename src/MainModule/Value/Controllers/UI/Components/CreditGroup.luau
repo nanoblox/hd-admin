@@ -4,6 +4,7 @@ local UI = Main.Value.Controllers.UI
 local OnyxUI = require(Packages.OnyxUI)
 local Fusion = require(Packages.Fusion)
 local States = require(UI.States)
+local PanelsStateMod = require(UI.StateMods.PanelsStateMod)
 
 local Children = Fusion.Children
 
@@ -53,11 +54,13 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 				[Children] = {
 					Scope:ForValues(Credits, function(Use, Scope, Credit: Credit)
 						return OnyxUI.Themer.Theme:is(Use(States.Theme)):during(function()
-							return Scope:CreditBadge {
-								Label = Credit.Label,
-								Image = Credit.Image,
-								Link = Credit.Link,
-							}
+							return PanelsStateMod.Panel:is(Panel):during(function()
+								return Scope:CreditBadge {
+									Label = Credit.Label,
+									Image = Credit.Image,
+									Link = Credit.Link,
+								}
+							end)
 						end)
 					end),
 				},

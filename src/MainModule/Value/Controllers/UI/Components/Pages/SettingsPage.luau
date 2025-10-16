@@ -5,6 +5,7 @@ local Fusion = require(Packages.Fusion)
 local OnyxUI = require(Packages.OnyxUI)
 local Settings = require(UI.Static.Settings)
 local States = require(UI.States)
+local PanelsStateMod = require(UI.StateMods.PanelsStateMod)
 
 local Children = Fusion.Children
 
@@ -27,6 +28,7 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 		CustomButton = CustomButton,
 	})
 	local Theme = OnyxUI.Themer.Theme:now()
+	local Panel = PanelsStateMod.Panel:now()
 
 	return Scope:Scroller(OnyxUI.Util.CombineProps(Props, {
 		Name = script.Name,
@@ -41,10 +43,12 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 		[Children] = {
 			Scope:ForValues(Settings, function(Use, Scope, Category: Settings.Category)
 				return OnyxUI.Themer.Theme:is(Use(States.Theme)):during(function()
-					return Scope:SettingGroup {
-						Title = Category.Name,
-						Settings = Category.Settings,
-					}
+					return PanelsStateMod.Panel:is(Panel):during(function()
+						return Scope:SettingGroup {
+							Title = Category.Name,
+							Settings = Category.Settings,
+						}
+					end)
 				end)
 			end),
 			Scope:Button {

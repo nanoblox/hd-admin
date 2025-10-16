@@ -185,15 +185,17 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 						[Children] = {
 							Scope:ForValues(INFO_CARDS, function(Use, Scope, InfoCardItem)
 								return OnyxUI.Themer.Theme:is(Use(Theme)):during(function()
-									return Scope:InfoCard {
-										Title = InfoCardItem.Title,
-										Body = InfoCardItem.Body,
-										Size = Scope:Computed(function(Use)
-											return UDim2.fromScale(0.5, 0)
-												+ UDim2.fromOffset(-Use(Theme.Spacing["0.5"]), 16 * 6)
-										end),
-										AutomaticSize = Enum.AutomaticSize.None,
-									}
+									return PanelsStateMod.Panel:is(Panel):during(function()
+										return Scope:InfoCard {
+											Title = InfoCardItem.Title,
+											Body = InfoCardItem.Body,
+											Size = Scope:Computed(function(Use)
+												return UDim2.fromScale(0.5, 0)
+													+ UDim2.fromOffset(-Use(Theme.Spacing["0.5"]), 16 * 6)
+											end),
+											AutomaticSize = Enum.AutomaticSize.None,
+										}
+									end)
 								end)
 							end),
 						},
