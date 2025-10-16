@@ -9,6 +9,7 @@ local Fusion = require(Packages.Fusion)
 local ScreenGui = require(script.Components.Guis.ScreenGui)
 local Config = require(script.Config)
 local Signals = require(script.Signals)
+local PanelsStateMod = require(script.StateMods.PanelsStateMod)
 
 local UI = {
 	Started = false,
@@ -20,7 +21,7 @@ local function start()
 
 	local appIcon = require(Modules.References.appIcon)
 	appIcon:bindEvent("toggled", function()
-		UI.toggleOpen()
+		UI.toggleAllOpen()
 	end)
 
 	States.Theme:set(DarkTheme)
@@ -46,12 +47,25 @@ function UI.configure(Configuration: typeof(Config:Get()))
 	end)
 end
 
-function UI.setOpen(Open: boolean)
-	States.Menu.Open:set(Open)
+function UI.setAllOpen(Open: boolean)
+	local PanelsValue = Fusion.peek(States.Panels)
+
+	for _, Panel in PanelsValue do
+		PanelsStateMod.SetOpen(Panel, Open)
+	end
 end
 
-function UI.toggleOpen()
-	States.Menu.Open:set(not Fusion.peek(States.Menu.Open))
+function UI.toggleAllOpen()
+	local AnyOpen = false
+	local PanelsValue = Fusion.peek(States.Panels)
+
+	for _, Panel in PanelsValue do
+		if Panel.Open then
+			AnyOpen = true
+		end
+	end
+
+	UI.setAllOpen(not AnyOpen)
 end
 
 task.defer(start)

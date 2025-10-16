@@ -6,6 +6,7 @@ local OnyxUI = require(Packages.OnyxUI)
 local States = require(UI.States)
 local StateMods = require(UI.StateMods)
 local DarkTheme = require(UI.Themes.DarkTheme)
+local PanelsStateMod = require(UI.StateMods.PanelsStateMod)
 
 local Viewport = require(script.Parent.ViewportGui)
 local CustomButton = require(script.Parent.Parent.CustomButton)
@@ -19,6 +20,8 @@ return function(Target: Instance)
 
 	StateMods:Initialize()
 	StateMods:Start()
+
+	local Panel = PanelsStateMod.New(Scope)
 
 	States.Users.Profiles:set({
 		[1] = {

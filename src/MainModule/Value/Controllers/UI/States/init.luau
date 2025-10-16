@@ -8,6 +8,7 @@ local Scope = Fusion.scoped(Fusion)
 
 local States = {
 	Theme = Scope:Value(nil),
+	Panels = Scope:Value({}),
 	Menu = {
 		Open = Scope:Value(false),
 		Page = Scope:Value("Dashboard"),

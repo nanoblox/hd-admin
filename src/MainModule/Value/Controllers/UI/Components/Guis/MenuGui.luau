@@ -14,6 +14,7 @@ local CONFIG = Config:Get()
 local Children = Fusion.Children
 
 local PageButton = require(script.Parent.Parent.PageButton)
+local PanelsStateMod = require(script.Parent.Parent.Parent.StateMods.PanelsStateMod)
 local TitleBar2 = require(script.Parent.Parent.TitleBar2)
 
 local MENUS = {
@@ -39,6 +40,7 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 		TitleBar2 = TitleBar2,
 	})
 	local Theme = OnyxUI.Themer.Theme:now()
+	local Panel = PanelsStateMod.Panel:now()
 
 	local Page = Scope:Computed(function(Use)
 		return Pages[Use(States.Menu.Page)]
