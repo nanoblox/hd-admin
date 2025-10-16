@@ -50,7 +50,7 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 				AnchorPoint = Vector2.new(1, 1),
 				Position = UDim2.fromScale(1, 1),
 			},
-			Scope:ForValues(States.Panels, function(Use, Scope, Panel: PanelsStateMod.PanelEntry)
+			Scope:ForValues(States.Panels, function(Use, Scope, Panel: PanelsStateMod.Panel)
 				return OnyxUI.Themer.Theme:is(Use(States.Theme)):during(function()
 					return PanelsStateMod.Panel:is(Panel):during(function()
 						return Scope:Menu {
