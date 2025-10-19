@@ -6,17 +6,35 @@ local UserInformant = require(UI.Utils.UserInformant)
 local States = require(UI.States)
 local Callbacks = require(UI.Callbacks)
 local Types = require(UI.Utils.Types)
+local Future = require(Packages.Future)
+local Sift = require(Packages.Sift)
 
 local Scope = Fusion.scoped(Fusion)
 
 local UserStateMod = {}
 
-function UserStateMod:Get(UserId: number): Types.User
-	local UserProfilesValue = Fusion.peek(States.Users.Profiles)
-	local ExistingDetails = UserProfilesValue[UserId]
+function UserStateMod:GetSafe(UserId: number): Fusion.Computed<Types.User>
+	return Scope:Computed(function(Use)
+		local UserValue = Use(UserStateMod:Get(UserId))
+
+		return Sift.Dictionary.merge(UserValue or {}, {
+			UserId = UserId,
+			Username = "Username",
+			DisplayName = "User",
+			AccountAge = -1,
+			Roles = {},
+			Warnings = {},
+			Bans = {},
+		})
+	end)
+end
+
+function UserStateMod:Get(UserId: number): Fusion.Computed<Types.User?>
+	local UsersValue = Fusion.peek(States.Users.Profiles)
+	local ExistingDetails = UsersValue[UserId]
 
 	if ExistingDetails == nil then
-		task.spawn(function()
+		Future.Try(function()
 			UserStateMod:Load(UserId)
 		end)
 	end
@@ -26,8 +44,20 @@ function UserStateMod:Get(UserId: number): Types.User
 	end)
 end
 
-function UserStateMod:Load(UserId: number)
-	Callbacks.UserInfoRequested(UserId)
+function UserStateMod:Load(UserId: number): boolean
+	local Success, UserInfo = Callbacks.RequestUserInfo(UserId)
+
+	if Success then
+		local UsersValue = Fusion.peek(States.Users.Profiles)
+
+		UsersValue[UserId] = UserInfo
+
+		States.Users.Profiles:set(UsersValue)
+
+		return true
+	end
+
+	return false
 end
 
 return UserStateMod
