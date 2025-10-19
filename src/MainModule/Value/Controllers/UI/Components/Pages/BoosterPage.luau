@@ -5,7 +5,7 @@ local Fusion = require(Packages.Fusion)
 local OnyxUI = require(Packages.OnyxUI)
 local States = require(UI.States)
 local Config = require(UI.Config)
-local Signals = require(UI.Signals)
+local Callbacks = require(UI.Callbacks)
 local PanelsStateMod = require(UI.StateMods.PanelsStateMod)
 
 local CONFIG = Config:Get()
@@ -103,7 +103,7 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 						Color = Theme.Colors.Primary.Main,
 
 						OnActivate = function()
-							Signals.BoosterPurchaseInitiated:Fire()
+							Callbacks.BoosterPurchaseInitiated()
 						end,
 					},
 					Scope:Button {

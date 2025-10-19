@@ -8,12 +8,12 @@ local Modules = Main.Value.Modules
 local Fusion = require(Packages.Fusion)
 local ScreenGui = require(script.Components.Guis.ScreenGui)
 local Config = require(script.Config)
-local Signals = require(script.Signals)
+local Callbacks = require(script.Callbacks)
 local PanelsStateMod = require(script.StateMods.PanelsStateMod)
 
 local UI = {
 	Started = false,
-	Signals = Signals,
+	Signals = Callbacks,
 }
 
 local function start()

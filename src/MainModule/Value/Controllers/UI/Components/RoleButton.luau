@@ -4,7 +4,6 @@ local UI = Main.Value.Controllers.UI
 local Fusion = require(Packages.Fusion)
 local OnyxUI = require(Packages.OnyxUI)
 local Config = require(UI.Config)
-local Signals = require(UI.Signals)
 
 local CONFIG = Config:Get()
 

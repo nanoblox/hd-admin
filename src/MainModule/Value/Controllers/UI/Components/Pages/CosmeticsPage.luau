@@ -5,7 +5,7 @@ local Fusion = require(Packages.Fusion)
 local OnyxUI = require(Packages.OnyxUI)
 local States = require(UI.States)
 local Config = require(UI.Config)
-local Signals = require(UI.Signals)
+local Callbacks = require(UI.Callbacks)
 
 local CONFIG = Config:Get()
 
@@ -92,7 +92,7 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 					local WornCosmetics = Fusion.peek(States.Perks.Cosmetics.Worn)
 
 					if #WornCosmetics >= 1 then
-						Signals.CosmeticsCheckedOut:Fire(WornCosmetics)
+						Callbacks.CosmeticsCheckedOut(WornCosmetics)
 					end
 				end,
 			},

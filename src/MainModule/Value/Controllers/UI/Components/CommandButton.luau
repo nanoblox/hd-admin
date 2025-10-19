@@ -7,8 +7,9 @@ local OnyxUI = require(Packages.OnyxUI)
 local Config = require(UI.Config)
 local Sift = require(Packages.Sift)
 local States = require(UI.States)
-local Signals = require(UI.Signals)
+local Callbacks = require(UI.Callbacks)
 local PanelsStateMod = require(UI.StateMods.PanelsStateMod)
+local Future = require(Packages.Future)
 
 local CONFIG = Config:Get()
 
@@ -100,7 +101,9 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 						Running:set(false)
 					end)
 
-					Signals.CommandRan:Fire(IdValue, {})
+					Future.Try(function()
+						Callbacks.CommandRan(IdValue, {})
+					end)
 				else
 					Panel.PagesData.Execute.CommandId:set(IdValue)
 					PanelsStateMod.ToPage(Panel, "Execute")
@@ -182,7 +185,7 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 					local CommandValue = Fusion.peek(Command)
 
 					if CommandValue ~= nil then
-						Signals.CommandStopped:Fire(IdValue)
+						Callbacks.CommandStopped(IdValue)
 					end
 				end,
 			},

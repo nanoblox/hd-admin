@@ -4,7 +4,7 @@ local UI = Main.Value.Controllers.UI
 local Fusion = require(Packages.Fusion)
 local OnyxUI = require(Packages.OnyxUI)
 local Config = require(UI.Config)
-local Signals = require(UI.Signals)
+local Callbacks = require(UI.Callbacks)
 
 local CONFIG = Config:Get()
 
@@ -78,7 +78,7 @@ return function(Scope: Fusion.Scope<>, Props: Props)
 						},
 
 						OnActivate = function()
-							Signals.UserRoleRevoked:Fire(UserIdValue, RoleValue)
+							Callbacks.UserRoleRevoked(UserIdValue, RoleValue)
 						end,
 					}
 				end

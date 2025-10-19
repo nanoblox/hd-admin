@@ -6,7 +6,7 @@ local OnyxUI = require(Packages.OnyxUI)
 local Navigation = require(UI.Static.Navigation)
 local States = require(UI.States)
 local Config = require(UI.Config)
-local Signals = require(UI.Signals)
+local Callbacks = require(UI.Callbacks)
 local PanelsStateMod = require(UI.StateMods.PanelsStateMod)
 
 local Children = Fusion.Children

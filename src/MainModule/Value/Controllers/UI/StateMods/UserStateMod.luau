@@ -4,20 +4,14 @@ local UI = Main.Value.Controllers.UI
 local Fusion = require(Packages.Fusion)
 local UserInformant = require(UI.Utils.UserInformant)
 local States = require(UI.States)
-local Signals = require(UI.Signals)
+local Callbacks = require(UI.Callbacks)
+local Types = require(UI.Utils.Types)
 
 local Scope = Fusion.scoped(Fusion)
 
-export type Profile = {
-	UserId: number,
-	Username: string,
-	DisplayName: string,
-	AccountAge: number?,
-}
-
 local UserStateMod = {}
 
-function UserStateMod:Get(UserId: number): Profile
+function UserStateMod:Get(UserId: number): Types.User
 	local UserProfilesValue = Fusion.peek(States.Users.Profiles)
 	local ExistingDetails = UserProfilesValue[UserId]
 
@@ -33,7 +27,7 @@ function UserStateMod:Get(UserId: number): Profile
 end
 
 function UserStateMod:Load(UserId: number)
-	Signals.UserProfileRequested:Fire(UserId)
+	Callbacks.UserInfoRequested(UserId)
 end
 
 return UserStateMod

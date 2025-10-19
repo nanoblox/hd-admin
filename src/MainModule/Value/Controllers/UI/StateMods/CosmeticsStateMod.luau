@@ -3,7 +3,7 @@ local Packages = Main.Value.Packages
 local UI = Main.Value.Controllers.UI
 local States = require(UI.States)
 local Fusion = require(Packages.Fusion)
-local Signals = require(UI.Signals)
+local Callbacks = require(UI.Callbacks)
 
 local CosmeticsStateMod = {}
 
@@ -20,7 +20,7 @@ function CosmeticsStateMod:SetEquipped(Id: string, Equipped: boolean)
 
 	States.Perks.Cosmetics.Worn:set(CosmeticsValue)
 
-	Signals.CosmeticToggled:Fire(Id, Equipped)
+	Callbacks.CosmeticToggled(Id, Equipped)
 end
 
 function CosmeticsStateMod:Toggle(Id: string)
@@ -28,7 +28,7 @@ function CosmeticsStateMod:Toggle(Id: string)
 
 	CosmeticsStateMod:SetEquipped(Id, not Equipped)
 
-	Signals.CosmeticToggled:Fire(Id, not Equipped)
+	Callbacks.CosmeticToggled(Id, not Equipped)
 end
 
 function CosmeticsStateMod:IsEquipped(Id: string): boolean
