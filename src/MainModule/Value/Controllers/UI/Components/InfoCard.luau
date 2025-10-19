@@ -57,11 +57,13 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 				[Children] = {
 					Scope:IconText {
 						Content = Title,
+						ContentWrapped = false,
 						FontFace = Scope:Computed(function(Use)
 							return Font.new(Use(Theme.Font.Body), Use(Theme.FontWeight.Bold))
 						end),
 						List = {
 							Padding = Scope:UDim(0, Theme.Spacing["0.25"]),
+							Wraps = false,
 						},
 					},
 					Scope:Text {

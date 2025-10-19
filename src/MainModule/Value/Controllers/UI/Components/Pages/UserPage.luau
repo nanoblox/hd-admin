@@ -19,8 +19,8 @@ local RolesReel = require(script.Parent.Parent.RolesReel)
 
 local INFO_CARDS = {
 	{
-		Title = { "Rank", CONFIG.Icons.ShieldPersonFill },
-		Body = "User",
+		Title = { "Joined", CONFIG.Icons.RecentCalendarFill },
+		Body = "01/01/2000",
 	},
 	{
 		Title = { "Warns", CONFIG.Icons.WarningFill },
