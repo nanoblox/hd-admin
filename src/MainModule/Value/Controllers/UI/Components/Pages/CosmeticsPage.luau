@@ -92,7 +92,7 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 					local WornCosmetics = Fusion.peek(States.Perks.Cosmetics.Worn)
 
 					if #WornCosmetics >= 1 then
-						Callbacks.CosmeticsCheckedOut(WornCosmetics)
+						Callbacks.PurchaseCosmetics(WornCosmetics)
 					end
 				end,
 			},

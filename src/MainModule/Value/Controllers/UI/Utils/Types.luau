@@ -23,6 +23,12 @@ export type User = {
 	},
 }
 
+export type Role = {
+	Name: string,
+	Color: Color3,
+	Level: number,
+}
+
 export type CommandArgument = {
 	Name: string,
 	Type: string,

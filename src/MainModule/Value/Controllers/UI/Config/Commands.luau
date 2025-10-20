@@ -1,5 +1,3 @@
-local Roles = require(script.Parent.Roles)
-
 export type Argument = {
 	Name: string,
 	Type: string,
@@ -10,18 +8,18 @@ export type Argument = {
 export type Command = {
 	Name: string,
 	Arguments: { Argument },
-	Rank: Roles.Rank,
+	Roles: { string },
 }
 
 local COMMANDS = {
 	Command = {
 		Name = "command",
-		Rank = "Moderator",
+		Roles = { "Moderator" },
 		Arguments = {},
 	},
 	Command2 = {
 		Name = "command2",
-		Rank = "Admin",
+		Roles = { "Admin" },
 		Arguments = {
 			{
 				Name = "Players",
@@ -37,7 +35,7 @@ local COMMANDS = {
 	},
 	Command3 = {
 		Name = "command3",
-		Rank = "VIP",
+		Roles = { "VIP" },
 		Arguments = {
 			{
 				Name = "Players",
@@ -51,7 +49,7 @@ local COMMANDS = {
 	},
 	Command4 = {
 		Name = "command4",
-		Rank = "Guest",
+		Roles = { "Guest" },
 		Arguments = {
 			{
 				Name = "Players",
@@ -65,7 +63,7 @@ local COMMANDS = {
 	},
 	Command5 = {
 		Name = "command5",
-		Rank = "Guest",
+		Roles = { "Guest" },
 		Arguments = {
 			{
 				Name = "Players",
@@ -79,7 +77,7 @@ local COMMANDS = {
 	},
 	Ban = {
 		Name = "ban",
-		Rank = "Moderator",
+		Roles = { "Moderator" },
 		Arguments = {
 			{
 				Name = "Players",
@@ -94,7 +92,7 @@ local COMMANDS = {
 	},
 	Warn = {
 		Name = "warn",
-		Rank = "Moderator",
+		Roles = { "Moderator" },
 		Arguments = {
 			{
 				Name = "Players",
@@ -108,14 +106,14 @@ local COMMANDS = {
 	},
 	Admin = {
 		Name = "admin",
-		Rank = "Admin",
+		Roles = { "Admin" },
 		Arguments = {
 			{
 				Name = "Players",
 				Type = "UserIds",
 			},
 			{
-				Name = "Rank",
+				Name = "Role",
 				Type = "Enum",
 				Options = { "Moderator", "Admin" },
 			},
@@ -123,7 +121,7 @@ local COMMANDS = {
 	},
 	EveryArgument = {
 		Name = "everyargument",
-		Rank = "Moderator",
+		Roles = { "Moderator" },
 		Arguments = {
 			{
 				Name = "UserIds",

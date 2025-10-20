@@ -69,7 +69,7 @@ return function(Scope: Fusion.Scope<>, Props: Props)
 				return OnyxUI.Themer.Theme:is(Theme):during(function()
 					return PanelsStateMod.Panel:is(Panel):during(function()
 						return Scope:RoleBadge(OnyxUI.Util.CombineProps(BadgeProps, {
-							Role = Role,
+							Id = Role,
 							UserId = UserId,
 						}))
 					end)

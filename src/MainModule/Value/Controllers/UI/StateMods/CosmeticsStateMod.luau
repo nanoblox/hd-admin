@@ -20,7 +20,7 @@ function CosmeticsStateMod:SetEquipped(Id: string, Equipped: boolean)
 
 	States.Perks.Cosmetics.Worn:set(CosmeticsValue)
 
-	Callbacks.CosmeticToggled(Id, Equipped)
+	Callbacks.ToggleCosmetic(Id, Equipped)
 end
 
 function CosmeticsStateMod:Toggle(Id: string)
@@ -28,7 +28,7 @@ function CosmeticsStateMod:Toggle(Id: string)
 
 	CosmeticsStateMod:SetEquipped(Id, not Equipped)
 
-	Callbacks.CosmeticToggled(Id, not Equipped)
+	Callbacks.ToggleCosmetic(Id, not Equipped)
 end
 
 function CosmeticsStateMod:IsEquipped(Id: string): boolean

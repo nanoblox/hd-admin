@@ -34,15 +34,19 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 	local Panel = PanelsStateMod.Panel:now()
 
 	local SearchQuery = Scope:Value("")
-	local RankTags = Scope:Value({})
+	local RoleTags = Scope:Value({})
 
 	local FilteredCommands = Scope:Computed(function(Use)
 		local SearchQueryValue = Use(SearchQuery)
-		local RankTagsValue = Use(RankTags)
+		local RoleTagsValue = Use(RoleTags)
 
 		return Sift.Dictionary.filter(CONFIG.Commands, function(Command)
-			if #RankTagsValue >= 1 then
-				if table.find(Sift.Array.flatten(RankTagsValue), Command.Rank) == nil then
+			if #RoleTagsValue >= 1 then
+				if
+					Sift.Array.some(Sift.Array.flatten(RoleTagsValue), function(RoleId)
+						return Sift.Array.includes(Command.Roles, RoleId)
+					end) == false
+				then
 					return false
 				end
 			end
@@ -59,22 +63,23 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 		local FilteredCommandsValue = Use(FilteredCommands)
 
 		return Sift.Array.sort(
-			Sift.Array.filter(
-				Sift.Array.map(CONFIG.Roles, function(Role)
+			Sift.Dictionary.values(Sift.Dictionary.filter(
+				Sift.Dictionary.map(CONFIG.Roles, function(Role, Id)
 					return {
-						Label = { Role },
-						Role = Role,
+						Label = { Role.Name },
+						Role = Id,
 						Commands = Sift.Dictionary.keys(Sift.Dictionary.filter(FilteredCommandsValue, function(Command)
-							return Command.Rank == Role
+							return table.find(Command.Roles, Id) ~= nil
 						end)),
-					}
+					},
+						Id
 				end),
 				function(Category)
 					return #Category.Commands > 0
 				end
-			),
+			)),
 			function(Category1, Category2)
-				return table.find(CONFIG.Roles, Category1.Role) < table.find(CONFIG.Roles, Category2.Role)
+				return CONFIG.Roles[Category1.Role].Level < CONFIG.Roles[Category2.Role].Level
 			end
 		)
 	end)
@@ -148,10 +153,10 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 
 						[Children] = {
 							Scope:Tags {
-								Tags = Sift.Array.map(CONFIG.Roles, function(RoleString: string)
-									return { RoleString }
-								end),
-								Selection = RankTags,
+								Tags = Sift.Dictionary.values(Sift.Dictionary.map(CONFIG.Roles, function(Role, Id)
+									return { Role.Name }, Id
+								end)),
+								Selection = RoleTags,
 								ButtonProps = {
 									SizeVariant = "Large",
 									ContentSize = Theme.TextSize["1"],

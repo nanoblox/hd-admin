@@ -36,21 +36,22 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 	local MemberCategories = Scope:Computed(function(Use)
 		local UserProfilesValue = Use(States.Users.Profiles)
 
-		return Sift.Array.map(CONFIG.Roles, function(Role)
+		return Sift.Dictionary.values(Sift.Dictionary.map(CONFIG.Roles, function(Role, Id)
 			return {
-				Label = { Role },
+				Label = { Role.Name },
 				Users = Sift.Dictionary.values(
 					Sift.Dictionary.map(
 						Sift.Dictionary.filter(UserProfilesValue, function(UserProfile)
-							return UserProfile.Role == Role
+							return table.find(UserProfile.Roles, Id)
 						end),
 						function(UserProfile)
 							return UserProfile.UserId
 						end
 					)
 				),
-			}
-		end)
+			},
+				Id
+		end))
 	end)
 
 	return Scope:Frame(OnyxUI.Util.CombineProps(Props, {
@@ -79,6 +80,9 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 				ScrollBarThickness = 0,
 				ScrollBarImageTransparency = 1,
 				CanvasSize = UDim2.fromOffset(0, 0),
+				Padding = {
+					All = Scope:UDim(0, Theme.StrokeThickness["1"]),
+				},
 				List = {
 					HorizontalFlex = Enum.UIFlexAlignment.Fill,
 					Padding = Scope:UDim(0, Theme.Spacing["1"]),
@@ -99,14 +103,15 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 								},
 
 								[Children] = {
-									Scope:ForValues(CONFIG.Roles, function(Use, Scope, Role)
-										return OnyxUI.Themer.Theme:is(Theme):during(function()
-											return PanelsStateMod.Panel:is(Panel):during(function()
-												return Scope:RoleButton {
-													Role = Role,
-												}
+									Scope:ForPairs(CONFIG.Roles, function(Use, Scope, Id, _)
+										return Id,
+											OnyxUI.Themer.Theme:is(Theme):during(function()
+												return PanelsStateMod.Panel:is(Panel):during(function()
+													return Scope:RoleButton {
+														Id = Id,
+													}
+												end)
 											end)
-										end)
 									end),
 								},
 							}
