@@ -8,6 +8,7 @@ local Config = require(UI.Config)
 local Sift = require(Packages.Sift)
 local Callbacks = require(UI.Callbacks)
 local PanelsStateMod = require(UI.StateMods.PanelsStateMod)
+local CommandsStateMod = require(UI.StateMods.CommandsStateMod)
 
 local CONFIG = Config:Get()
 
@@ -26,22 +27,10 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 	local Theme = OnyxUI.Themer.Theme:now()
 	local Panel = PanelsStateMod.Panel:now()
 
-	local Command = Scope:Computed(function(Use)
-		local IdValue = Use(Panel.PagesData.Execute.CommandId)
-
-		return CONFIG.Commands[IdValue]
-	end)
-	local SafeCommand = Scope:Computed(function(Use)
-		local CommandValue = Use(Command)
-
-		return Sift.Dictionary.merge({
-			Prompt = "command",
-			Arguments = {},
-			Callback = function() end,
-		}, CommandValue or {})
-	end)
+	local CommandId = Panel.PagesData.Execute.CommandId
+	local Command = CommandsStateMod.GetSafe(Scope, CommandsStateMod.Get(Scope, CommandId))
 	local SafeArguments = Scope:Computed(function(Use)
-		return Use(SafeCommand).Arguments
+		return Use(Command).Arguments
 	end)
 
 	local ArgumentSettings = Scope:ForValues(SafeArguments, function(Use, Scope, Argument)
@@ -59,7 +48,7 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 	local TextPrompt = Scope:Value("")
 
 	local TextPromptComputed = Scope:Computed(function(Use)
-		return `{Use(States.Settings.Prefix)}{Use(SafeCommand).Prompt} <arg1> <arg2>`
+		return `{Use(States.Settings.Prefix)}{Use(Command).Name} <arg1> <arg2>`
 	end)
 	Scope:Observer(TextPromptComputed):onChange(function()
 		TextPrompt:set(Fusion.peek(TextPromptComputed))
@@ -91,10 +80,10 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 				[Children] = {
 					Scope:SettingGroup {
 						Title = Scope:Computed(function(Use)
-							local SafeCommandValue = Use(SafeCommand)
+							local SafeCommandValue = Use(Command)
 							local PrefixValue = Use(States.Settings.Prefix)
 
-							return `{PrefixValue}{SafeCommandValue.Prompt}`
+							return `{PrefixValue}{SafeCommandValue.Name}`
 						end),
 						Settings = ArgumentSettings,
 					},

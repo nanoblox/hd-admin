@@ -2,6 +2,9 @@ local Main = script:FindFirstAncestor("MainModule")
 local UI = Main.Value.Controllers.UI
 local Packages = Main.Value.Packages
 local Types = require(UI.Utils.Types)
+local Config = require(UI.Config)
+
+local CONFIG = Config:Get()
 
 local RUN_COMMAND: (Name: string, Arguments: { any }) -> boolean = function() end
 local BAN_USER: (UserId: number) -> boolean = function() end
@@ -16,8 +19,8 @@ local PURCHASE_BOOSTER: () -> boolean = function() end
 local REQUEST_USER_INFO: (UserId: number) -> (boolean, Types.User) = function()
 	return {}
 end
-local REQUEST_COMMAND_INFO: (Name: string) -> (boolean, Types.Command) = function()
-	return {}
+local REQUEST_COMMAND_INFO: (Name: string) -> (boolean, Types.Command) = function(Name)
+	return true, CONFIG.Commands[Name]
 end
 
 local Callbacks = {

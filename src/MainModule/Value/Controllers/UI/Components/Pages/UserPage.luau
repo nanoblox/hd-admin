@@ -5,9 +5,9 @@ local Fusion = require(Packages.Fusion)
 local OnyxUI = require(Packages.OnyxUI)
 local States = require(UI.States)
 local Config = require(UI.Config)
-local UserInformant = require(UI.Utils.UserInformant)
 local Sift = require(Packages.Sift)
 local PanelsStateMod = require(UI.StateMods.PanelsStateMod)
+local UserStateMod = require(UI.StateMods.UserStateMod)
 
 local CONFIG = Config:Get()
 
@@ -66,28 +66,7 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 	local Panel = PanelsStateMod.Panel:now()
 
 	local UserId = Panel.PagesData.User.UserId
-	local UserInfo = Scope:Value({})
-
-	local function UpdateUserInfo()
-		local UserIdValue = Fusion.peek(UserId)
-
-		UserInfo:set({
-			UserId = UserIdValue,
-		})
-
-		UserInfo:set(Sift.Dictionary.merge({
-			UserId = 1,
-			Username = "Username",
-			DisplayName = "Name",
-		}, UserInformant.User(UserIdValue)))
-	end
-
-	Scope:Observer(UserId):onChange(function()
-		UpdateUserInfo()
-	end)
-	task.spawn(function()
-		UpdateUserInfo()
-	end)
+	local UserInfo = UserStateMod.GetSafe(Scope, UserStateMod.Get(Scope, UserId))
 
 	return Scope:Frame(OnyxUI.Util.CombineProps(Props, {
 		Name = script.Name,
@@ -142,14 +121,12 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 										},
 									},
 									Scope:Frame {
-										Name = "Names",
 										List = {
 											Padding = Scope:UDim(0, Theme.Spacing["0"]),
 										},
 
 										[Children] = {
 											Scope:Heading {
-												Name = "DisplayName",
 												Text = Scope:Computed(function(Use)
 													return `{Use(UserInfo).DisplayName}`
 												end),
@@ -157,7 +134,6 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 												HeadingSize = 1.5,
 											},
 											Scope:Text {
-												Name = "Username",
 												Text = Scope:Computed(function(Use)
 													return `@{Use(UserInfo).Username}`
 												end),
@@ -175,7 +151,6 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 						},
 					},
 					Scope:Frame {
-						Name = "InfoCards",
 						List = {
 							FillDirection = Enum.FillDirection.Horizontal,
 							Padding = Scope:UDim(0, Theme.Spacing["0.5"]),
@@ -203,7 +178,6 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 				},
 			},
 			Scope:Frame {
-				Name = "ActionButtons",
 				List = {
 					FillDirection = Enum.FillDirection.Horizontal,
 					HorizontalFlex = Enum.UIFlexAlignment.Fill,

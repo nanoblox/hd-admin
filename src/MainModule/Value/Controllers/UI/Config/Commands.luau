@@ -8,19 +8,19 @@ export type Argument = {
 	Optional: boolean?,
 }
 export type Command = {
-	Prompt: string,
+	Name: string,
 	Arguments: { Argument },
 	Rank: Roles.Rank,
 }
 
 local COMMANDS = {
 	Command = {
-		Prompt = "command",
+		Name = "command",
 		Rank = "Moderator",
 		Arguments = {},
 	},
 	Command2 = {
-		Prompt = "command2",
+		Name = "command2",
 		Rank = "Admin",
 		Arguments = {
 			{
@@ -36,7 +36,7 @@ local COMMANDS = {
 		},
 	},
 	Command3 = {
-		Prompt = "command3",
+		Name = "command3",
 		Rank = "VIP",
 		Arguments = {
 			{
@@ -50,7 +50,7 @@ local COMMANDS = {
 		},
 	},
 	Command4 = {
-		Prompt = "command4",
+		Name = "command4",
 		Rank = "Guest",
 		Arguments = {
 			{
@@ -64,7 +64,7 @@ local COMMANDS = {
 		},
 	},
 	Command5 = {
-		Prompt = "command5",
+		Name = "command5",
 		Rank = "Guest",
 		Arguments = {
 			{
@@ -78,7 +78,7 @@ local COMMANDS = {
 		},
 	},
 	Ban = {
-		Prompt = "ban",
+		Name = "ban",
 		Rank = "Moderator",
 		Arguments = {
 			{
@@ -93,7 +93,7 @@ local COMMANDS = {
 		},
 	},
 	Warn = {
-		Prompt = "warn",
+		Name = "warn",
 		Rank = "Moderator",
 		Arguments = {
 			{
@@ -107,7 +107,7 @@ local COMMANDS = {
 		},
 	},
 	Admin = {
-		Prompt = "admin",
+		Name = "admin",
 		Rank = "Admin",
 		Arguments = {
 			{
@@ -122,7 +122,7 @@ local COMMANDS = {
 		},
 	},
 	EveryArgument = {
-		Prompt = "everyargument",
+		Name = "everyargument",
 		Rank = "Moderator",
 		Arguments = {
 			{

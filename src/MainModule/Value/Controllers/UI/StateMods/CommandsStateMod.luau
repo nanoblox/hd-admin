@@ -12,41 +12,54 @@ local Scope = Fusion.scoped(Fusion)
 
 local CommandsStateMod = {}
 
-function CommandsStateMod:GetSafe(Name: string): Fusion.Computed<Types.Command>
+function CommandsStateMod.GetSafe(
+	Scope: Fusion.Scope<typeof(Fusion)>,
+	Command: typeof(CommandsStateMod.Get(Fusion.scoped(Fusion), "Command"))
+): Fusion.Computed<Types.Command>
 	return Scope:Computed(function(Use)
-		local CommandValue = Use(CommandsStateMod:Get(Name))
+		local CommandValue = Use(Command)
 
-		return Sift.Dictionary.merge(CommandValue or {}, {
+		return Sift.Dictionary.merge({
 			Name = "Command",
 			Aliases = {},
 			Arguments = {},
 			Role = "Guest",
-		})
+		}, CommandValue or {})
 	end)
 end
 
-function CommandsStateMod:Get(Name: string): Fusion.Computed<Types.Command?>
-	local CommandsValue = Fusion.peek(States.Commands)
-	local ExistingDetails = CommandsValue[Name]
+function CommandsStateMod.Get(
+	Scope: Fusion.Scope<typeof(Fusion)>,
+	Name: Fusion.UsedAs<string>
+): Fusion.Computed<Types.Command?>
+	local function GetDetails(Name: string)
+		local CommandsValue = Fusion.peek(States.Commands)
+		local ExistingDetails = CommandsValue[Name]
 
-	if ExistingDetails == nil then
-		Future.Try(function()
-			CommandsStateMod:Load(Name)
-		end)
+		if ExistingDetails == nil then
+			Future.Try(function()
+				CommandsStateMod.Load(Name)
+			end)
+		end
 	end
 
+	GetDetails(Fusion.peek(Name))
+	Scope:Observer(Name):onChange(function()
+		GetDetails(Fusion.peek(Name))
+	end)
+
 	return Scope:Computed(function(Use)
-		return Use(States.Commands)[Name]
+		return Use(States.Commands)[Use(Name)]
 	end)
 end
 
-function CommandsStateMod:Load(Command: string): boolean
-	local Success, Command = Callbacks.RequestCommandInfo(Command)
+function CommandsStateMod.Load(Command: string): boolean
+	local Success, CommandInfo = Callbacks.RequestCommandInfo(Command)
 
 	if Success then
 		local CommandsValue = Fusion.peek(States.Commands)
 
-		CommandsValue[Command] = Command
+		CommandsValue[Command] = CommandInfo
 
 		States.Commands:set(CommandsValue)
 

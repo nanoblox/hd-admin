@@ -9,42 +9,53 @@ local Types = require(UI.Utils.Types)
 local Future = require(Packages.Future)
 local Sift = require(Packages.Sift)
 
-local Scope = Fusion.scoped(Fusion)
-
 local UserStateMod = {}
 
-function UserStateMod:GetSafe(UserId: number): Fusion.Computed<Types.User>
+function UserStateMod.GetSafe(
+	Scope: Fusion.Scope<typeof(Fusion)>,
+	User: typeof(UserStateMod.Get(Fusion.scoped(), 1))
+): Fusion.Computed<Types.User>
 	return Scope:Computed(function(Use)
-		local UserValue = Use(UserStateMod:Get(UserId))
+		local UserValue = Use(User)
 
-		return Sift.Dictionary.merge(UserValue or {}, {
-			UserId = UserId,
+		return Sift.Dictionary.merge({
+			UserId = 1,
 			Username = "Username",
 			DisplayName = "User",
 			AccountAge = -1,
-			Roles = {},
+			Roles = { "Guest" },
 			Warnings = {},
 			Bans = {},
-		})
+		}, UserValue or {})
 	end)
 end
 
-function UserStateMod:Get(UserId: number): Fusion.Computed<Types.User?>
-	local UsersValue = Fusion.peek(States.Users.Profiles)
-	local ExistingDetails = UsersValue[UserId]
+function UserStateMod.Get(
+	Scope: Fusion.Scope<typeof(Fusion)>,
+	UserId: Fusion.UsedAs<number>
+): Fusion.Computed<Types.User?>
+	local function GetDetails(UserId: number)
+		local UsersValue = Fusion.peek(States.Users.Profiles)
+		local ExistingDetails = UsersValue[UserId]
 
-	if ExistingDetails == nil then
-		Future.Try(function()
-			UserStateMod:Load(UserId)
-		end)
+		if ExistingDetails == nil then
+			Future.Try(function()
+				UserStateMod.Load(UserId)
+			end)
+		end
 	end
 
+	GetDetails(Fusion.peek(UserId))
+	Scope:Observer(UserId):onChange(function()
+		GetDetails(Fusion.peek(UserId))
+	end)
+
 	return Scope:Computed(function(Use)
-		return Use(States.Users.Profiles)[UserId]
+		return Use(States.Users.Profiles)[Use(UserId)]
 	end)
 end
 
-function UserStateMod:Load(UserId: number): boolean
+function UserStateMod.Load(UserId: number): boolean
 	local Success, UserInfo = Callbacks.RequestUserInfo(UserId)
 
 	if Success then
