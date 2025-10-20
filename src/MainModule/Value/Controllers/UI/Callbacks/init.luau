@@ -40,11 +40,6 @@ local REQUEST_USER_INFO: (UserId: number) -> (boolean, Types.User) = function(Us
 		end
 	end
 end
-local REQUEST_COMMAND_INFO: (Name: string) -> (boolean, Types.Command) = function(Name)
-	if RunService:IsEdit() then
-		return true, CONFIG.Commands[Name]
-	end
-end
 
 local Callbacks = {
 	RunCommand = RUN_COMMAND,
@@ -53,7 +48,6 @@ local Callbacks = {
 	PurchaseCosmetics = PURCHASE_COSMETICS,
 	PurchaseBooster = PURCHASE_BOOSTER,
 	RequestUserInfo = REQUEST_USER_INFO,
-	RequestCommandInfo = REQUEST_COMMAND_INFO,
 }
 
 return Callbacks

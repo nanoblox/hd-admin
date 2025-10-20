@@ -44,7 +44,7 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 		local CommandValue = Use(Command)
 
 		return Sift.Dictionary.merge({
-			Prompt = "command",
+			Name = "command",
 			Arguments = {},
 		}, CommandValue or {})
 	end)
@@ -137,7 +137,7 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 					local ArgumentsAreOptionalValue = Use(ArgumentsAreOptional)
 
 					return {
-						`{Use(States.Settings.Prefix)}{SafeCommandValue.Prompt}`,
+						`{Use(States.Settings.Prefix)}{SafeCommandValue.Name}`,
 						(QuickRunEnabledValue and CONFIG.Icons.ZapFill)
 							or (ArgumentsAreOptionalValue and CONFIG.Icons.Zap)
 							or "",

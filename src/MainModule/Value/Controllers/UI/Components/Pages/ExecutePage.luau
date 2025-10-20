@@ -8,7 +8,6 @@ local Config = require(UI.Config)
 local Sift = require(Packages.Sift)
 local Callbacks = require(UI.Callbacks)
 local PanelsStateMod = require(UI.StateMods.PanelsStateMod)
-local CommandsStateMod = require(UI.StateMods.CommandsStateMod)
 
 local CONFIG = Config:Get()
 
@@ -28,7 +27,16 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 	local Panel = PanelsStateMod.Panel:now()
 
 	local CommandId = Panel.PagesData.Execute.CommandId
-	local Command = CommandsStateMod.GetSafe(Scope, CommandsStateMod.Get(Scope, CommandId))
+	local Command = Scope:Computed(function(Use)
+		local CommandIdValue = Use(CommandId)
+
+		return Sift.Dictionary.merge({
+			Name = "Command",
+			Aliases = {},
+			Arguments = {},
+			Role = "Guest",
+		}, CONFIG.Commands[CommandIdValue])
+	end)
 	local SafeArguments = Scope:Computed(function(Use)
 		return Use(Command).Arguments
 	end)
