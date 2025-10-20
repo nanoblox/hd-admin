@@ -14,6 +14,7 @@ export type UserInfo = {
 	Username: string?,
 	DisplayName: string?,
 	AccountAge: number?,
+	AgeVerified: boolean?,
 }
 
 local UserInformant = {
@@ -38,11 +39,20 @@ function UserInformant.User(UserId: number): UserInfo
 		Username = UserInformant.Username(UserId),
 		DisplayName = UserInformant.DisplayName(UserId),
 		AccountAge = UserInformant.AccountAge(UserId),
+		AgeVerified = UserInformant.AgeVerified(UserId),
 	}
 
 	UserInformant.UserInfos[UserId] = Details
 
 	return Details
+end
+
+function UserInformant.AgeVerified(UserId): string?
+	local Player = Players:GetPlayerByUserId(UserId)
+
+	if Player then
+		return Player:IsVerified()
+	end
 end
 
 function UserInformant.Username(UserId): string?

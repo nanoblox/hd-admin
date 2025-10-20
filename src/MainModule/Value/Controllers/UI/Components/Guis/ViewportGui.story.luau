@@ -23,20 +23,6 @@ return function(Target: Instance)
 
 	local Panel = PanelsStateMod.New(Scope)
 
-	States.Users.Profiles:set({
-		[1] = {
-			UserId = 1,
-			Banned = true,
-			Role = "Admin",
-			Warnings = {},
-		},
-		[2] = {
-			UserId = 1,
-			Role = "Guest",
-			Warnings = { {} },
-		},
-	})
-
 	States.Theme:set(DarkTheme)
 
 	Scope:Viewport {

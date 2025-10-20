@@ -1,13 +1,17 @@
+-- Timestamps are in unix format
+-- For durations, -1 is treated as infinite
+
 export type User = {
 	UserId: number,
 	Username: string,
 	DisplayName: string,
 	AccountAge: number,
+	AgeVerified: boolean,
 	Roles: { string },
 	Warnings: {
 		{
 			Timestamp: number,
-			Text: string,
+			Reason: string,
 		}?
 	},
 	Bans: {

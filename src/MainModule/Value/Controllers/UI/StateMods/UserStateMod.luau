@@ -23,6 +23,7 @@ function UserStateMod.GetSafe(
 			Username = "Username",
 			DisplayName = "User",
 			AccountAge = -1,
+			AgeVerified = false,
 			Roles = { "Guest" },
 			Warnings = {},
 			Bans = {},

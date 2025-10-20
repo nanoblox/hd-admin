@@ -17,40 +17,26 @@ local InfoCard = require(script.Parent.Parent.InfoCard)
 local CustomButton = require(script.Parent.Parent.CustomButton)
 local RolesReel = require(script.Parent.Parent.RolesReel)
 
-local INFO_CARDS = {
-	{
-		Title = { "Joined", CONFIG.Icons.RecentCalendarFill },
-		Body = "01/01/2000",
-	},
-	{
-		Title = { "Warns", CONFIG.Icons.WarningFill },
-		Body = "0",
-	},
-	{
-		Title = { "Banned", CONFIG.Icons.ProhibitedFill },
-		Body = "Sep 20, 2024\n30d remaining",
-	},
-	{
-		Title = { "Ban note", CONFIG.Icons.NotepadFill },
-		Body = "Lorem ipsum dolor sit amet, consectetur.",
-	},
-}
 local MODERATION_ACTIONS = {
 	{
 		Name = "Warn",
 		Content = { CONFIG.Icons.WarningFill },
+		Command = "Warn",
 	},
 	{
 		Name = "Kick",
 		Content = { CONFIG.Icons.Close },
+		Command = "Kick",
 	},
 	{
 		Name = "Ban",
 		Content = { CONFIG.Icons.ProhibitedFill },
+		Command = "Ban",
 	},
 	{
-		Name = "Rank",
+		Name = "Role",
 		Content = { CONFIG.Icons.ShieldPersonFill },
+		Command = "Role",
 	},
 }
 
@@ -77,7 +63,6 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 
 		[Children] = {
 			Scope:Scroller {
-				Name = "Page",
 				ClipsDescendants = true,
 				ScrollBarThickness = 0,
 				ScrollBarImageTransparency = 1,
@@ -94,14 +79,12 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 
 				[Children] = {
 					Scope:Frame {
-						Name = "Details",
 						List = {
 							HorizontalFlex = Enum.UIFlexAlignment.Fill,
 						},
 
 						[Children] = {
 							Scope:Frame {
-								Name = "NameAndPicture",
 								List = {
 									FillDirection = Enum.FillDirection.Horizontal,
 									Padding = Scope:UDim(0, Theme.Spacing["0.5"]),
@@ -144,7 +127,11 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 								},
 							},
 							Scope:RolesReel {
-								Roles = { "Admin", "Mod" },
+								Roles = Scope:Computed(function(Use)
+									local UserInfoValue = Use(UserInfo)
+
+									return UserInfoValue.Roles
+								end),
 								UserId = UserId,
 								Truncated = false,
 							},
@@ -158,21 +145,58 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 						},
 
 						[Children] = {
-							Scope:ForValues(INFO_CARDS, function(Use, Scope, InfoCardItem)
-								return OnyxUI.Themer.Theme:is(Use(Theme)):during(function()
-									return PanelsStateMod.Panel:is(Panel):during(function()
-										return Scope:InfoCard {
-											Title = InfoCardItem.Title,
-											Body = InfoCardItem.Body,
-											Size = Scope:Computed(function(Use)
-												return UDim2.fromScale(0.5, 0)
-													+ UDim2.fromOffset(-Use(Theme.Spacing["0.5"]), 16 * 6)
-											end),
-											AutomaticSize = Enum.AutomaticSize.None,
-										}
+							Scope:ForValues(
+								Scope:Computed(function(Use)
+									local UserInfoValue = Use(UserInfo)
+
+									local LatestBan = UserInfoValue.Bans[#UserInfoValue.Bans] or {}
+									local BanTimeRemaining = os.time()
+										- ((LatestBan.Timestamp or 0) + (LatestBan.Duration or -1))
+
+									if (LatestBan.Duration or -1) == -1 then
+										BanTimeRemaining = -1
+									end
+
+									return {
+										{
+											Title = { "Account", CONFIG.Icons.Info },
+											Body = `Joined: {DateTime.fromUnixTimestamp(UserInfoValue.AccountAge)
+												:FormatLocalTime("LL", "en-us")}\n\nAge Verified: {UserInfoValue.AgeVerified}`,
+										},
+										{
+											Title = { "Flags", CONFIG.Icons.WarningFill },
+											Body = `Warnings: {#UserInfoValue.Warnings}\nBans: {#UserInfoValue.Bans}`,
+										},
+										{
+											Title = { "Banned", CONFIG.Icons.ProhibitedFill },
+											Body = `{DateTime.fromUnixTimestamp(LatestBan.Timestamp or 0)
+												:FormatLocalTime("LL", "en-us")}\n\n{BanTimeRemaining > 0 and `{BanTimeRemaining} remaining` or "Indefinite"}`,
+										},
+										{
+											Title = { "Ban note", CONFIG.Icons.NotepadFill },
+											Body = (UserInfoValue.Bans[#UserInfoValue.Bans] or {}).Reason,
+										},
+									}
+								end),
+								function(Use, Scope, InfoCardItem)
+									return OnyxUI.Themer.Theme:is(Use(Theme)):during(function()
+										return PanelsStateMod.Panel:is(Panel):during(function()
+											return Scope:InfoCard {
+												Title = InfoCardItem.Title,
+												Body = InfoCardItem.Body,
+												Size = Scope:Computed(function(Use)
+													return UDim2.fromScale(0.5, 0)
+														+ UDim2.fromOffset(
+															-Use(Theme.Spacing["0.5"]),
+															Use(Theme.Spacing["8"]) * 1.25
+														)
+												end),
+												AutomaticSize = Enum.AutomaticSize.None,
+											}
+										end)
 									end)
-								end)
-							end),
+								end
+							),
 						},
 					},
 				},
@@ -187,9 +211,13 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 				[Children] = {
 					Scope:ForValues(MODERATION_ACTIONS, function(Use, Scope, Action)
 						return Scope:Button {
-							Name = `{Action.Name}Button`,
 							Content = Action.Content,
 							SizeVariant = "ExtraLarge",
+
+							OnActivate = function()
+								Panel.PagesData.Execute.CommandId:set(Action.Command)
+								PanelsStateMod.ToPage(Panel, "Execute")
+							end,
 						}
 					end),
 				},

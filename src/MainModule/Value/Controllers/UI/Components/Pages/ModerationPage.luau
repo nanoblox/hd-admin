@@ -8,6 +8,7 @@ local Sift = require(Packages.Sift)
 local UserInformant = require(UI.Utils.UserInformant)
 local States = require(UI.States)
 local PanelsStateMod = require(UI.StateMods.PanelsStateMod)
+local UserStateMod = require(UI.StateMods.UserStateMod)
 
 local CONFIG = Config:Get()
 
@@ -37,7 +38,9 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 		local UserProfilesValue = Use(States.Users.Profiles)
 
 		return Sift.Dictionary.keys(Sift.Dictionary.filter(UserProfilesValue, function(Profile, UserId)
-			if Profile.Banned then
+			local UserInfoSafe = Fusion.peek(UserStateMod.GetSafe(Scope, Profile))
+
+			if #UserInfoSafe.Bans > 0 then
 				return UserId
 			else
 				return nil
@@ -48,7 +51,9 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 		local UserProfilesValue = Use(States.Users.Profiles)
 
 		return Sift.Dictionary.keys(Sift.Dictionary.filter(UserProfilesValue, function(Profile, UserId)
-			if #Profile.Warnings > 0 then
+			local UserInfoSafe = Fusion.peek(UserStateMod.GetSafe(Scope, Profile))
+
+			if #UserInfoSafe.Warnings > 0 then
 				return UserId
 			else
 				return nil
