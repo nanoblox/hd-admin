@@ -22,6 +22,7 @@ return function(Target: Instance)
 	StateMods:Start()
 
 	local Panel = PanelsStateMod.New(Scope)
+	Panel.Open:set(true)
 
 	States.Theme:set(DarkTheme)
 

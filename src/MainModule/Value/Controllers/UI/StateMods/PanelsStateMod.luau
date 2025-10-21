@@ -37,7 +37,7 @@ export type Panel = {
 local NewPanel = function(Scope: Fusion.Scope<typeof(Fusion)>): Panel
 	local Panel = {
 		Id = HttpService:GenerateGUID(false),
-		Open = Scope:Value(true),
+		Open = Scope:Value(false),
 		Position = Scope:Value(Vector2.new(0.005, 0.005)),
 		Page = Scope:Value("Dashboard"),
 		PageHistory = Scope:Value({}),
@@ -128,7 +128,19 @@ function PanelsStateMod.Update(PanelId: string, Update: (Panel) -> Panel)
 	States.Panels:set(PanelsValue)
 end
 
-function PanelsStateMod.New(Scope: Fusion.Scope)
+function PanelsStateMod.Destroy(Panel: Panel)
+	local PanelsValue = Fusion.peek(States.Panels)
+
+	for Index, OtherPanel in PanelsValue do
+		if (OtherPanel.Id == Panel.Id) and (Index ~= 1) then
+			table.remove(PanelsValue, Index)
+		end
+	end
+
+	States.Panels:set(PanelsValue)
+end
+
+function PanelsStateMod.New(Scope: Fusion.Scope, ParentPanel: Panel)
 	local Scope = Fusion.innerScope(Scope, Fusion)
 
 	local Panel = NewPanel(Scope)
@@ -138,6 +150,11 @@ function PanelsStateMod.New(Scope: Fusion.Scope)
 	States.Panels:set(PanelsValue)
 
 	PanelsStateMod.RecordPage(Panel, Fusion.peek(Panel.Page))
+
+	if ParentPanel ~= nil then
+		Panel.Position = Fusion.peek(Panel.Position) + UDim2.fromOffset(40, 40)
+		Panel.Open:set(true)
+	end
 
 	return Panel
 end

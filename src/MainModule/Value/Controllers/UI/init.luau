@@ -14,10 +14,14 @@ local PanelsStateMod = require(script.StateMods.PanelsStateMod)
 local UI = {
 	Started = false,
 	Signals = Callbacks,
+	Scope = Fusion.scoped(Fusion),
 }
 
 local function start()
 	assert(UI.Started == false, "Frontend cannot be started twice!")
+
+	local Panel = PanelsStateMod.New(UI.Scope)
+	Panel.Open:set(true)
 
 	local appIcon = require(Modules.References.appIcon)
 	appIcon:bindEvent("toggled", function()
@@ -60,7 +64,7 @@ function UI.toggleAllOpen()
 	local PanelsValue = Fusion.peek(States.Panels)
 
 	for _, Panel in PanelsValue do
-		if Panel.Open then
+		if Fusion.peek(Panel.Open) then
 			AnyOpen = true
 		end
 	end

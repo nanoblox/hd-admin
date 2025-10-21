@@ -118,6 +118,7 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 
 				OnActivate = function()
 					Panel.Open:set(false)
+					PanelsStateMod.Destroy(Panel)
 				end,
 			},
 		},
