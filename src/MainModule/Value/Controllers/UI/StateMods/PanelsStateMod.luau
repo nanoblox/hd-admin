@@ -152,8 +152,10 @@ function PanelsStateMod.New(Scope: Fusion.Scope, ParentPanel: Panel)
 	PanelsStateMod.RecordPage(Panel, Fusion.peek(Panel.Page))
 
 	if ParentPanel ~= nil then
-		Panel.Position = Fusion.peek(Panel.Position) + UDim2.fromOffset(40, 40)
+		Panel.Position:set(Fusion.peek(ParentPanel.Position))
 		Panel.Open:set(true)
+	else
+		Panel.Position:set(Vector2.new(1, 0.5))
 	end
 
 	return Panel

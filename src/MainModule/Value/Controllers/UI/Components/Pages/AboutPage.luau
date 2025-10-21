@@ -217,7 +217,7 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 						Content = { "Booster" },
 
 						OnActivate = function()
-							local BoosterPanel = PanelsStateMod.New(Scope)
+							local BoosterPanel = PanelsStateMod.New(Scope, Panel)
 							PanelsStateMod.ToPage(BoosterPanel, "Booster")
 						end,
 					},

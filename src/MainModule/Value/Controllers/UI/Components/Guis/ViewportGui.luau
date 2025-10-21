@@ -55,7 +55,22 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 					return PanelsStateMod.Panel:is(Panel):during(function()
 						return Scope:Menu {
 							AnchorPoint = Vector2.new(1, 0.5),
-							Position = UDim2.fromScale(1, 0.5) + UDim2.fromOffset(-20, 0),
+							Position = Scope:Computed(function(Use)
+								local PositionValue = Use(Panel.Position)
+
+								return UDim2.fromScale(PositionValue.X, PositionValue.Y)
+							end),
+							ZIndex = Scope:Computed(function(Use)
+								local PanelsValue = Use(States.Panels)
+
+								for Index, OtherPanel in PanelsValue do
+									if OtherPanel.Id == Panel.Id then
+										return Index
+									end
+								end
+
+								return 1
+							end),
 						}
 					end)
 				end)
