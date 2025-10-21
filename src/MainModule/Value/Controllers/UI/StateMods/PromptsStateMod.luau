@@ -72,19 +72,19 @@ function PromptsStateMod:Get(Id: string): (number?, Prompt? | nil)
 	return nil
 end
 
-task.spawn(function()
-	for Count = 1, 5 do
-		task.wait(0.5)
+-- task.spawn(function()
+-- 	for Count = 1, 5 do
+-- 		task.wait(0.5)
 
-		PromptsStateMod:Push {
-			Title = { "Welcome to HD Admin UI!" },
-			Body = { "This is a sample prompt to demonstrate the system." },
-			Lifetime = -1,
-			Callback = function()
-				print("Prompt closed!")
-			end,
-		}
-	end
-end)
+-- 		PromptsStateMod:Push {
+-- 			Title = { "Welcome to HD Admin UI!" },
+-- 			Body = { "This is a sample prompt to demonstrate the system." },
+-- 			Lifetime = -1,
+-- 			Callback = function()
+-- 				print("Prompt closed!")
+-- 			end,
+-- 		}
+-- 	end
+-- end)
 
 return PromptsStateMod

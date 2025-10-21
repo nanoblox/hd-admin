@@ -1,4 +1,5 @@
 local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
 local UserService = game:GetService("UserService")
 
 local Main = script:FindFirstAncestor("MainModule")
@@ -50,7 +51,7 @@ end
 function UserInformant.AgeVerified(UserId): string?
 	local Player = Players:GetPlayerByUserId(UserId)
 
-	if Player then
+	if Player and RunService:IsServer() then
 		return Player:IsVerified()
 	end
 end

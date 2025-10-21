@@ -18,7 +18,9 @@ export type Props = OnyxUI.ButtonProps & {
 }
 
 return function(Scope: Fusion.Scope<>, Props: Props)
-	local Scope = Fusion.innerScope(Scope, Fusion, OnyxUI.Components, OnyxUI.Util, {})
+	local Scope = Fusion.innerScope(Scope, Fusion, OnyxUI.Components, OnyxUI.Util, {
+		CustomButton = CustomButton,
+	})
 	local Theme = OnyxUI.Themer.Theme:now()
 
 	local Id = OnyxUI.Util.Fallback(Props.Id, "Guest")

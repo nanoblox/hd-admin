@@ -212,6 +212,15 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 							},
 						},
 					},
+					Scope:Divider {},
+					Scope:Button {
+						Content = { "Booster" },
+
+						OnActivate = function()
+							local BoosterPanel = PanelsStateMod.New(Scope)
+							PanelsStateMod.ToPage(BoosterPanel, "Booster")
+						end,
+					},
 				},
 			},
 			Scope:Frame {
