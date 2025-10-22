@@ -13,6 +13,7 @@ local ROLES: {
 	Booster = {
 		Name = "Booster",
 		Color = Color3.fromHex("FFFFFF"),
+		Gamepass = 372275,
 		Level = 1,
 	},
 	VIP = {

@@ -27,6 +27,7 @@ export type Role = {
 	Name: string,
 	Color: Color3,
 	Level: number,
+	Gamepass: number?,
 }
 
 export type CommandArgument = {

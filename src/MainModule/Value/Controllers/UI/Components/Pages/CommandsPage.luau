@@ -7,6 +7,7 @@ local States = require(UI.States)
 local Config = require(UI.Config)
 local Sift = require(Packages.Sift)
 local PanelsStateMod = require(UI.StateMods.PanelsStateMod)
+local Future = require(Packages.Future)
 
 local CONFIG = Config:Get()
 
@@ -16,6 +17,7 @@ local Setting = require(script.Parent.Parent.Setting)
 local CommandButton = require(script.Parent.Parent.CommandButton)
 local CommandCategory = require(script.Parent.Parent.CommandCategory)
 local IconToggle = require(script.Parent.Parent.IconToggle)
+local Callbacks = require(script.Parent.Parent.Parent.Callbacks)
 local Tags = require(script.Parent.Parent.Tags)
 
 export type Props = OnyxUI.FrameProps & {
@@ -157,16 +159,41 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 
 								[Children] = {
 									Scope:Tags {
-										Tags = Sift.Dictionary.values(
-											Sift.Dictionary.map(CONFIG.Roles, function(Role, Id)
-												return { Role.Name }, Id
-											end)
+										Tags = Sift.Array.map(
+											Sift.Array.sort(Sift.Dictionary.values(CONFIG.Roles), function(RoleA, RoleB)
+												return RoleA.Level < RoleB.Level
+											end),
+											function(Role, Id)
+												local TextIcon = nil
+
+												if Role.Gamepass ~= nil then
+													TextIcon = ""
+												end
+
+												return { Role.Name, TextIcon }
+											end
 										),
 										Selection = ActiveTags,
 										ButtonProps = {
 											SizeVariant = "Large",
 											ContentSize = Theme.TextSize["1"],
 										},
+
+										OnSelect = function(TagContent, Enabled)
+											local MatchingRole = nil
+
+											for Id, Role in CONFIG.Roles do
+												if Id == TagContent[1] then
+													MatchingRole = Role
+												end
+											end
+
+											if MatchingRole and (MatchingRole.Gamepass ~= nil) then
+												Future.Try(function()
+													return Callbacks.PurchaseRoleGamepass(MatchingRole.Gamepass)
+												end)
+											end
+										end,
 									},
 								},
 							}

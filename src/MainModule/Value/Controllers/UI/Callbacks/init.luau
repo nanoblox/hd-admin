@@ -1,3 +1,6 @@
+local MarketplaceService = game:GetService("MarketplaceService")
+local Players = game:GetService("Players")
+
 local RunService = game:GetService("RunService")
 local Main = script:FindFirstAncestor("MainModule")
 local UI = Main.Value.Controllers.UI
@@ -41,6 +44,9 @@ local REQUEST_USER_INFO: (UserId: number) -> (boolean, Types.User) = function(Us
 		end
 	end
 end
+local PURCHASE_ROLE_GAMEPASS: (GamepassId: number) -> boolean = function(GamepassId)
+	MarketplaceService:PromptGamePassPurchase(Players.LocalPlayer, GamepassId)
+end
 
 local Callbacks = {
 	RunCommand = RUN_COMMAND,
@@ -49,6 +55,7 @@ local Callbacks = {
 	PurchaseCosmetics = PURCHASE_COSMETICS,
 	PurchaseBooster = PURCHASE_BOOSTER,
 	RequestUserInfo = REQUEST_USER_INFO,
+	PurchaseRoleGamepass = PURCHASE_ROLE_GAMEPASS,
 }
 
 return Callbacks
