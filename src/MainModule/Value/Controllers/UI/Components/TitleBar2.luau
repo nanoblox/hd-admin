@@ -77,11 +77,13 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 				Disabled = Scope:Computed(function(Use)
 					local PageIdValue = Use(Panel.Page)
 					local PageValue = Use(Page)
+					local NavigationValue = Use(Panel.Navigation)
+					local PageHistory = Use(Panel.PageHistory)
 
-					if PageIdValue == "Dashboard" then
+					if #PageHistory <= 1 then
 						return true
 					elseif PageValue ~= nil then
-						return PageValue.NavigationLocked
+						return not NavigationValue
 					else
 						return false
 					end
@@ -110,11 +112,6 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 				Image = CONFIG.Icons.Close,
 				ContentSize = Theme.TextSize["1.25"],
 				Color = ContentColor,
-				Disabled = Scope:Computed(function(Use)
-					local PageValue = Use(Page)
-
-					return PageValue.NavigationLocked == true
-				end),
 
 				OnActivate = function()
 					Panel.Open:set(false)

@@ -122,8 +122,11 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 						Content = Scope:Computed(function(Use)
 							local PageValue = Use(Page)
 							local PageIdValue = Use(Panel.Page)
+							local TitleValue = Use(Panel.Title)
 
-							if PageIdValue == "Dashboard" then
+							if TitleValue ~= nil then
+								return { TitleValue }
+							elseif PageIdValue == "Dashboard" then
 								return { CONFIG.Icons.LogoGlyph, PageValue.Name or PageValue.Id or PageIdValue }
 							else
 								return { PageValue.Name or PageValue.Id or PageIdValue }

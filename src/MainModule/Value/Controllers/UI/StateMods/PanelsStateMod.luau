@@ -10,6 +10,8 @@ export type Panel = {
 	Id: string,
 	Open: Fusion.Value<boolean>,
 	Position: Fusion.Value<Vector2>,
+	Title: Fusion.Value<string?>,
+	Navigation: Fusion.Value<boolean>,
 	Page: Fusion.Value<string>,
 	PageHistory: Fusion.Value<{ string }>,
 	PageUndoHistory: Fusion.Value<{ string }>,
@@ -19,7 +21,8 @@ export type Panel = {
 		},
 		Commands: {
 			QuickRun: Fusion.Value<boolean>,
-			ActiveTag: Fusion.Value<string?>,
+			ActiveTags: Fusion.Value<{ string }>,
+			TagsLocked: Fusion.Value<boolean>,
 		},
 		User: {
 			UserId: Fusion.Value<number>,
@@ -39,6 +42,8 @@ local NewPanel = function(Scope: Fusion.Scope<typeof(Fusion)>): Panel
 		Id = HttpService:GenerateGUID(false),
 		Open = Scope:Value(false),
 		Position = Scope:Value(Vector2.new(0.005, 0.005)),
+		Title = Scope:Value(nil),
+		Navigation = Scope:Value(true),
 		Page = Scope:Value("Dashboard"),
 		PageHistory = Scope:Value({}),
 		PageUndoHistory = Scope:Value({}),
@@ -48,7 +53,8 @@ local NewPanel = function(Scope: Fusion.Scope<typeof(Fusion)>): Panel
 			},
 			Commands = {
 				QuickRun = Scope:Value(false),
-				ActiveTag = Scope:Value(nil),
+				ActiveTags = Scope:Value({}),
+				TagsLocked = Scope:Value(false),
 			},
 			User = {
 				UserId = Scope:Value(1),
@@ -140,7 +146,18 @@ function PanelsStateMod.Destroy(Panel: Panel)
 	States.Panels:set(PanelsValue)
 end
 
-function PanelsStateMod.New(Scope: Fusion.Scope, ParentPanel: Panel)
+function PanelsStateMod.New(
+	Scope: Fusion.Scope,
+	Config: {
+		ParentPanel: Panel?,
+		RecordInitialPage: boolean?,
+	}
+)
+	Config = Sift.Dictionary.merge({
+		ParentPanel = nil,
+		RecordInitialPage = true,
+	}, Config or {})
+
 	local Scope = Fusion.innerScope(Scope, Fusion)
 
 	local Panel = NewPanel(Scope)
@@ -149,10 +166,12 @@ function PanelsStateMod.New(Scope: Fusion.Scope, ParentPanel: Panel)
 	table.insert(PanelsValue, Panel)
 	States.Panels:set(PanelsValue)
 
-	PanelsStateMod.RecordPage(Panel, Fusion.peek(Panel.Page))
+	if Config.RecordInitialPage then
+		PanelsStateMod.RecordPage(Panel, Fusion.peek(Panel.Page))
+	end
 
-	if ParentPanel ~= nil then
-		Panel.Position:set(Fusion.peek(ParentPanel.Position))
+	if Config.ParentPanel ~= nil then
+		Panel.Position:set(Fusion.peek(Config.ParentPanel.Position))
 		Panel.Open:set(true)
 	else
 		Panel.Position:set(Vector2.new(1, 0.5))

@@ -196,6 +196,27 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 						AutomaticSize = Enum.AutomaticSize.Y,
 					},
 					Scope:Divider {},
+					Scope:Button {
+						Content = { "Booster" },
+						ContentSize = Theme.TextSize["1"],
+						SizeVariant = "ExtraLarge",
+
+						OnActivate = function()
+							local BoosterPanel = PanelsStateMod.New(Scope, {
+								ParentPanel = Panel,
+								RecordInitialPage = false,
+							})
+
+							-- BoosterPanel.Navigation:set(false)
+							BoosterPanel.Title:set("Booster")
+
+							BoosterPanel.PagesData.Commands.TagsLocked:set(true)
+							BoosterPanel.PagesData.Commands.ActiveTags:set({ { "Booster" } })
+
+							PanelsStateMod.ToPage(BoosterPanel, "Booster")
+						end,
+					},
+					Scope:Divider {},
 					Scope:Frame {
 						List = {
 							HorizontalAlignment = Enum.HorizontalAlignment.Center,
@@ -211,15 +232,6 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 								},
 							},
 						},
-					},
-					Scope:Divider {},
-					Scope:Button {
-						Content = { "Booster" },
-
-						OnActivate = function()
-							local BoosterPanel = PanelsStateMod.New(Scope, Panel)
-							PanelsStateMod.ToPage(BoosterPanel, "Booster")
-						end,
 					},
 				},
 			},

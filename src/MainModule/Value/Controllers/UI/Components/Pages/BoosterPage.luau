@@ -113,7 +113,6 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 						SizeVariant = "ExtraLarge",
 
 						OnActivate = function()
-							Panel.PagesData.Commands.ActiveTag:set("Booster")
 							PanelsStateMod.ToPage(Panel, "Commands")
 						end,
 					},

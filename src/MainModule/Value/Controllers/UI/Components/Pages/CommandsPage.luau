@@ -34,16 +34,16 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 	local Panel = PanelsStateMod.Panel:now()
 
 	local SearchQuery = Scope:Value("")
-	local RoleTags = Scope:Value({})
+	local ActiveTags = Panel.PagesData.Commands.ActiveTags
 
 	local FilteredCommands = Scope:Computed(function(Use)
 		local SearchQueryValue = Use(SearchQuery)
-		local RoleTagsValue = Use(RoleTags)
+		local ActiveTagsValue = Use(ActiveTags)
 
 		return Sift.Dictionary.filter(CONFIG.Commands, function(Command)
-			if #RoleTagsValue >= 1 then
+			if #ActiveTagsValue >= 1 then
 				if
-					Sift.Array.some(Sift.Array.flatten(RoleTagsValue), function(RoleId)
+					Sift.Array.some(Sift.Array.flatten(ActiveTagsValue), function(RoleId)
 						return Sift.Array.includes(Command.Roles, RoleId)
 					end) == false
 				then
@@ -139,31 +139,39 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 							},
 						},
 					},
-					Scope:Scroller {
-						Name = "Tags",
-						ScrollingDirection = Enum.ScrollingDirection.X,
-						ScrollBarThickness = 0,
-						ScrollBarImageTransparency = 1,
-						CanvasSize = UDim2.fromOffset(0, 0),
-						AutomaticCanvasSize = Enum.AutomaticSize.X,
-						AutomaticSize = Enum.AutomaticSize.Y,
-						Padding = {
-							All = Scope:UDim(0, Theme.StrokeThickness["1"]),
-						},
+					Scope:Computed(function(Use)
+						local TagsLocked = Use(Panel.PagesData.Commands.TagsLocked)
 
-						[Children] = {
-							Scope:Tags {
-								Tags = Sift.Dictionary.values(Sift.Dictionary.map(CONFIG.Roles, function(Role, Id)
-									return { Role.Name }, Id
-								end)),
-								Selection = RoleTags,
-								ButtonProps = {
-									SizeVariant = "Large",
-									ContentSize = Theme.TextSize["1"],
+						if not TagsLocked then
+							return Scope:Scroller {
+								Name = "Tags",
+								ScrollingDirection = Enum.ScrollingDirection.X,
+								ScrollBarThickness = 0,
+								ScrollBarImageTransparency = 1,
+								CanvasSize = UDim2.fromOffset(0, 0),
+								AutomaticCanvasSize = Enum.AutomaticSize.X,
+								AutomaticSize = Enum.AutomaticSize.Y,
+								Padding = {
+									All = Scope:UDim(0, Theme.StrokeThickness["1"]),
 								},
-							},
-						},
-					},
+
+								[Children] = {
+									Scope:Tags {
+										Tags = Sift.Dictionary.values(
+											Sift.Dictionary.map(CONFIG.Roles, function(Role, Id)
+												return { Role.Name }, Id
+											end)
+										),
+										Selection = ActiveTags,
+										ButtonProps = {
+											SizeVariant = "Large",
+											ContentSize = Theme.TextSize["1"],
+										},
+									},
+								},
+							}
+						end
+					end),
 				},
 			},
 			Scope:Scroller {
