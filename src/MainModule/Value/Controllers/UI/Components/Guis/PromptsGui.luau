@@ -45,6 +45,7 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 									Title = PromptItem.Title,
 									Body = PromptItem.Body,
 									Actions = PromptItem.Actions,
+									Arguments = PromptItem.Arguments,
 									Callback = PromptItem.Callback,
 									Lifetime = PromptItem.Lifetime,
 								}

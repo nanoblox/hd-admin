@@ -11,6 +11,7 @@ local CONFIG = Config:Get()
 local Children = Fusion.Children
 
 local CustomButton = require(script.Parent.CustomButton)
+local Setting = require(script.Parent.Setting)
 
 export type Props = CustomButton.Props & {
 	Body: Fusion.UsedAs<{ string }>?,
@@ -22,24 +23,27 @@ export type Props = CustomButton.Props & {
 			Callback: () -> (),
 		}
 	}>?,
+	Arguments: Fusion.UsedAs<{
+		{
+			Type: string,
+			Value: Fusion.Value<any>,
+		}
+	}>?,
 	Lifetime: Fusion.UsedAs<number>?,
 }
 
 return function(Scope: Fusion.Scope<any>, Props: Props)
 	local Scope = Fusion.innerScope(Scope, Fusion, OnyxUI.Components, OnyxUI.Util, {
 		CustomButton = CustomButton,
+		Setting = Setting,
 	})
 	local Theme = OnyxUI.Themer.Theme:now()
 
 	local Body = OnyxUI.Util.Fallback(Props.Body, {})
 	local Title = OnyxUI.Util.Fallback(Props.Title, {})
 	local Callback = OnyxUI.Util.Fallback(Props.Callback, function() end)
-	local Actions = OnyxUI.Util.Fallback(
-		Props.Actions,
-		Scope:Computed(function(Use)
-			return {}
-		end)
-	)
+	local Actions = OnyxUI.Util.Fallback(Props.Actions, {})
+	local Arguments = OnyxUI.Util.Fallback(Props.Arguments, {})
 	local Lifetime = OnyxUI.Util.Fallback(Props.Lifetime, -1)
 
 	local Padding = Scope:UDim(0, Theme.Padding["1"])
@@ -117,6 +121,13 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 					},
 				},
 			},
+			Scope:ForValues(Arguments, function(Use, Scope, Argument)
+				return Scope:Setting {
+					Type = Argument.Type,
+					Value = Argument.Value,
+					Label = "",
+				}
+			end),
 			Scope:Computed(function(Use)
 				if #Use(Actions) >= 1 then
 					return Scope:Frame {

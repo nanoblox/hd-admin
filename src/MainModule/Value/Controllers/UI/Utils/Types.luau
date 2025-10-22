@@ -46,4 +46,12 @@ export type Command = {
 	Category: string,
 }
 
+export type Prompt = {
+	Id: string,
+	Title: { string },
+	Body: string,
+	Lifetime: number?,
+	Callback: () -> ()?,
+}
+
 return nil

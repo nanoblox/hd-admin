@@ -25,6 +25,16 @@ local CONTROLS = {
 			},
 		},
 	},
+	Slider = {
+		Component = OnyxUI.Components.Slider,
+		OutputProp = "Value",
+		Inline = false,
+		Props = {
+			Flex = {
+				Mode = Enum.UIFlexMode.Fill,
+			},
+		},
+	},
 	String = {
 		Component = FilteredTextInput,
 		OutputProp = "Text",
@@ -167,19 +177,25 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 		end,
 
 		[Children] = {
-			Scope:Text {
-				Text = Label,
-				TextSize = Scope:Computed(function(Use)
-					if Use(Inline) then
-						return Use(Theme.TextSize["1"])
-					else
-						return Use(Theme.TextSize["1.25"])
-					end
-				end),
-				AutomaticSize = Scope:Computed(function(Use)
-					return (Use(Inline) and Enum.AutomaticSize.XY) or Enum.AutomaticSize.Y
-				end),
-			},
+			Scope:Computed(function(Use)
+				local LabelValue = Use(Label)
+
+				if string.len(LabelValue) >= 1 then
+					return Scope:Text {
+						Text = Label,
+						TextSize = Scope:Computed(function(Use)
+							if Use(Inline) then
+								return Use(Theme.TextSize["1"])
+							else
+								return Use(Theme.TextSize["1.25"])
+							end
+						end),
+						AutomaticSize = Scope:Computed(function(Use)
+							return (Use(Inline) and Enum.AutomaticSize.XY) or Enum.AutomaticSize.Y
+						end),
+					}
+				end
+			end),
 			Scope:Computed(function(Use)
 				local ControlValue = Use(Control)
 
