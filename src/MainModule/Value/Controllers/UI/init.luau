@@ -21,7 +21,6 @@ local function start()
 	assert(UI.Started == false, "Frontend cannot be started twice!")
 
 	local Panel = PanelsStateMod.New(UI.Scope)
-	Panel.Open:set(true)
 
 	local appIcon = require(Modules.References.appIcon)
 	appIcon:bindEvent("toggled", function()
