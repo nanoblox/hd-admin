@@ -5,6 +5,7 @@ local Stator = require(Packages.Stator)
 local DEFAULT_CONFIG = {
 	Icons = require(script.Icons),
 	Commands = require(script.Commands),
+	CommandCategories = require(script.CommandCategories),
 	Credits = require(script.Credits),
 	Cosmetics = require(script.Cosmetics),
 	FeaturedCosmetics = require(script.FeaturedCosmetics),

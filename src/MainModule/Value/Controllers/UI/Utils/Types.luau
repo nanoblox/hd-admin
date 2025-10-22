@@ -42,7 +42,8 @@ export type Command = {
 	Name: string,
 	Aliases: { string },
 	Arguments: { CommandArgument },
-	Role: string,
+	Roles: { string },
+	Category: string,
 }
 
 return nil

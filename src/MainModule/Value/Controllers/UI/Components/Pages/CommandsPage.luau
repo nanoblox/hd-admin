@@ -1,6 +1,7 @@
 local Main = script:FindFirstAncestor("MainModule")
 local Packages = Main.Value.Packages
 local UI = Main.Value.Controllers.UI
+local Category = require(script.Parent.Parent.Category)
 local Fusion = require(Packages.Fusion)
 local OnyxUI = require(Packages.OnyxUI)
 local States = require(UI.States)
@@ -36,22 +37,35 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 	local Panel = PanelsStateMod.Panel:now()
 
 	local SearchQuery = Scope:Value("")
-	local ActiveTags = Panel.PagesData.Commands.ActiveTags
+	local RoleTags = Panel.PagesData.Commands.ActiveTags
+	local CategoryTags = Scope:Value({})
 
 	local FilteredCommands = Scope:Computed(function(Use)
 		local SearchQueryValue = Use(SearchQuery)
-		local ActiveTagsValue = Use(ActiveTags)
+		local RoleTagsValue = Use(RoleTags)
+		local CategoryTagsValue = Use(CategoryTags)
 
 		return Sift.Dictionary.filter(CONFIG.Commands, function(Command)
-			if #ActiveTagsValue >= 1 then
+			if #RoleTagsValue >= 1 then
 				if
-					Sift.Array.some(Sift.Array.flatten(ActiveTagsValue), function(RoleId)
+					Sift.Array.some(Sift.Array.flatten(RoleTagsValue), function(RoleId)
 						return Sift.Array.includes(Command.Roles, RoleId)
 					end) == false
 				then
 					return false
 				end
 			end
+
+			if #CategoryTagsValue >= 1 then
+				if
+					Sift.Array.some(Sift.Array.flatten(CategoryTagsValue), function(Category: string)
+						return Command.Category == Category
+					end) == false
+				then
+					return false
+				end
+			end
+
 			if utf8.len(SearchQueryValue) >= 1 then
 				if string.find(Command.Prompt, SearchQueryValue) == nil then
 					return false
@@ -156,6 +170,10 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 								Padding = {
 									All = Scope:UDim(0, Theme.StrokeThickness["1"]),
 								},
+								List = {
+									FillDirection = Enum.FillDirection.Horizontal,
+									Padding = Scope:UDim(0, Theme.Spacing["0.5"]),
+								},
 
 								[Children] = {
 									Scope:Tags {
@@ -164,16 +182,16 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 												return RoleA.Level < RoleB.Level
 											end),
 											function(Role, Id)
-												local TextIcon = nil
+												local Icon = CONFIG.Icons.PersonTagFill
 
 												if Role.Gamepass ~= nil then
-													TextIcon = ""
+													Icon = CONFIG.Icons.RobuxFill
 												end
 
-												return { Role.Name, TextIcon }
+												return { Role.Name, Icon }
 											end
 										),
-										Selection = ActiveTags,
+										Selection = RoleTags,
 										ButtonProps = {
 											SizeVariant = "Large",
 											ContentSize = Theme.TextSize["1"],
@@ -194,6 +212,16 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 												end)
 											end
 										end,
+									},
+									Scope:Tags {
+										Tags = Sift.Array.map(CONFIG.CommandCategories, function(Category)
+											return { Category, CONFIG.Icons.TagFill }
+										end),
+										Selection = CategoryTags,
+										ButtonProps = {
+											SizeVariant = "Large",
+											ContentSize = Theme.TextSize["1"],
+										},
 									},
 								},
 							}

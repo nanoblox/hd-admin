@@ -1,20 +1,13 @@
-export type Argument = {
-	Name: string,
-	Type: string,
-	Options: { string }?,
-	Fallback: any?,
-	Optional: boolean?,
-}
-export type Command = {
-	Name: string,
-	Arguments: { Argument },
-	Roles: { string },
-}
+local Main = script:FindFirstAncestor("MainModule")
+local Packages = Main.Value.Packages
+local UI = Main.Value.Controllers.UI
+local Types = require(UI.Utils.Types)
 
-local COMMANDS = {
+local COMMANDS: { [string]: Types.Command } = {
 	Command = {
 		Name = "command",
 		Roles = { "Moderator" },
+		Category = "Moderation",
 		Arguments = {},
 	},
 	Command2 = {
@@ -36,6 +29,7 @@ local COMMANDS = {
 	Command3 = {
 		Name = "command3",
 		Roles = { "VIP" },
+		Category = "Fun",
 		Arguments = {
 			{
 				Name = "Players",
@@ -50,6 +44,7 @@ local COMMANDS = {
 	Command4 = {
 		Name = "command4",
 		Roles = { "Guest" },
+		Category = "Utility",
 		Arguments = {
 			{
 				Name = "Players",
@@ -64,6 +59,7 @@ local COMMANDS = {
 	Command5 = {
 		Name = "command5",
 		Roles = { "Guest" },
+		Category = "Moderation",
 		Arguments = {
 			{
 				Name = "Players",
@@ -78,6 +74,7 @@ local COMMANDS = {
 	Ban = {
 		Name = "ban",
 		Roles = { "Moderator" },
+		Category = "Moderation",
 		Arguments = {
 			{
 				Name = "Players",
@@ -93,6 +90,7 @@ local COMMANDS = {
 	Warn = {
 		Name = "warn",
 		Roles = { "Moderator" },
+		Category = "Moderation",
 		Arguments = {
 			{
 				Name = "Players",
@@ -107,6 +105,7 @@ local COMMANDS = {
 	Admin = {
 		Name = "admin",
 		Roles = { "Admin" },
+		Category = "Administration",
 		Arguments = {
 			{
 				Name = "Players",
@@ -122,6 +121,7 @@ local COMMANDS = {
 	EveryArgument = {
 		Name = "everyargument",
 		Roles = { "Moderator" },
+		Category = "Utility",
 		Arguments = {
 			{
 				Name = "UserIds",
