@@ -11,6 +11,7 @@ local Children = Fusion.Children
 
 export type Props = OnyxUI.FrameProps & {
 	Text: Fusion.Value<string>?,
+	OnFocusEnd: Fusion.UsedAs<() -> ()>?,
 }
 
 return function(Scope: Fusion.Scope<>, Props: Props)
@@ -18,6 +19,8 @@ return function(Scope: Fusion.Scope<>, Props: Props)
 	local Theme = OnyxUI.Themer.Theme:now()
 
 	local Text = Scope:EnsureValue(OnyxUI.Util.Fallback(Props.Text, ""))
+	local OnFocusEnd = OnyxUI.Util.Fallback(Props.OnFocusEnd, function() end)
+
 	local FilterPassed = Scope:Value(nil)
 
 	local FilterAttributesSource = {
@@ -56,6 +59,8 @@ return function(Scope: Fusion.Scope<>, Props: Props)
 				Flex = {
 					Mode = Enum.UIFlexMode.Fill,
 				},
+
+				OnFocusEnd = OnFocusEnd,
 			},
 			Scope:IconText {
 				Name = "FilterStatus",
