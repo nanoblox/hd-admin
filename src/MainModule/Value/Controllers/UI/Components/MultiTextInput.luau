@@ -45,6 +45,7 @@ return function(Scope: Fusion.Scope<>, Props: Props)
 
 									return Scope:FilteredTextInput {
 										Text = TextReactive,
+										LayoutOrder = Index,
 
 										OnFocusEnd = function()
 											local TextReactiveValue = Fusion.peek(TextReactive)
