@@ -74,7 +74,7 @@ return function(Scope: Fusion.Scope<>, Props: Props)
 
 					return Use(FilterAttributesValue.Color)
 				end),
-				ContentSize = Theme.TextSize["1.25"],
+				ContentSize = Theme.TextSize["1.125"],
 			},
 		},
 	}))
