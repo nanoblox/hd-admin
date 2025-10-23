@@ -1,12 +1,11 @@
 local Main = script:FindFirstAncestor("MainModule")
-local Packages = Main.Value.Packages
 local UI = Main.Value.Controllers.UI
 local Types = require(UI.Utils.Types)
 
 local COMMANDS: { [string]: Types.Command } = {
 	Command = {
 		Name = "command",
-		Roles = { "Moderator" },
+		Roles = { "Mod" },
 		Category = "Moderation",
 		Arguments = {},
 	},
@@ -73,7 +72,7 @@ local COMMANDS: { [string]: Types.Command } = {
 	},
 	Ban = {
 		Name = "ban",
-		Roles = { "Moderator" },
+		Roles = { "Mod" },
 		Category = "Moderation",
 		Arguments = {
 			{
@@ -89,7 +88,7 @@ local COMMANDS: { [string]: Types.Command } = {
 	},
 	Warn = {
 		Name = "warn",
-		Roles = { "Moderator" },
+		Roles = { "Mod" },
 		Category = "Moderation",
 		Arguments = {
 			{
@@ -120,7 +119,7 @@ local COMMANDS: { [string]: Types.Command } = {
 	},
 	EveryArgument = {
 		Name = "everyargument",
-		Roles = { "Moderator" },
+		Roles = { "Mod" },
 		Category = "Utility",
 		Arguments = {
 			{
@@ -161,6 +160,10 @@ local COMMANDS: { [string]: Types.Command } = {
 			{
 				Name = "Duration",
 				Type = "Duration",
+			},
+			{
+				Name = "MultiText",
+				Type = "MultiText",
 			},
 		},
 	},

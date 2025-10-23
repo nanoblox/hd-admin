@@ -1,7 +1,7 @@
 local Main = script:FindFirstAncestor("MainModule")
 local Packages = Main.Value.Packages
 local UI = Main.Value.Controllers.UI
-local Category = require(script.Parent.Parent.Category)
+
 local Fusion = require(Packages.Fusion)
 local OnyxUI = require(Packages.OnyxUI)
 local States = require(UI.States)
@@ -181,7 +181,7 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 											Sift.Array.sort(Sift.Dictionary.values(CONFIG.Roles), function(RoleA, RoleB)
 												return RoleA.Level < RoleB.Level
 											end),
-											function(Role, Id)
+											function(Role)
 												local Icon = CONFIG.Icons.PersonTagFill
 
 												if Role.Gamepass ~= nil then
@@ -198,6 +198,10 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 										},
 
 										OnSelect = function(TagContent, Enabled)
+											if not Enabled then
+												return
+											end
+
 											local MatchingRole = nil
 
 											for Id, Role in CONFIG.Roles do
