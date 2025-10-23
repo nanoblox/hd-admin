@@ -1,18 +1,18 @@
 local MarketplaceService = game:GetService("MarketplaceService")
 local Players = game:GetService("Players")
-
 local RunService = game:GetService("RunService")
+
 local Main = script:FindFirstAncestor("MainModule")
 local UI = Main.Value.Controllers.UI
 local Packages = Main.Value.Packages
+
 local Types = require(UI.Utils.Types)
-local Config = require(UI.Config)
 local UserInformant = require(UI.Utils.UserInformant)
 local Sift = require(Packages.Sift)
 
-local CONFIG = Config:Get()
-
-local RUN_COMMAND: (Name: string, Arguments: { any }) -> boolean = function() end
+local RUN_COMMAND: (Name: string, Arguments: { any }) -> boolean = function(Name, Arguments)
+	print(Name, Arguments)
+end
 local TOGGLE_COSMETIC: (Cosmetic: string, Worn: boolean) -> boolean = function() end
 local PURCHASE_COSMETICS: (Cosmetics: { string }) -> boolean = function() end
 local STOP_COMMAND_TASKS: (Command: string) -> boolean = function() end

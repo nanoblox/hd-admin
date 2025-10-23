@@ -103,7 +103,7 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 						Color = Theme.Colors.Primary.Main,
 
 						OnActivate = function()
-							Callbacks.BoosterPurchaseInitiated()
+							Callbacks.PurchaseBooster()
 						end,
 					},
 					Scope:Button {

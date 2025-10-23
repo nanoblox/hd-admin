@@ -120,7 +120,7 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 						ContentSize = Theme.TextSize["1"],
 
 						OnActivate = function()
-							Callbacks.CommandRan(
+							Callbacks.RunCommand(
 								Fusion.peek(Panel.PagesData.Execute.CommandId),
 								Fusion.peek(ArgumentSettingValues)
 							)

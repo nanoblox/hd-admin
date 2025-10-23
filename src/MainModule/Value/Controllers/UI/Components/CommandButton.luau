@@ -102,7 +102,7 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 					end)
 
 					Future.Try(function()
-						Callbacks.CommandRan(IdValue, {})
+						Callbacks.RunCommand(IdValue, {})
 					end)
 				else
 					Panel.PagesData.Execute.CommandId:set(IdValue)
@@ -185,7 +185,7 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 					local CommandValue = Fusion.peek(Command)
 
 					if CommandValue ~= nil then
-						Callbacks.CommandStopped(IdValue)
+						Callbacks.StopCommandTasks(IdValue)
 					end
 				end,
 			},
