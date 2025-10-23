@@ -19,13 +19,11 @@ function PromptsStateMod:Push(Properties: Types.Prompt)
 		Lifetime = 5,
 	}, Properties)
 
-	Prompt.Callback = function()
+	Prompt.Pull = function()
 		PromptsStateMod:Pull(Prompt.Id)
-
-		if Properties.Callback ~= nil then
-			Properties.Callback()
-		end
 	end
+
+	Prompt.Callback = Properties.Callback
 
 	local PromptsStateModValue: { Types.Prompt } = Fusion.peek(States.Prompts.Prompts)
 
@@ -82,9 +80,10 @@ task.spawn(function()
 			},
 		},
 		Lifetime = -1,
+		Sticky = true,
 
 		Callback = function()
-			print("Prompt closed!")
+			print("Fly toggled!")
 		end,
 	}
 end)

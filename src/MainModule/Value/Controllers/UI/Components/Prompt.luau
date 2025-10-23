@@ -17,6 +17,8 @@ export type Props = CustomButton.Props & {
 	Body: Fusion.UsedAs<{ string }>?,
 	Title: Fusion.UsedAs<{ string }>?,
 	Callback: Fusion.UsedAs<() -> ()>?,
+	Pull: Fusion.UsedAs<() -> ()>?,
+	Sticky: Fusion.UsedAs<boolean>?,
 	Actions: Fusion.UsedAs<{
 		{
 			Content: { string },
@@ -42,9 +44,11 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 	local Body = OnyxUI.Util.Fallback(Props.Body, {})
 	local Title = OnyxUI.Util.Fallback(Props.Title, {})
 	local Callback = OnyxUI.Util.Fallback(Props.Callback, function() end)
+	local Pull = OnyxUI.Util.Fallback(Props.Pull, function() end)
 	local Actions = OnyxUI.Util.Fallback(Props.Actions, {})
 	local Arguments = OnyxUI.Util.Fallback(Props.Arguments, {})
 	local Lifetime = OnyxUI.Util.Fallback(Props.Lifetime, -1)
+	local Sticky = OnyxUI.Util.Fallback(Props.Sticky, false)
 
 	local Padding = Scope:UDim(0, Theme.Padding["1"])
 
@@ -71,7 +75,15 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 		},
 
 		OnActivate = function()
-			Fusion.peek(Callback)()
+			local CallbackValue = Fusion.peek(Callback)
+			local PullValue = Fusion.peek(Pull)
+			local StickyValue = Fusion.peek(Sticky)
+
+			if not StickyValue then
+				PullValue()
+			end
+
+			CallbackValue()
 		end,
 
 		[Children] = {
@@ -104,9 +116,16 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 									Mode = Enum.UIFlexMode.Fill,
 								},
 							},
-							Scope:Icon {
-								Image = CONFIG.Icons.LogoGlyphOutline,
-								ImageColor3 = Theme.Colors.NeutralContent.Dark,
+							Scope:IconButton {
+								Image = CONFIG.Icons.Close,
+								Color = Theme.Colors.NeutralContent.Dark,
+								Style = "Ghost",
+
+								OnActivate = function()
+									local PullValue = Fusion.peek(Pull)
+
+									PullValue()
+								end,
 							},
 						},
 					},
@@ -154,7 +173,7 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 					return Scope:ProgressBar {
 						Name = "ExpiryBar",
 						Progress = Scope:Computed(function(Use)
-							local UnixTimeValue = Use(States.UnixTime)
+							local UnixTimeValue = Use(States.UnixTime) or 0
 							local LifetimeValue = Use(Lifetime) * 1000
 
 							return math.clamp(

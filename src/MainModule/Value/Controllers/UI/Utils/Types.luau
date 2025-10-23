@@ -51,7 +51,9 @@ export type Prompt = {
 	Title: { string },
 	Body: string,
 	Lifetime: number?,
+	Sticky: boolean?,
 	Callback: () -> ()?,
+	Pull: () -> (),
 }
 
 return nil
