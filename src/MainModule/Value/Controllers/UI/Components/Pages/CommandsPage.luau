@@ -159,76 +159,81 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 						local TagsLocked = Use(Panel.PagesData.Commands.TagsLocked)
 
 						if not TagsLocked then
-							return Scope:Scroller {
-								Name = "Tags",
-								ScrollingDirection = Enum.ScrollingDirection.X,
-								ScrollBarThickness = 0,
-								ScrollBarImageTransparency = 1,
-								CanvasSize = UDim2.fromOffset(0, 0),
-								AutomaticCanvasSize = Enum.AutomaticSize.X,
-								AutomaticSize = Enum.AutomaticSize.Y,
-								Padding = {
-									All = Scope:UDim(0, Theme.StrokeThickness["1"]),
-								},
-								List = {
-									FillDirection = Enum.FillDirection.Horizontal,
-									Padding = Scope:UDim(0, Theme.Spacing["0.5"]),
-								},
+							return OnyxUI.Themer.Theme:is(Theme):during(function()
+								return Scope:Scroller {
+									Name = "Tags",
+									ScrollingDirection = Enum.ScrollingDirection.X,
+									ScrollBarThickness = 0,
+									ScrollBarImageTransparency = 1,
+									CanvasSize = UDim2.fromOffset(0, 0),
+									AutomaticCanvasSize = Enum.AutomaticSize.X,
+									AutomaticSize = Enum.AutomaticSize.Y,
+									Padding = {
+										All = Scope:UDim(0, Theme.StrokeThickness["1"]),
+									},
+									List = {
+										FillDirection = Enum.FillDirection.Horizontal,
+										Padding = Scope:UDim(0, Theme.Spacing["0.5"]),
+									},
 
-								[Children] = {
-									Scope:Tags {
-										Tags = Sift.Array.map(
-											Sift.Array.sort(Sift.Dictionary.values(CONFIG.Roles), function(RoleA, RoleB)
-												return RoleA.Level < RoleB.Level
+									[Children] = {
+										Scope:Tags {
+											Tags = Sift.Array.map(
+												Sift.Array.sort(
+													Sift.Dictionary.values(CONFIG.Roles),
+													function(RoleA, RoleB)
+														return RoleA.Level < RoleB.Level
+													end
+												),
+												function(Role)
+													local Icon = CONFIG.Icons.PersonTagFill
+
+													if Role.Gamepass ~= nil then
+														Icon = CONFIG.Icons.RobuxFill
+													end
+
+													return { Role.Name, Icon }
+												end
+											),
+											Selection = RoleTags,
+											ButtonProps = {
+												SizeVariant = "Large",
+												ContentSize = Theme.TextSize["1"],
+											},
+
+											OnSelect = function(TagContent, Enabled)
+												if not Enabled then
+													return
+												end
+
+												local MatchingRole = nil
+
+												for Id, Role in CONFIG.Roles do
+													if Id == TagContent[1] then
+														MatchingRole = Role
+													end
+												end
+
+												if MatchingRole and (MatchingRole.Gamepass ~= nil) then
+													Future.Try(function()
+														return Callbacks.PurchaseRoleGamepass(MatchingRole.Gamepass)
+													end)
+												end
+											end,
+										},
+										Scope:Tags {
+											Tags = Sift.Array.map(CONFIG.CommandCategories, function(Category)
+												return { Category, CONFIG.Icons.TagFill }
 											end),
-											function(Role)
-												local Icon = CONFIG.Icons.PersonTagFill
-
-												if Role.Gamepass ~= nil then
-													Icon = CONFIG.Icons.RobuxFill
-												end
-
-												return { Role.Name, Icon }
-											end
-										),
-										Selection = RoleTags,
-										ButtonProps = {
-											SizeVariant = "Large",
-											ContentSize = Theme.TextSize["1"],
-										},
-
-										OnSelect = function(TagContent, Enabled)
-											if not Enabled then
-												return
-											end
-
-											local MatchingRole = nil
-
-											for Id, Role in CONFIG.Roles do
-												if Id == TagContent[1] then
-													MatchingRole = Role
-												end
-											end
-
-											if MatchingRole and (MatchingRole.Gamepass ~= nil) then
-												Future.Try(function()
-													return Callbacks.PurchaseRoleGamepass(MatchingRole.Gamepass)
-												end)
-											end
-										end,
-									},
-									Scope:Tags {
-										Tags = Sift.Array.map(CONFIG.CommandCategories, function(Category)
-											return { Category, CONFIG.Icons.TagFill }
-										end),
-										Selection = CategoryTags,
-										ButtonProps = {
-											SizeVariant = "Large",
-											ContentSize = Theme.TextSize["1"],
+											Selection = CategoryTags,
+											ButtonProps = {
+												SizeVariant = "Large",
+												ContentSize = Theme.TextSize["1"],
+											},
 										},
 									},
-								},
-							}
+								}
+							end)
 						end
 					end),
 				},

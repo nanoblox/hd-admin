@@ -232,16 +232,21 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 														local RenderedValue = Use(Rendered)
 
 														if RenderedValue then
-															return PanelsStateMod.Panel:is(Panel):during(function()
-																return Component(Scope, {
-																	Name = Name,
-																	Open = true,
-																	Size = Scope:UDim2Offset(288, 0),
-																	AutomaticSize = Enum.AutomaticSize.None,
-																	Padding = {
-																		All = Scope:UDim(0, Theme.StrokeThickness["1"]),
-																	},
-																})
+															return OnyxUI.Themer.Theme:is(Theme):during(function()
+																return PanelsStateMod.Panel:is(Panel):during(function()
+																	return Component(Scope, {
+																		Name = Name,
+																		Open = true,
+																		Size = Scope:UDim2Offset(288, 0),
+																		AutomaticSize = Enum.AutomaticSize.None,
+																		Padding = {
+																			All = Scope:UDim(
+																				0,
+																				Theme.StrokeThickness["1"]
+																			),
+																		},
+																	})
+																end)
 															end)
 														end
 													end),
