@@ -51,6 +51,15 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 
 		return Sift.Array.merge(UndoHistoryValue, HistoryValue)
 	end)
+	local RenderedPages = Scope:Computed(function(Use)
+		local PageValue = Use(Panel.Page)
+		
+		return Sift.Array.filter(PAGES, function(_, Name: string)
+			print(PageValue, Name)
+
+			return PageValue == Name
+		end)
+	end)
 
 	local LastPageHistory = Scope:Value({})
 	local LastPageHistoryRaw = {}
