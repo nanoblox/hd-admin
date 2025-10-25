@@ -99,9 +99,9 @@ end
 function Framework.getInstance(container: Folder | ModuleScript, instanceName: string): Instance?
 	--[[
 		In most cases instances can be rerieved by just doing ``script[INSTANCE_NAME]``,
-		however, when the *server* wants to access a model under a *shared* module, indexing
-		the instance will return nil or throw an error, because it will be located in the
-		mirrored shared container. This is the same still even when doing...
+		however, when the *server* wants to access a model, indexing
+		the instance can return nil or throw an error, because it's possible for the instance to be located in the
+		both mirrored shared container and server container. This is the same still even when doing...
 		```
 		local sharedValue = script:FindFirstAncestor("MainModule").Value
 		local model = sharedValue.Controllers.ModuleWithAnInstance[INSTANCE_NAME]
@@ -137,17 +137,25 @@ function Framework.getInstance(container: Folder | ModuleScript, instanceName: s
 	for i = 1, 100 do
 		table.insert(parents, part.Name)
 		part = part.Parent
-		if part == nil or part == serverContainer then
+		if part == nil or part == serverContainer or part == sharedContainer then
 			break
 		end
 	end
-	local nextPart = sharedContainer
-	for i = #parents, 1, -1 do
-		nextPart = nextPart:FindFirstChild(parents[i])
-		if not nextPart then
-			return nil
-		end
+	local oppositeTopLevelContainer = sharedContainer
+	if part == sharedContainer then
+		oppositeTopLevelContainer = serverContainer
 	end
+	local function getNextPart(containerToCheck)
+		local nextPart = containerToCheck
+		for i = #parents, 1, -1 do
+			nextPart = nextPart:FindFirstChild(parents[i])
+			if not nextPart then
+				return nil
+			end
+		end
+		return nextPart
+	end
+	local nextPart = getNextPart(oppositeTopLevelContainer)
 	local function checkChildren(instanceToCheck)
 		if not instanceToCheck or not instanceToCheck:IsA("Instance") then
 			return nil

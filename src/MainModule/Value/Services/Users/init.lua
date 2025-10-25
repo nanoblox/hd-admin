@@ -34,12 +34,14 @@ for _, player in Players:GetPlayers() do
 end
 
 
--- Setup commands if the client makes a request before the server needs to update
+-- Setup commands and roles if the client makes a request before the server needs to update
 -- This is essential for example to ensure data fetched via User.everyone is accurate
 local State = require(modules.Objects.State)
 State.firstFetchRequested:connect(function()
 	local Commands = require(services.Commands)
+	local Roles = require(services.Roles)
 	Commands.updateCommands()
+	Roles.updateRoles()
 end)
 
 

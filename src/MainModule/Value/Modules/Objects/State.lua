@@ -67,6 +67,7 @@ function State.new(dataMustBeSerializable: boolean?, initialTable: {[string]: an
 		_data = {} :: {[string]: any},
 		_listeners = {} :: {[string]: {[number]: (...any) -> (...any)}},
 		_changedCallbacks = {} :: {[number]: (...any) -> (...any)},
+		_verifyCallbacks = {} :: {(Player, {string}, any) -> (...any)},
 		_bindingReplicationKey = nil :: any?,
 		_successfulBindings = {},
 		_requestingBindings = {},
@@ -167,7 +168,7 @@ function State.set(self: Class, ...: string | any)
 		if callbacksArray then
 			for _, callback in callbacksArray do
 				callback = callback :: (any) -> (any)
-				table.insert(callbacksToCall, {callback, dataValue})
+				table.insert(callbacksToCall :: any, {callback, dataValue})
 			end
 		end
 	end
@@ -217,6 +218,10 @@ function State.setAll(self: Class, table: {[string]: any}?)
 	end
 end
 
+function State.clear(self: Class)
+	self:setAll({})
+end
+
 function State.update(self: Class, ...: string | any)
 	-- This is the same as set, but the value is a function that returns the new value
 	local totalArgs = select("#", ...)
@@ -235,7 +240,7 @@ function State.update(self: Class, ...: string | any)
 end
 
 function State.changed(self: Class, callback: (pathwayKey: string, value: any) -> (...any))
-	local callbacksArray = self._changedCallbacks
+	local callbacksArray = self._changedCallbacks :: any
 	table.insert(callbacksArray, callback)
 	return self:_createConnection(function()
 		if self.isActive ~= true then
@@ -275,7 +280,7 @@ function State.listen(self: Class, ...: string | (...any) -> (...any)): Disconne
 		callbacksArray = {}
 		self._listeners[pathwayKey] = callbacksArray
 	end
-	table.insert(callbacksArray, callback :: any) 
+	table.insert(callbacksArray :: any, callback :: any) 
 	if self._bindingReplicationKey then
 		task.spawn(function()
 			self:fetchAsync(table.unpack(pathwayAndCallback :: {string}))
@@ -378,7 +383,7 @@ function State.replicate(self: Class, player: Player, replicationName: string, p
 	
 	-- Upon requesting and verifying, replication to client can now begin
 	local function replicationHandler(player, ...: unknown): (boolean, string | {any})
-		local pathway = {...}
+		local pathway = {...} :: {string}
 		for _, value in pathway do
 			if typeof(value) ~= "string" then
 				return false, "Pathways must be strings"
@@ -418,6 +423,12 @@ function State.replicate(self: Class, player: Player, replicationName: string, p
 		activeListenersSize += actualSize
 		activeListeners[pathwayKey] = true
 		local currentValue = self:get(table.unpack(pathway))
+		for _, callback in self._verifyCallbacks do
+			local shouldUpdate, newValue = callback(player, pathway, currentValue)
+			if shouldUpdate then
+				currentValue = newValue
+			end
+		end
 		return true, currentValue
 	end
 	replicationHandlers[replicationKey] = replicationHandler
@@ -427,6 +438,7 @@ function State.replicate(self: Class, player: Player, replicationName: string, p
 	repJanitor:add(self:changed(function(pathwayKey: string, value: any)
 		if activeListeners[pathwayKey] then
 			local pathway = State.getPathway(pathwayKey)
+			print("Client accessed (2):", player, #pathway, pathway, value) --!!! REMOVE THIS
 			stateEvent:fireClient(player, replicationKey, pathway, value)
 		end
 	end))
@@ -461,7 +473,7 @@ function State.bind(self: Class, replicationName: string)
 		if replicationKey ~= self._bindingReplicationKey then
 			return
 		end
-		table.insert(pathway, value)
+		table.insert(pathway :: any, value)
 		selfClass:set(table.unpack(pathway))
 	end))
 	return
@@ -532,6 +544,27 @@ function State.fetchAsync(self: Class, ...: string): (boolean, string | {any})
 	table.insert(pathway, value)
 	self:set(table.unpack(pathway))
 	return true, value
+end
+
+function State.verify(self: Class, callback: (Player, {string}, any) -> (...any))
+	-- This verifies data the client is requesting to view when used inconjunction with :replicate
+	-- This can only be used on the server
+	-- This accepts a callback which is called with the requested value,
+	-- then returns a new value that is then sent to the client
+	-- This is useful for scenarios where you want to restrict what data
+	-- within a permitted table a client can see, and also for limiting
+	-- certain players to certain data
+	local callbacksArray = self._verifyCallbacks :: any
+	table.insert(callbacksArray, callback)
+	return self:_createConnection(function()
+		if self.isActive ~= true then
+			return
+		end
+		local index = table.find(callbacksArray, callback)
+		if index then
+			table.remove(callbacksArray, index)
+		end
+	end)
 end
 
 function State.destroy(self: Class)
