@@ -16,7 +16,7 @@ local Children = Fusion.Children
 local PageButton = require(script.Parent.Parent.PageButton)
 local TitleBar2 = require(script.Parent.Parent.TitleBar2)
 
-local MENUS = {
+local PAGES = {
 	Dashboard = require(script.Parent.Parent.Pages.DashboardPage),
 	Commands = require(script.Parent.Parent.Pages.CommandsPage),
 	About = require(script.Parent.Parent.Pages.AboutPage),
@@ -45,7 +45,6 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 		return Pages[Use(Panel.Page)]
 	end)
 	local PageHistory = Scope:Computed(function(Use)
-		local PageValue = Use(Page)
 		local UndoHistoryValue = Use(Panel.PageUndoHistory)
 		local HistoryValue = Use(Panel.PageHistory)
 
@@ -53,12 +52,18 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 	end)
 	local RenderedPages = Scope:Computed(function(Use)
 		local PageValue = Use(Panel.Page)
-		
-		return Sift.Array.filter(PAGES, function(_, Name: string)
-			print(PageValue, Name)
+		local PageHistoryValue = Use(Panel.PageHistory)
+		local PageUndoHistoryValue = Use(Panel.PageUndoHistory)
 
-			return PageValue == Name
-		end)
+		local ValidValues = {
+			PageValue,
+			PageHistoryValue[#PageHistoryValue - 1],
+			PageUndoHistoryValue[#PageUndoHistoryValue - 1],
+		}
+
+		return Sift.Dictionary.keys(Sift.Dictionary.filter(PAGES, function(_, Name)
+			return table.find(ValidValues, Name) ~= nil
+		end))
 	end)
 
 	local LastPageHistory = Scope:Value({})
@@ -174,60 +179,75 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 						},
 
 						[Children] = {
-							Scope:ForPairs(MENUS, function(Use, Scope, Name, Component)
+							Scope:ForPairs(PAGES, function(Use, Scope, Name, Component)
 								return Name,
 									OnyxUI.Themer.Theme:is(Use(States.Theme)):during(function()
-										local Index = Scope:Computed(function(Use)
-											local LastPageHistoryValue = Use(LastPageHistory)
+										return PanelsStateMod.Panel:is(Panel):during(function()
+											local HistoryIndex = Scope:Computed(function(Use)
+												local LastPageHistoryValue = Use(LastPageHistory)
 
-											return table.find(LastPageHistoryValue, Name) or 0
+												return table.find(LastPageHistoryValue, Name) or 0
+											end)
+											local Open = Scope:Computed(function(Use)
+												local PageValue = Use(Panel.Page)
+
+												if PageValue == Name then
+													return true
+												elseif (PAGES[PageValue] == nil) and (Name == "Placeholder") then
+													return true
+												else
+													return false
+												end
+											end)
+											local Rendered = Scope:Computed(function(Use)
+												local RenderedPagesValue = Use(RenderedPages)
+
+												return table.find(RenderedPagesValue, Name) ~= nil
+											end)
+
+											return Scope:Frame {
+												Name = Name,
+												Size = Scope:Spring(
+													Scope:Computed(function(Use)
+														local OpenValue = Use(Open)
+
+														if OpenValue then
+															return UDim2.fromScale(1, 1)
+														else
+															return UDim2.fromScale(0, 1)
+														end
+													end),
+													Theme.SpringSpeed["2"],
+													Theme.SpringDampening["1.5"]
+												),
+												AutomaticSize = Enum.AutomaticSize.Y,
+												LayoutOrder = HistoryIndex,
+												ClipsDescendants = true,
+												List = {
+													VerticalFlex = Enum.UIFlexAlignment.Fill,
+												},
+
+												[Children] = {
+													Scope:Computed(function(Use)
+														local RenderedValue = Use(Rendered)
+
+														if RenderedValue then
+															return PanelsStateMod.Panel:is(Panel):during(function()
+																return Component(Scope, {
+																	Name = Name,
+																	Open = true,
+																	Size = Scope:UDim2Offset(288, 0),
+																	AutomaticSize = Enum.AutomaticSize.None,
+																	Padding = {
+																		All = Scope:UDim(0, Theme.StrokeThickness["1"]),
+																	},
+																})
+															end)
+														end
+													end),
+												},
+											}
 										end)
-										local Open = Scope:Computed(function(Use)
-											local PageValue = Use(Panel.Page)
-
-											if PageValue == Name then
-												return true
-											elseif (MENUS[PageValue] == nil) and (Name == "Placeholder") then
-												return true
-											else
-												return false
-											end
-										end)
-
-										return Scope:Frame {
-											Name = Name,
-											Size = Scope:Spring(
-												Scope:Computed(function(Use)
-													local OpenValue = Use(Open)
-
-													if OpenValue then
-														return UDim2.fromScale(1, 1)
-													else
-														return UDim2.fromScale(0, 1)
-													end
-												end),
-												Theme.SpringSpeed["2"],
-												Theme.SpringDampening["1.5"]
-											),
-											AutomaticSize = Enum.AutomaticSize.Y,
-											LayoutOrder = Index,
-											ClipsDescendants = true,
-											List = {
-												VerticalFlex = Enum.UIFlexAlignment.Fill,
-											},
-
-											[Children] = {
-												Component(Scope, {
-													Name = Name,
-													Open = Open,
-													Size = Scope:UDim2Offset(288, 0),
-													AutomaticSize = Enum.AutomaticSize.None,
-													Padding = {
-														All = Scope:UDim(0, Theme.StrokeThickness["1"]),
-													},
-												}),
-											},
-										}
 									end)
 							end),
 						},
