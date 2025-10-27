@@ -3,9 +3,7 @@ local Packages = Main.Value.Packages
 local UI = Main.Value.Controllers.UI
 local Fusion = require(Packages.Fusion)
 local OnyxUI = require(Packages.OnyxUI)
-local States = require(UI.States)
 local Config = require(UI.Config)
-local Sift = require(Packages.Sift)
 local PanelsStateMod = require(UI.StateMods.PanelsStateMod)
 local UserStateMod = require(UI.StateMods.UserStateMod)
 
@@ -19,24 +17,14 @@ local RolesReel = require(script.Parent.Parent.RolesReel)
 
 local MODERATION_ACTIONS = {
 	{
-		Name = "Warn",
-		Content = { CONFIG.Icons.WarningFill },
-		Command = "Warn",
-	},
-	{
 		Name = "Kick",
-		Content = { CONFIG.Icons.Close },
+		Content = { "Kick", CONFIG.Icons.Close },
 		Command = "Kick",
 	},
 	{
 		Name = "Ban",
-		Content = { CONFIG.Icons.ProhibitedFill },
+		Content = { "Ban", CONFIG.Icons.ProhibitedFill },
 		Command = "Ban",
-	},
-	{
-		Name = "Role",
-		Content = { CONFIG.Icons.ShieldPersonFill },
-		Command = "Role",
 	},
 }
 
@@ -164,17 +152,10 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 												:FormatLocalTime("LL", "en-us")}\n\nAge Verified: {UserInfoValue.AgeVerified}`,
 										},
 										{
-											Title = { "Flags", CONFIG.Icons.WarningFill },
-											Body = `Warnings: {#UserInfoValue.Warnings}\nBans: {#UserInfoValue.Bans}`,
-										},
-										{
 											Title = { "Banned", CONFIG.Icons.ProhibitedFill },
 											Body = `{DateTime.fromUnixTimestamp(LatestBan.Timestamp or 0)
 												:FormatLocalTime("LL", "en-us")}\n\n{BanTimeRemaining > 0 and `{BanTimeRemaining} remaining` or "Indefinite"}`,
-										},
-										{
-											Title = { "Ban note", CONFIG.Icons.NotepadFill },
-											Body = (UserInfoValue.Bans[#UserInfoValue.Bans] or {}).Reason,
+											Color = LatestBan ~= nil and Theme.Colors.Primary.Main,
 										},
 									}
 								end),
@@ -192,6 +173,17 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 														)
 												end),
 												AutomaticSize = Enum.AutomaticSize.None,
+												Stroke = {
+													Color = Scope:Computed(function(Use)
+														local ColorValue = Use(InfoCardItem.Color)
+
+														if ColorValue then
+															return ColorValue
+														else
+															return Use(Theme.Colors.Neutral.Main)
+														end
+													end),
+												},
 											}
 										end)
 									end)
@@ -212,7 +204,9 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 					Scope:ForValues(MODERATION_ACTIONS, function(Use, Scope, Action)
 						return Scope:Button {
 							Content = Action.Content,
+							ContentSize = Theme.TextSize["1"],
 							SizeVariant = "ExtraLarge",
+							Color = Theme.Colors.Primary.Main,
 
 							OnActivate = function()
 								Panel.PagesData.Execute.CommandId:set(Action.Command)
