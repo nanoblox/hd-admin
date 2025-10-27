@@ -6,10 +6,12 @@ local CHECK_EDIT = false
 
 local TestDataStateMod = {}
 
-if (not CHECK_EDIT) or (RunService:IsStudio()) then
-	UserStateMod.Load(1)
-	UserStateMod.Load(2)
-	UserStateMod.Load(3)
-end
+task.spawn(function()
+	if (not CHECK_EDIT) or (RunService:IsStudio()) then
+		UserStateMod.Load(1)
+		UserStateMod.Load(2)
+		UserStateMod.Load(3)
+	end
+end)
 
 return TestDataStateMod
