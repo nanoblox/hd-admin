@@ -40,7 +40,17 @@ local REQUEST_USER_INFO: (UserId: number) -> (boolean, Types.User) = function(Us
 					},
 				}, BaseInfo)
 		else
-			return true, BaseInfo
+			return true,
+				Sift.Dictionary.merge({
+					UserId = 1,
+					Username = "Username",
+					DisplayName = "Name",
+					AccountAge = -1,
+					AgeVerified = false,
+					Roles = {},
+					Warnings = {},
+					Bans = {},
+				}, BaseInfo)
 		end
 	end
 end

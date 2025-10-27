@@ -67,7 +67,7 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 			end
 
 			if utf8.len(SearchQueryValue) >= 1 then
-				if string.find(Command.Prompt, SearchQueryValue) == nil then
+				if string.find(Command.Name, SearchQueryValue) == nil then
 					return false
 				end
 			end
