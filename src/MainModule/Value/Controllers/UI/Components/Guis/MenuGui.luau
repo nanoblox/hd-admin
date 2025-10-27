@@ -101,9 +101,9 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 
 	return Scope:AutoScaler(OnyxUI.Util.CombineProps(Props, {
 		Name = script.Name,
-		BaseResolution = Vector2.new(700, 500),
+		BaseResolution = Vector2.new(300, 500),
 		MaxScale = 1,
-		MinScale = 0.6,
+		MinScale = 0.7,
 		Visible = Enabled,
 
 		[Children] = {
