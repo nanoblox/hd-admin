@@ -61,6 +61,10 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 			PageUndoHistoryValue[#PageUndoHistoryValue - 1],
 		}
 
+		if PAGES[PageValue] == nil then
+			table.insert(ValidValues, "Placeholder")
+		end
+
 		return Sift.Dictionary.keys(Sift.Dictionary.filter(PAGES, function(_, Name)
 			return table.find(ValidValues, Name) ~= nil
 		end))
@@ -184,9 +188,13 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 									OnyxUI.Themer.Theme:is(Use(States.Theme)):during(function()
 										return PanelsStateMod.Panel:is(Panel):during(function()
 											local HistoryIndex = Scope:Computed(function(Use)
-												local LastPageHistoryValue = Use(LastPageHistory)
+												local PageHistoryValue = Use(PageHistory)
 
-												return table.find(LastPageHistoryValue, Name) or 0
+												if Name == "Placeholder" then
+													return 1000
+												end
+
+												return table.find(PageHistoryValue, Name) or 0
 											end)
 											local Open = Scope:Computed(function(Use)
 												local PageValue = Use(Panel.Page)
