@@ -1,5 +1,7 @@
 local Pages = require(script.Parent.Pages)
 
+-- Commands, Analytics, Moderation, Roles, Tasks, Logs, Settings, About
+
 local NAVIGATION = {
 	Page = Pages.Dashboard,
 	Children = {
@@ -7,21 +9,19 @@ local NAVIGATION = {
 			Page = Pages.Commands,
 		},
 		{
-			Page = Pages.Tasks,
-		},
-		{
 			Page = Pages.Analytics,
 		},
 		{
 			Page = Pages.Moderation,
-			Children = {
-				{
-					Page = Pages.Bans,
-				},
-			},
 		},
 		{
 			Page = Pages.Roles,
+		},
+		{
+			Page = Pages.Tasks,
+		},
+		{
+			Page = Pages.Logs,
 		},
 		{
 			Page = Pages.Settings,

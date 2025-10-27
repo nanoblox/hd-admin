@@ -61,6 +61,10 @@ local PAGES = {
 	Booster = {
 		Id = "Unlock",
 	},
+	Logs = {
+		Id = "Logs",
+		Icon = CONFIG.Icons.TerminalFill,
+	},
 }
 
 return PAGES

@@ -22,7 +22,6 @@ local ICONS = {
 	Color = "rbxassetid://13847104644",
 	BrightnessHigh = "rbxassetid://13846522170",
 	RunCommand = "rbxassetid://83414257006200",
-	TerminalFill = "rbxassetid://127808004176157",
 	CalendarLtr = "rbxassetid://13846624819",
 	Zap = "rbxassetid://138222403774691",
 	ZapFill = "rbxassetid://79958644689755",
