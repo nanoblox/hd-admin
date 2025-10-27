@@ -236,7 +236,7 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 												},
 
 												[Children] = {
-													Scope:Computed(function(Use)
+													Scope:Computed(function(Use, Scope)
 														local RenderedValue = Use(Rendered)
 
 														if RenderedValue then
