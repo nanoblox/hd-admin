@@ -90,7 +90,7 @@ return function(Scope: Fusion.Scope<>, Props: Props)
 	return Scope:Frame(OnyxUI.Util.CombineProps(Props, {
 		Name = script.Name,
 		List = {
-			Padding = Scope:UDim(0, Theme.Spacing["0.75"]),
+			Padding = Scope:UDim(0, Theme.Spacing["0.5"]),
 			HorizontalFlex = Enum.UIFlexAlignment.Fill,
 		},
 
