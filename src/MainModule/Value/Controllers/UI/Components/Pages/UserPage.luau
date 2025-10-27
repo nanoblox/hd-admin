@@ -155,7 +155,7 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 											Title = { "Banned", CONFIG.Icons.ProhibitedFill },
 											Body = `{DateTime.fromUnixTimestamp(LatestBan.Timestamp or 0)
 												:FormatLocalTime("LL", "en-us")}\n\n{BanTimeRemaining > 0 and `{BanTimeRemaining} remaining` or "Indefinite"}`,
-											Color = LatestBan ~= nil and Theme.Colors.Primary.Main,
+											Highlighted = LatestBan ~= nil,
 										},
 									}
 								end),
@@ -175,10 +175,10 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 												AutomaticSize = Enum.AutomaticSize.None,
 												Stroke = {
 													Color = Scope:Computed(function(Use)
-														local ColorValue = Use(InfoCardItem.Color)
+														local HighlightedValue = Use(InfoCardItem.Highlighted)
 
-														if ColorValue then
-															return ColorValue
+														if HighlightedValue then
+															return Use(Theme.Colors.Primary.Main)
 														else
 															return Use(Theme.Colors.Neutral.Main)
 														end
