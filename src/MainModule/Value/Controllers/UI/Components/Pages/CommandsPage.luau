@@ -180,9 +180,14 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 										Scope:Tags {
 											Tags = Sift.Array.map(
 												Sift.Array.sort(
-													Sift.Dictionary.values(CONFIG.Roles),
+													Sift.Array.sort(
+														Sift.Dictionary.values(CONFIG.Roles),
+														function(RoleA, RoleB)
+															return RoleA.Level < RoleB.Level
+														end
+													),
 													function(RoleA, RoleB)
-														return RoleA.Level < RoleB.Level
+														return (RoleA.Gamepass or 0) > (RoleB.Gamepass or 0)
 													end
 												),
 												function(Role)
