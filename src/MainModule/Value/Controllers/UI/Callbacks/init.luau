@@ -18,7 +18,7 @@ local PURCHASE_COSMETICS: (Cosmetics: { string }) -> boolean = function() end
 local STOP_COMMAND_TASKS: (Command: string) -> boolean = function() end
 local PURCHASE_BOOSTER: () -> boolean = function() end
 local REQUEST_USER_INFO: (UserId: number) -> (boolean, Types.User) = function(UserId)
-	if RunService:IsEdit() then
+	if RunService:IsStudio() then
 		local BaseInfo = UserInformant.User(UserId)
 
 		if UserId == 1 then
