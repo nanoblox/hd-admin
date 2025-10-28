@@ -1,5 +1,6 @@
 --!strict
 -- CONFIG
+local MAXIMUM_REQUEST_PER_SECOND = 20 -- Maximum size of a single command request (in characters) which overrides ``settings.Limits.RequestsPerSecond`` if greater than
 local CLIENT_PROPERTIES_TO_EXCLUDE = {
 	"run",
 }
@@ -164,10 +165,47 @@ function Commands.getCommandPrefixes()
 	return commandPrefixes
 end
 
+function Commands.request(user: User.Class, message: string): (boolean, {any}, {Task})
+	-- It's essential that in addition to checking the maximum commands a player can use, that
+	-- we also check the maximum requests they are making too, so to avoid malicious spamming
+	-- of messages which could overwhelm the parser (e.g. 100,000 characters every milisecond).
+	-- If detected, we simply ignore the message from that user.
+	local getDataSize = require(modules.VerifyUtil.getDataSize)
+	local bypassLimits = false --!!! roles: CHECK IF USER ROLES
+	local limits = Config.getSetting("Limits")
+	local maxRequestSize = limits.RequestSize
+	local maxRequestsPerSecond = if bypassLimits then MAXIMUM_REQUEST_PER_SECOND else math.min(limits.RequestsPerSecond, MAXIMUM_REQUEST_PER_SECOND)
+	local messageSize = getDataSize(message)
+	if not bypassLimits and messageSize > maxRequestSize then
+		return false, {{false, `Request exceeded max size of {maxRequestSize} characters!`}}, {}
+	end
+	local requestsThisSecond = user.temp:get("RequestsThisSecond")
+	local requestsThisSecondStartClock = user.temp:get("RequestsThisSecondStartClock")
+	local clockNow = os.clock()
+	if clockNow - requestsThisSecondStartClock >= 1 then
+		requestsThisSecond = 0
+		requestsThisSecondStartClock = clockNow
+		user.temp:set("RequestsThisSecond", requestsThisSecond)
+		user.temp:set("RequestsThisSecondStartClock", requestsThisSecondStartClock)
+	end
+	local newRequestsThisSecond = requestsThisSecond + 1
+	if not bypassLimits and newRequestsThisSecond > maxRequestsPerSecond then
+		return false, {{false, `Request rate exceeded max of {maxRequestsPerSecond} requests per second!`}}, {}
+	end
+	user.temp:set("RequestsThisSecond", newRequestsThisSecond)
+	--
+	local Parser = require(modules.Parser) :: any -- 'Any' to remove cyclic warning
+	local batch = Parser.parseMessage(message, user)
+	local approved, notices, tasks = Commands.processBatchAsync(user, batch)
+	if not tasks then
+		tasks = {}
+	end
+	--
+	return approved, notices, tasks :: {Task}
+end
+
 function Commands.processStatementAsync(callerUser: User, statement: Statement): (boolean, string | {Task})
 	-- This verifies and executes the statement (if permitted)
-	local ParserUtility = require(parser.ParserUtility)
-	ParserUtility.convertStatementToRealNames(statement)
 	local approved, warning = Commands.verifyStatementAsync(callerUser, statement)
 	if not approved then
 		return false, (warning or "Statement denied")
@@ -177,7 +215,7 @@ function Commands.processStatementAsync(callerUser: User, statement: Statement):
 	return true, tasks
 end
 
-function Commands.processBatchAsync(callerUser: User, batch: Batch): (boolean, {{boolean | string}}, {Task}?)
+function Commands.processBatchAsync(callerUser: User, batch: Batch): (boolean, {any}, {Task}?)
 	-- This verifies and executes the statements within the batch (if permitted)
 	if type(batch) ~= "table" then
 		return false, {{false, "The batch must be a table!"}}, nil
@@ -195,17 +233,117 @@ function Commands.processBatchAsync(callerUser: User, batch: Batch): (boolean, {
 		end
 		if not success and typeof(tasksOrWarning) == "string" then
 			table.insert(collectiveNotices, {false, tasksOrWarning})
+			break -- After any failures, stop processing further statements to avoid spam
 		end
 	end
 	return atLeastOneSuccess, collectiveNotices, collectiveTasks :: {Task}
 end
 
-function Commands.verifyStatementAsync(callerUser: User, statement: Statement)--: (approved: boolean, reason: string?)
+function Commands.verifyStatementAsync(user: User, statement: Statement)--: (approved: boolean, reason: string?)
 	
+	-- Was the statement rejected during parsing?
 	if statement.isValid ~= true then
 		return false, statement.errorMessage
 	end
-	
+
+	-- Ensure statement is converted
+	local ParserUtility = require(parser.ParserUtility)
+	ParserUtility.convertStatementToRealNames(statement)
+
+	-- Is user still active?
+	local callerUserId = user.userId :: number
+	if not user.isActive then
+		return false, "User hasn't loaded yet!"
+	end
+
+	-- Ensure commands exists and add up total
+	local statementCommands = statement.commands
+	local statementModifiers = statement.modifiers
+	local statementQualifiers = statement.qualifiers
+	local totalCommands = 0
+	if not statementCommands then
+		return false, "Failed to execute command as it does not exist!"
+	end
+	for commandName, arguments in statementCommands do
+		local command = Commands.getCommand(commandName) :: Command?
+		if not command or typeof(command.args) ~= "table" then
+			continue
+		end
+		totalCommands += 1
+	end
+
+	-- Block the command from running if a cooldown is already active
+	local warningNotice
+	local forEveryPotentialTask = require(modules.CommandUtil.forEveryPotentialTask)
+	forEveryPotentialTask(callerUserId, statement, function(command: Command, arguments, optionalTargetUserId: number?)
+		local commandName = command.name
+		local runningTasks = Task.getTasks(commandName, optionalTargetUserId)
+		local hasACooldown = typeof(command.cooldown) == "number" and command.cooldown > 0
+		if hasACooldown and #runningTasks > 0 and not statementModifiers.undo then
+			local activeTask = runningTasks[1]
+			local endTime = activeTask.cooldownEndTime
+			local additionalUserMessage = ""
+			local associatedPlayer = activeTask.target
+			if associatedPlayer then
+				additionalUserMessage = ` on {associatedPlayer.DisplayName} (@{associatedPlayer.Name})`
+			end
+			if endTime then
+				local remainingTime = (math.ceil((endTime-os.clock())*100))/100
+				warningNotice = `Wait {remainingTime} seconds until using '{commandName}' again{additionalUserMessage}!`
+			else
+				warningNotice = `Wait until '{commandName}' has finished{additionalUserMessage} before using again!`
+			end
+			return false
+		end
+		return true
+	end)
+	if warningNotice then
+		return false, warningNotice
+	end
+
+	-- Ensures commands per 1 second limit is not exceeded
+	local bypassLimits = false --!!! roles: CHECK IF USER ROLES
+	local limits = Config.getSetting("Limits")
+	local maxCommandsPerMinute = limits.CommandsPerMinute
+	local maxCommandsPer1Second = math.floor(maxCommandsPerMinute / 6)
+	local commandsThisSecond = user.temp:get("CommandsThisSecond")
+	local commandsThisSecondStartClock = user.temp:get("CommandsThisSecondStartClock")
+	local clockNow = os.clock()
+	if clockNow - commandsThisSecondStartClock >= 1 then
+		commandsThisSecond = 0
+		commandsThisSecondStartClock = clockNow
+		user.temp:set("CommandsThisSecond", commandsThisSecond)
+		user.temp:set("CommandsThisSecondStartClock", commandsThisSecondStartClock)
+	end
+	local newComandsThisSecond = commandsThisSecond + totalCommands
+	if not bypassLimits and newComandsThisSecond > maxCommandsPer1Second then
+		return false, `Exceeded {maxCommandsPer1Second} commands per second. Send less and try again.`
+	end
+
+	-- Ensures commands per 60 and 20 second limits are not exceeded
+	local maxCommandsPer20Seconds = math.floor(maxCommandsPerMinute / 2)
+	local commandsThisMinute = user.perm:get("CommandsThisMinute")
+	local commandsThisMinuteStartStamp = user.perm:get("CommandsThisMinuteStartStamp")
+	local timeNow = os.time()
+	if timeNow - commandsThisMinuteStartStamp >= 60 then
+		commandsThisMinute = 0
+		commandsThisMinuteStartStamp = timeNow
+		user.perm:set("CommandsThisMinute", commandsThisMinute)
+		user.perm:set("CommandsThisMinuteStartStamp", commandsThisMinuteStartStamp)
+	end
+	local timeSoFar = timeNow - commandsThisMinuteStartStamp
+	local cooldownAmount = commandsThisMinuteStartStamp + 60 - timeNow
+	local newComandsThisMinute = commandsThisMinute + totalCommands
+	if not bypassLimits then
+		if newComandsThisMinute > maxCommandsPerMinute then
+			return false, `Exceeded {maxCommandsPerMinute} commands per minute. Wait {cooldownAmount}s to send again.`
+		end
+		if timeSoFar <= 20 and newComandsThisMinute > maxCommandsPer20Seconds then
+			cooldownAmount -= 40
+			return false, `Exceeded {maxCommandsPer20Seconds} commands per 20s. Wait {cooldownAmount}s to send again.`
+		end
+	end
+
 	--[[
 	-- argItem.verifyCanUse can sometimes be asynchronous therefore we name this an async function
 	local approved = true
@@ -300,7 +438,7 @@ function Commands.verifyStatementAsync(callerUser: User, statement: Statement)--
 	end
 	
 	resolve(approved, details)
-
+	
 	return promise:andThen(function(approved, noticeDetails)
 		-- This fires off any notifications to the caller
 		local callerPlayer = callerUser.player
@@ -313,11 +451,19 @@ function Commands.verifyStatementAsync(callerUser: User, statement: Statement)--
 		return approved, noticeDetails
 	end)
 	--]]
+	
+	-- Now actually set when success
+	user.temp:set("CommandsThisSecond", newComandsThisSecond)
+	user.perm:set("CommandsThisMinute", newComandsThisMinute)
 
 	return true, nil
 end
 
 function Commands.executeStatement(callerUserId: number, statement: Statement): {Task}
+
+	-- Ensure statement is converted
+	local ParserUtility = require(parser.ParserUtility)
+	ParserUtility.convertStatementToRealNames(statement)
 
 	-- This enables restrictions to be bypassed if customized
 	-- This is useful for fake server users for example
@@ -373,134 +519,72 @@ function Commands.executeStatement(callerUserId: number, statement: Statement): 
 		end
 	end
 
+	-- Define the properties that we'll create the task from arguments
 	local Args = require(parser.Args)
 	local tasks: {any} = {}
 	local isPermModifier = statement.modifiers.perm
 	local isGlobalModifier = statement.modifiers.wasGlobal
-	for commandName, arguments in pairs(statement.commands) do
+	local qualifiers = (statement.qualifiers or {}) :: ArgGroup
+	local modifiers = (statement.modifiers or {}) :: ArgGroup
+	local generateUID = require(modules.DataUtil.generateUID)
+	local taskUID = statement.taskUID or generateUID(10)
+
+	-- Tasks are split into separate players (such as those with the 'Player' arg),
+	-- while some do not (such as those with the 'Players' arg, or without any type
+	-- of player arg at all)
+	-- For more details, see module 'forEveryPotentialTask'
+	local forEveryPotentialTask = require(modules.CommandUtil.forEveryPotentialTask)
+	forEveryPotentialTask(callerUserId, statement, function(command: Command, arguments, optionalTargetUserId: number?)
 		
-		local command = Commands.getCommand(commandName) :: Command?
-		if not command or typeof(command.args) ~= "table" then
-			continue
-		end
-
-		-- Its important to split commands into specific users for most cases so that the command can
-		-- be easily reapplied if the player rejoins (for ones where the perm modifier is present)
-		-- The one exception for this is when a global modifier is present. In this scenerio, don't save
-		-- specific targetPlayers, simply use the qualifiers instead to select a general audience relevant for
-		-- the particular server at time of exection.
-		-- e.g. ``;permLoopKillAll`` will save each specific targetPlayer within that server and permanetly loop kill them
-		-- while ``;globalLoopKillAll`` will permanently save the loop kill action and execute this within all
-		-- servers repeatidly
-		local addToPerm = false
-		local splitIntoUsers = false
-		local firstArgNameOrDetail = command.args[1]
-		local firstArg = Args.get(firstArgNameOrDetail)
-		local executeForEachPlayer = if firstArg then firstArg.executeForEachPlayer else false
-		if isPermModifier then
-			if isGlobalModifier then
-				addToPerm = true
-			elseif executeForEachPlayer then
-				addToPerm = true
-				splitIntoUsers = true
-			end
-		else
-			splitIntoUsers = executeForEachPlayer
-		end
-
-		-- Define the properties that we'll create the task from arguments
-		local args = (arguments or {}) :: ArgGroup
-		local qualifiers = (statement.qualifiers or {}) :: ArgGroup
-		local modifiers = (statement.modifiers or {}) :: ArgGroup
-		local generateUID = require(modules.DataUtil.generateUID)
-		local taskUID = statement.taskUID or generateUID(10)
+		-- Setup task properties
+		local commandName = command.name
 		local commandNameLower = string.lower(commandName)
+		local args = (arguments or {}) :: ArgGroup
+		local properties: Properties = {
+			callerUserId = callerUserId,
+			targetUserId = optionalTargetUserId,
+			commandName = commandName,
+			commandNameLower = commandNameLower,
+			args = args,
+			modifiers = modifiers,
+			qualifiers = qualifiers,
+			isRestricted = statement.isRestricted,
+			UID = taskUID,
+		}
 
-		-- Create task wrapper
-		local function createTask(optionalTargetUserId: number?): Task?
-			
-			-- Setup task properties
-			local properties: Properties = {
-				callerUserId = callerUserId,
-				targetUserId = optionalTargetUserId,
-				commandName = commandName,
-				commandNameLower = commandNameLower,
-				args = args,
-				modifiers = modifiers,
-				qualifiers = qualifiers,
-				isRestricted = statement.isRestricted,
-				UID = taskUID,
-			}
-
-			-- Undo taks if already applied to player (or server level)
-			local runningTasks = Task.getTasks(commandName, optionalTargetUserId)
-			local hasACooldown = typeof(command.cooldown) == "number" and command.cooldown > 0
-			if not hasACooldown then
-				for _, task in pairs(runningTasks) do
-					task:destroy()
-				end
+		-- Undo tasks if already applied to player (or server level)
+		local runningTasks = Task.getTasks(commandName, optionalTargetUserId)
+		local hasACooldown = typeof(command.cooldown) == "number" and command.cooldown > 0
+		if not hasACooldown then
+			for _, task in pairs(runningTasks) do
+				task:destroy()
 			end
-
-			-- Undo tasks if they contain the same group as any groups from this command
-			local ourGroups = command.groups
-			if optionalTargetUserId and typeof(ourGroups) == "table" then
-				local allPlayerTasks = Task.getTasks(nil, optionalTargetUserId)
-				for _, task in allPlayerTasks do
-					local dictOfGroupsLower = task.dictOfGroupsLower
-					for _, groupName in ourGroups do
-						local nameLower = string.lower(groupName)
-						if dictOfGroupsLower[nameLower] then
-							task:destroy()
-							break
-						end
+		end
+		
+		-- Undo tasks if they contain the same group as any groups from this command
+		local ourGroups = command.groups
+		if optionalTargetUserId and typeof(ourGroups) == "table" then
+			local allPlayerTasks = Task.getTasks(nil, optionalTargetUserId)
+			for _, task in allPlayerTasks do
+				local dictOfGroupsLower = task.dictOfGroupsLower
+				for _, groupName in ourGroups do
+					local nameLower = string.lower(groupName)
+					if dictOfGroupsLower[nameLower] then
+						task:destroy()
+						break
 					end
 				end
 			end
-
-			-- Block the command from running if a cooldown is already active
-			if hasACooldown and #runningTasks > 0 then
-				local activeTask = runningTasks[1]
-				local endTime = activeTask.cooldownEndTime
-				local additionalUserMessage = ""
-				local associatedPlayer = activeTask.target
-				if associatedPlayer then
-					additionalUserMessage = ` on {associatedPlayer.DisplayName}' (@{associatedPlayer.Name})`
-				end
-				local warningNotice
-				if endTime then
-					local remainingTime = (math.ceil((endTime-os.clock())*100))/100
-					warningNotice = `Wait {remainingTime} seconds until using '{commandName}' again{additionalUserMessage}!`
-				else
-					warningNotice = `Wait until '{commandName}' has finished before using again{additionalUserMessage}!`
-				end
-				warn(warningNotice) --!!!notice
-				return nil
-			end
-
-			-- Finally all good, now create task
-			local task = Task.new(properties)
-			return task
-
 		end
 
-		-- Tasks are split into separate players (such as those with the 'Player' arg),
-		-- while some do not (such as those with the 'Players' arg, or without any type
-		-- of player arg at all)
-		if not splitIntoUsers then
-			local task = createTask()
-			if task then
-				table.insert(tasks, task)
-			end
-		else
-			local targetPlayers = if firstArg then firstArg:parse(statement.qualifiers, callerUserId) else {}
-			for _, plr in targetPlayers do
-				local task = createTask(plr.UserId)
-				if task then
-					table.insert(tasks, task)
-				end
-			end
+		-- Finally all good, now create task
+		local task = Task.new(properties)
+		if task then
+			table.insert(tasks, task)
 		end
-	end
+
+		return true
+	end)
 
 	return tasks :: {Task}
 end

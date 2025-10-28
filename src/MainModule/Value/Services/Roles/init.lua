@@ -5,6 +5,10 @@ local DEFAULT_ROLE = {
 	displayName = "UnnamedRole",
 	members = {""},
 	rank = 1,
+	modifiers = "",
+	bypassLimits = false, -- This enables command cooldowns, batch size limits, etc to be bypassed when true, in addition to command-specific limits that are determined with task.bypassLimits
+	modifiers = "",
+	qualifiers = "",
 }
 
 local CLIENT_PROPERTIES_TO_EXCLUDE = {

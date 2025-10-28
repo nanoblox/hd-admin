@@ -25,10 +25,11 @@ local Settings = {
 	-- will observe this change and automatically change their settings to your newly
 	-- changed values.
 	["PlayerSettings"] = {
+		HelloWorldThisIStest3 = true,
 		Prefix = ";", -- The character you use before every command (e.g. ';jump me')
-		PreviewIncompleteCommands = true,
 		AppTheme = "Blurple", -- The theme of the app
 		SoundProperties = { -- Min: 0, Max: 2
+			Hello = true,
 			Volume = {
 				Music = 1,
 				Command = 1,
@@ -57,8 +58,13 @@ local Settings = {
 		Collective = ",", -- The character used to split up items (e.g. ,jump player1,player2,player3)
 		SpaceSeparator = " ", -- The character inbetween command arguments (e.g. setting it to '/' would change ',jump me' to ',jump/me')
 		BatchSeparator = " ", -- The character inbetween batch commands (e.g. setting it to '|' would change ',jump me ,fire me ,smoke me' to ',jump me | ,fire me | ,smoke me'
-		DescriptorSeparator = " ",
 		
+		Limits = { -- While strongly recommended, can be disabled by setting `BypassLimits` to false in Role attributes
+			RequestSize = 1000, -- Maximum number of characters in a message request until it's cutoff
+			RequestsPerSecond = 10, -- Maximum message requests that can be parsed per second per second. When disabled, this is still capped to 20.
+			CommandsPerMinute = 60, -- Maximum number of commands a player can run per minute
+		},
+
 		-- App Colors
 		AppThemes = {
 			{"Blurple", Color3.fromRGB(94, 86, 213)},
@@ -87,15 +93,15 @@ local Settings = {
 		},
 
 		-- Display
-		ShowOnlyUsableAndBuyableCommands = true, 	-- Only display commands equal to or below the user's rank on the Commands page OR commands from Ranks or Roles they can purchase.
-		DisableBoosterBundles = false,	-- This disables the Booster bundles. Please keep enabled to support the development of HD Admin.
-		WelcomeRankNotice = true,			-- The 'You're a [rankName]' notice that appears when you join the game. Set to false to disable.
-		WarnIncorrectPrefix = true,			-- Warn the user if using the wrong prefix | "Invalid prefix! Try using [correctPrefix][commandName] instead!"
-		DisableAllNotices = false,		-- Set to true to disable all HD Admin notices.
-		HideWarningsIfBelowRank = 1, 			-- Hide core notices such as 'CommandName is not a valid command!' and 'You do not have permission to use this command' for ranks below the specified rank
-		RankRequiredToViewCommandsIcon = 0, 		-- Minimum rank to view the icon which opens the Commands-Only page. This is hidden if the user can view the dashboard.
-		RankRequiredToViewDashboardIcon = 1, 		-- Minimum rank to view the icon which opens the Dashboard
-		RankRequiredToViewPage = {				-- || The pages on the main menu ||
+		ShowOnlyUsableAndBuyableCommands = true, -- Only display commands equal to or below the user's rank on the Commands page OR commands from Ranks or Roles they can purchase.
+		DisableBoosterBundles = false, -- This disables the Booster bundles. Please keep enabled to support the development of HD Admin.
+		WelcomeRankNotice = true, -- The 'You're a [rankName]' notice that appears when you join the game. Set to false to disable.
+		WarnIncorrectPrefix = true, -- Warn the user if using the wrong prefix | "Invalid prefix! Try using [correctPrefix][commandName] instead!"
+		DisableAllNotices = false, -- Set to true to disable all HD Admin notices.
+		HideWarningsIfBelowRank = 1, -- Hide core notices such as 'CommandName is not a valid command!' and 'You do not have permission to use this command' for ranks below the specified rank
+		RankRequiredToViewCommandsIcon = 0, -- Minimum rank to view the icon which opens the Commands-Only page. This is hidden if the user can view the dashboard.
+		RankRequiredToViewDashboardIcon = 1, -- Minimum rank to view the icon which opens the Dashboard
+		RankRequiredToViewPage = { -- || The pages on the main menu ||
 			["Commands"] = 0,
 			["Moderation"] = 100,
 			["Revenue"] = 100,

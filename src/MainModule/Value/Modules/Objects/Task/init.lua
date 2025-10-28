@@ -97,6 +97,7 @@ function Task.construct(properties: Properties)
 		janitor = janitor,
 		UID = UID,
 		isActive = true :: any,
+		bypassLimits = false :: any,  --!!! roles: CHECK IF USER ROLES
 		caller = if callerUserId then Players:GetPlayerByUserId(callerUserId) else nil,
 		target = if targetUserId then Players:GetPlayerByUserId(targetUserId) else nil,
 		client = TaskClient.new(UID),
@@ -354,7 +355,7 @@ function Task.unregisterHold(self: Task, callback: () -> ()?, remainingTime: num
 			resumed = self.janitor:add(Signal.new())
 			self.resumed = resumed
 		end
-		self.resumed:wait()
+		self.resumed:Wait()
 		remainingTime = durationRemaining :: number
 	end
 	if remainingTime and remainingTime > 0 and self.isActive then
@@ -395,7 +396,7 @@ function Task.resume(self: Task)
 		end)
 	end
 	if self.resumed then
-		self.resumed:fire()
+		self.resumed:Fire()
 	end
 end
 
@@ -637,7 +638,7 @@ function Task.keep(self: Task, persistence: Persistence?)
 	end
 	if isRespawns or isDies then
 		local loadCharacterStarted = require(modules.PlayerUtil.loadCharacterStarted)
-		self.janitor:add(loadCharacterStarted:connect(function(incomingPlayer)
+		self.janitor:add(loadCharacterStarted:Connect(function(incomingPlayer)
 			if incomingPlayer == trackingPlayer then
 				self:destroy()
 			end

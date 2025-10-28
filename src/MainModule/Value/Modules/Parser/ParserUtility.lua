@@ -278,7 +278,7 @@ function ParserUtility.convertStatementToRealNames(statement: Statement)
 		["commands"] = {services.Commands, "getCommand"},
 		["modifiers"] = {modules.Parser.Modifiers, "get"},
 	}
-	for tableName, getMethodDetail in pairs(tablesToConvertToRealNames) do
+	for tableName, getMethodDetail in tablesToConvertToRealNames do
 		local table = statement[tableName]
 		if table then
 			local getModule = getMethodDetail[1] :: any
@@ -287,11 +287,12 @@ function ParserUtility.convertStatementToRealNames(statement: Statement)
 			local newTable = {}
 			local originalTableName = "original"..tableName:sub(1,1):upper()..tableName:sub(2)
 			local originalTable = {}
-			for name, value in pairs(table) do
+			for name, value in table do
 				local returnValue = getMethod(name)
-				local realName = returnValue and string.lower(returnValue.name)
-				if realName then
-					newTable[realName] = value
+				local realName = returnValue and (returnValue.aliasOf or returnValue.name)
+				local realNameLower = realName and string.lower(realName)
+				if realNameLower then
+					newTable[realNameLower] = value
 				end
 				originalTable[name] = true
 			end

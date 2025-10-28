@@ -15,7 +15,7 @@ DataStore.compressData = false
 -- FUNCTIONS
 function DataStore.generateTemplate(user: User.Class?)
 	if user then
-		user.beforeSaving:connect(function()
+		user.beforeSaving:Connect(function()
 			
 		end)
 	end

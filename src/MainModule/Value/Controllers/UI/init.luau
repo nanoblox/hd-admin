@@ -10,6 +10,10 @@ local ScreenGui = require(script.Components.Guis.ScreenGui)
 local Config = require(script.Config)
 local Signals = require(script.Signals)
 
+if true then
+	return {}
+end
+
 local UI = {
 	Started = false,
 	Signals = Signals,

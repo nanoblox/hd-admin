@@ -140,10 +140,9 @@ function State.set(self: Class, ...: string | any)
 		error(`State has 'dataMustBeSerializable' enabled, but the value '{tostring(value)}' (type: {typeof(value)}) is not serializable`)
 	end
 	local data = self._data
-	local dataTable = data
 	local pathway = {} :: {[number]: string}
 	local callbacksToCall = {} :: {{(any) -> (any)}}
-	local function buildPathway(keyToAdd: string, useGivenValue: boolean?)
+	local function buildPathway(keyToAdd: string, dataTable: any?, useGivenValue: boolean?)
 		-- Every time the pathway develops, we check for listeners and call if present
 		if typeof(keyToAdd) ~= "string" then
 			error("Keys must be strings")
@@ -171,24 +170,26 @@ function State.set(self: Class, ...: string | any)
 				table.insert(callbacksToCall :: any, {callback, dataValue})
 			end
 		end
+		return dataTable
 	end
-	local function addValueTablesToPathwayRecursive(valueToCheck: any)
+	local function addValueTablesToPathwayRecursive(valueToCheck: any, dataTable: any)
 		-- This allows us to listen to changes within value (if present) in addition
 		-- to the given pathway of the key
 		if typeof(valueToCheck) == "table" then
 			for subKey, subValue in (valueToCheck :: {[any]: any}) do
 				if typeof(subKey) == "string" then
-					buildPathway(subKey)
-					addValueTablesToPathwayRecursive(subValue)
+					local nextDataTable = buildPathway(subKey, dataTable, nil)
+					addValueTablesToPathwayRecursive(subValue, nextDataTable)
 				end
 			end
 		end
 	end
 	local finalIndex = #pathwayAndValue
+	local nextDataTable = data
 	for i, keyToAdd in pathwayAndValue do
-		buildPathway(keyToAdd, i == finalIndex)
+		nextDataTable = buildPathway(keyToAdd, nextDataTable, i == finalIndex)
 	end
-	addValueTablesToPathwayRecursive(value)
+	addValueTablesToPathwayRecursive(value, nextDataTable)
 	for _, callbackDetail in callbacksToCall do
 		local callback = callbackDetail[1]
 		local dataValue = callbackDetail[2]
@@ -351,7 +352,7 @@ function State.replicate(self: Class, player: Player, replicationName: string, p
 			end
 			if not hasFirstFetchRequested then
 				hasFirstFetchRequested = true
-				State.firstFetchRequested:fire()
+				State.firstFetchRequested:Fire()
 			end
 			return replicationHandler(player, ...)
 		end)
@@ -438,7 +439,6 @@ function State.replicate(self: Class, player: Player, replicationName: string, p
 	repJanitor:add(self:changed(function(pathwayKey: string, value: any)
 		if activeListeners[pathwayKey] then
 			local pathway = State.getPathway(pathwayKey)
-			print("Client accessed (2):", player, #pathway, pathway, value) --!!! REMOVE THIS
 			stateEvent:fireClient(player, replicationKey, pathway, value)
 		end
 	end))

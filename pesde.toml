@@ -36,5 +36,4 @@ Fusion = { wally = "elttob/fusion", version = "^0.3.0" }
 OnyxUI = { wally = "imavafe/onyx-ui", version = "^1.0.1" }
 
 Janitor = { wally = "1foreverhd/janitor", version = "^1.18.12" }
-Promise = { wally = "howmanysmall/typed-promise", version = "^4.0.6" }
 TopbarPlus = { wally = "1foreverhd/topbarplus", version = "^3.3.1" }
