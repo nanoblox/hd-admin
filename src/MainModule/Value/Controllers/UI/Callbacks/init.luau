@@ -24,7 +24,7 @@ local REQUEST_USER_INFO: (UserId: number) -> (boolean, Types.User) = function(Us
 		if UserId == 1 then
 			return true,
 				Sift.Dictionary.merge({
-					Roles = { "Owner" },
+					Roles = { "Owner", "Guest" },
 					Warnings = {
 						{
 							Timestamp = os.time(),
@@ -47,7 +47,7 @@ local REQUEST_USER_INFO: (UserId: number) -> (boolean, Types.User) = function(Us
 					DisplayName = "Name",
 					AccountAge = -1,
 					AgeVerified = false,
-					Roles = {},
+					Roles = { "Guest" },
 					Warnings = {},
 					Bans = {},
 				}, BaseInfo)

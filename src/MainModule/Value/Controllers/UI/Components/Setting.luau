@@ -49,6 +49,7 @@ local CONTROLS = {
 	UserIds = {
 		Component = UserInput,
 		OutputProp = "UserIds",
+		Default = {},
 		Inline = false,
 	},
 	Boolean = {

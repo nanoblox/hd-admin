@@ -33,7 +33,7 @@ local ROLES: {
 	},
 	Owner = {
 		Name = "Owner",
-		Color = Color3.fromHex("FFFFFF"),
+		Color = Color3.fromHex("#ef4444"),
 		Level = 5,
 	},
 }

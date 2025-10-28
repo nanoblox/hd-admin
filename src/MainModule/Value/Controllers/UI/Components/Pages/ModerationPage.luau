@@ -5,7 +5,6 @@ local Fusion = require(Packages.Fusion)
 local OnyxUI = require(Packages.OnyxUI)
 local Config = require(UI.Config)
 local Sift = require(Packages.Sift)
-local UserInformant = require(UI.Utils.UserInformant)
 local States = require(UI.States)
 local PanelsStateMod = require(UI.StateMods.PanelsStateMod)
 local UserStateMod = require(UI.StateMods.UserStateMod)
@@ -32,7 +31,6 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 	local TabMode = Scope:Value(1)
 	local SearchQuery = Scope:Value("")
 	local UserSelection = Scope:Value({})
-	local ActiveUserInfos = Scope:Value({})
 
 	local BannedUsers = Scope:Computed(function(Use)
 		local UserProfilesValue = Use(States.Users.Profiles)
@@ -66,25 +64,6 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 		local ModeUserMap = { BannedUsers, WarnedUsers }
 
 		return Use(ModeUserMap[TabModeValue])
-	end)
-
-	local function UpdateUserInfos()
-		local UserIdsValue = Fusion.peek(ActiveUsers)
-
-		ActiveUserInfos:set(Sift.Array.map(UserIdsValue, function(UserId)
-			return {
-				UserId = UserId,
-			}
-		end))
-
-		ActiveUserInfos:set(UserInformant.Users(UserIdsValue))
-	end
-
-	Scope:Observer(ActiveUsers):onChange(function()
-		UpdateUserInfos()
-	end)
-	task.spawn(function()
-		UpdateUserInfos()
 	end)
 
 	Scope:Observer(TabMode):onChange(function()
