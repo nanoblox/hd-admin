@@ -23,6 +23,7 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 		SettingGroup = SettingGroup,
 		CustomButton = CustomButton,
 	})
+
 	local Theme = OnyxUI.Themer.Theme:now()
 	local Panel = PanelsStateMod.Panel:now()
 
@@ -98,7 +99,6 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 				},
 			},
 			Scope:Frame {
-				Name = "Execute",
 				List = {
 					HorizontalFlex = Enum.UIFlexAlignment.Fill,
 					Padding = Scope:UDim(0, Theme.Spacing["0.5"]),
@@ -106,15 +106,13 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 
 				[Children] = {
 					Scope:TextInput {
-						Name = "PromptBox",
 						Text = TextPrompt,
 						TextEditable = false,
 						BackgroundTransparency = 0,
 						BackgroundColor3 = Theme.Colors.Neutral.Main,
 					},
 					Scope:Button {
-						Name = "ExecuteButton",
-						Content = { "Execute" },
+						Content = { "Run" },
 						Color = Theme.Colors.Primary.Main,
 						SizeVariant = "ExtraLarge",
 						ContentSize = Theme.TextSize["1"],

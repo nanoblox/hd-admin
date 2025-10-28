@@ -20,7 +20,7 @@ local PAGES = {
 		Icon = CONFIG.Icons.Pages.Commands,
 	},
 	Execute = {
-		Id = "Execute",
+		Id = "Run",
 	},
 	Moderation = {
 		Id = "Moderation",
