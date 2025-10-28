@@ -1,6 +1,7 @@
 local Main = script:FindFirstAncestor("MainModule")
 local Packages = Main.Value.Packages
 local UI = Main.Value.Controllers.UI
+
 local ColorUtils = require(Packages.ColorUtils)
 local Fusion = require(Packages.Fusion)
 local OnyxUI = require(Packages.OnyxUI)
@@ -30,7 +31,6 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 	local Panel = PanelsStateMod.Panel:now()
 
 	local Id = OnyxUI.Util.Fallback(Props.Id, "Command")
-	local QuickRun = OnyxUI.Util.Fallback(Props.QuickRun, false)
 
 	local Running = Scope:Value(false)
 	local Runs = Scope:Value(0)
@@ -48,20 +48,6 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 			Arguments = {},
 		}, CommandValue or {})
 	end)
-	local ArgumentsAreOptional = Scope:Computed(function(Use)
-		local SafeCommandValue = Use(SafeCommand)
-
-		return Sift.Array.every(SafeCommandValue.Arguments, function(Argument)
-			return Argument.Optional == true
-		end)
-	end)
-	local QuickRunEnabled = Scope:Computed(function(Use)
-		local SafeCommandValue = Use(SafeCommand)
-		local QuickRunValue = Use(QuickRun)
-		local ArgumentsAreOptionalValue = Use(ArgumentsAreOptional)
-
-		return ArgumentsAreOptionalValue and ((#SafeCommandValue.Arguments == 0) or QuickRunValue)
-	end)
 	local Color = Scope:Computed(function(Use)
 		if Use(Running) then
 			return Use(Theme.Colors.Primary.Main)
@@ -77,12 +63,13 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 		Color = Scope:Spring(Color, Theme.SpringSpeed["1"], Theme.SpringDampening["1.5"]),
 		List = {
 			HorizontalAlignment = Enum.HorizontalAlignment.Left,
+			Padding = Scope:UDim(0, Theme.Spacing["0.25"]),
 		},
 		Padding = {
-			Top = Scope:UDim(0, Theme.Padding["0.5"]),
-			Left = Scope:UDim(0, Theme.Padding["0.75"]),
-			Right = Scope:UDim(0, Theme.Padding["0.75"]),
-			Bottom = Scope:UDim(0, Theme.Padding["0.5"]),
+			Top = Scope:UDim(0, Theme.Padding["0"]),
+			Left = Scope:UDim(0, Theme.Padding["0"]),
+			Right = Scope:UDim(0, Theme.Padding["0"]),
+			Bottom = Scope:UDim(0, Theme.Padding["0"]),
 		},
 		Corner = {
 			Radius = Scope:UDim(0, Theme.CornerRadius["1.5"]),
@@ -90,30 +77,46 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 
 		OnActivate = function()
 			local IdValue = Fusion.peek(Id)
-			local QuickRunEnabledValue = Fusion.peek(QuickRunEnabled)
 
 			if IdValue ~= nil then
-				if QuickRunEnabledValue then
+				Panel.PagesData.Execute.CommandId:set(IdValue)
+				PanelsStateMod.ToPage(Panel, "Execute")
+			end
+		end,
+
+		[Children] = {
+			Scope:IconButton {
+				Style = "Ghost",
+				List = {
+					Enabled = false,
+				},
+				Padding = {
+					Top = Scope:UDim(0, Theme.Padding["0.75"]),
+					Bottom = Scope:UDim(0, Theme.Padding["0.75"]),
+					Left = Scope:UDim(0, Theme.Padding["0.75"]),
+					Right = Scope:UDim(0, Theme.Padding["0.75"]),
+				},
+
+				OnActivate = function()
+					local IdValue = Fusion.peek(Id)
+
+					if IdValue ~= nil then
+						Future.Try(function()
+							Callbacks.RunCommand(IdValue, {})
+						end):After(function(Success, Result)
+							if not Success then
+								warn(Result)
+							end
+						end)
+					end
+
 					task.spawn(function()
 						Runs:set(Fusion.peek(Runs) + 1)
 						Running:set(true)
 						task.wait(25 / Fusion.peek(Theme.SpringSpeed["1"]))
 						Running:set(false)
 					end)
-
-					Future.Try(function()
-						Callbacks.RunCommand(IdValue, {})
-					end)
-				else
-					Panel.PagesData.Execute.CommandId:set(IdValue)
-					PanelsStateMod.ToPage(Panel, "Execute")
-				end
-			end
-		end,
-
-		[Children] = {
-			Scope:Frame {
-				Name = "RunSpinner",
+				end,
 
 				[Children] = {
 					Scope:Icon {
@@ -129,56 +132,30 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 					},
 				},
 			},
-			Scope:IconText {
-				Name = "Prompt",
-				Content = Scope:Computed(function(Use)
+			Scope:Text {
+				Text = Scope:Computed(function(Use)
 					local SafeCommandValue = Use(SafeCommand)
-					local QuickRunEnabledValue = Use(QuickRunEnabled)
-					local ArgumentsAreOptionalValue = Use(ArgumentsAreOptional)
 
-					return {
-						`{Use(States.Settings.Prefix)}{SafeCommandValue.Name}`,
-						(QuickRunEnabledValue and CONFIG.Icons.ZapFill)
-							or (ArgumentsAreOptionalValue and CONFIG.Icons.Zap)
-							or "",
-					}
+					return `{Use(States.Settings.Prefix)}{SafeCommandValue.Name}`
 				end),
-				ContentColor = Scope:Spring(ContentColor, Theme.SpringSpeed["1"], Theme.SpringDampening["1.5"]),
-				ContentWrapped = false,
+				TextColor = Scope:Spring(ContentColor, Theme.SpringSpeed["1"], Theme.SpringDampening["1.5"]),
+				TextWrapped = false,
 				Flex = {
 					Mode = Enum.UIFlexMode.Fill,
 				},
-				List = {
-					Padding = Scope:UDim(0, Theme.Padding["0.25"]),
-				},
 			},
 			Scope:IconButton {
-				Name = "StopExecution",
 				Image = CONFIG.Icons.StopFill,
 				Active = Running,
-				Color = Scope:Spring(
-					Scope:Computed(function(Use)
-						if Use(Running) then
-							return Use(Theme.Colors.Primary.Main)
-						else
-							return Use(Theme.Colors.Neutral.Main)
-						end
-					end),
-					Theme.SpringSpeed["1"],
-					Theme.SpringDampening["1.5"]
-				),
-				ContentColor = Scope:Spring(
-					Scope:Computed(function(Use)
-						if Use(Running) then
-							return Use(Theme.Colors.Primary.Contrast)
-						else
-							return Use(Theme.Colors.Neutral.Light)
-						end
-					end),
-					Theme.SpringSpeed["1"],
-					Theme.SpringDampening["1.5"]
-				),
-				SizeVariant = "Small",
+				Visible = Running,
+				Style = "Ghost",
+				Color = Theme.Colors.Primary.Contrast,
+				Padding = {
+					Top = Scope:UDim(0, Theme.Padding["0.75"]),
+					Bottom = Scope:UDim(0, Theme.Padding["0.75"]),
+					Left = Scope:UDim(0, Theme.Padding["0.75"]),
+					Right = Scope:UDim(0, Theme.Padding["0.75"]),
+				},
 
 				OnActivate = function()
 					local IdValue = Fusion.peek(Id)
