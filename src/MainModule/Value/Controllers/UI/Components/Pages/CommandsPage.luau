@@ -36,9 +36,12 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 	local Theme = OnyxUI.Themer.Theme:now()
 	local Panel = PanelsStateMod.Panel:now()
 
+	local Open = OnyxUI.Util.Fallback(Props.Open, false)
+
 	local SearchQuery = Scope:Value("")
 	local RoleTags = Panel.PagesData.Commands.ActiveTags
 	local CategoryTags = Scope:Value({})
+	local TagsShown = Scope:Value(false)
 
 	local FilteredCommands = Scope:Computed(function(Use)
 		local SearchQueryValue = Use(SearchQuery)
@@ -100,6 +103,15 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 		)
 	end)
 
+	Scope:Observer(Open):onChange(function()
+		local OpenValue = Fusion.peek(Open)
+
+		if not OpenValue then
+			RoleTags:set({})
+			TagsShown:set(false)
+		end
+	end)
+
 	return Scope:Frame(OnyxUI.Util.CombineProps(Props, {
 		Name = script.Name,
 		List = {
@@ -132,6 +144,10 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 								Flex = {
 									Mode = Enum.UIFlexMode.Fill,
 								},
+
+								OnFocus = function()
+									TagsShown:set(true)
+								end,
 							},
 							Scope:IconToggle {
 								Name = "CommandBarToggle",
@@ -143,22 +159,13 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 									Type = Enum.AspectType.ScaleWithParentSize,
 								},
 							},
-							Scope:IconToggle {
-								Name = "QuickRunToggle",
-								Options = { CONFIG.Icons.Zap, CONFIG.Icons.ZapFill },
-								Toggled = Panel.PagesData.Commands.QuickRun,
-								ContentSize = Theme.TextSize["1.125"],
-								Aspect = {
-									Ratio = 1,
-									Type = Enum.AspectType.ScaleWithParentSize,
-								},
-							},
 						},
 					},
 					Scope:Computed(function(Use)
 						local TagsLocked = Use(Panel.PagesData.Commands.TagsLocked)
+						local TagsShownValue = Use(TagsShown)
 
-						if not TagsLocked then
+						if (not TagsLocked) and TagsShownValue then
 							return OnyxUI.Themer.Theme:is(Theme):during(function()
 								return Scope:Scroller {
 									Name = "Tags",

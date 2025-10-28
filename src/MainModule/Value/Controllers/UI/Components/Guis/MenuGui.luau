@@ -235,7 +235,7 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 																return PanelsStateMod.Panel:is(Panel):during(function()
 																	return Component(Scope, {
 																		Name = Name,
-																		Open = true,
+																		Open = Open,
 																		Size = Scope:UDim2Offset(288, 0),
 																		AutomaticSize = Enum.AutomaticSize.None,
 																		Padding = {
