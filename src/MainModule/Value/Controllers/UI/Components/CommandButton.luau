@@ -21,16 +21,23 @@ local CustomButton = require(script.Parent.CustomButton)
 export type Props = OnyxUI.ButtonProps & {
 	Id: Fusion.UsedAs<string>?,
 	QuickRun: Fusion.UsedAs<boolean>?,
+	Arguments: Fusion.UsedAs<{ any }>?,
+	Text: Fusion.UsedAs<string>?,
 }
 
 return function(Scope: Fusion.Scope<any>, Props: Props)
 	local Scope = Fusion.innerScope(Scope, Fusion, OnyxUI.Components, OnyxUI.Util, {
 		CustomButton = CustomButton,
 	})
+
 	local Theme = OnyxUI.Themer.Theme:now()
 	local Panel = PanelsStateMod.Panel:now()
 
 	local Id = OnyxUI.Util.Fallback(Props.Id, "Command")
+	local QuickRun = OnyxUI.Util.Fallback(Props.QuickRun, false)
+	local Arguments = OnyxUI.Util.Fallback(Props.Arguments, {})
+	local Text = OnyxUI.Util.Fallback(Props.Text, "")
+	local Color = OnyxUI.Util.Fallback(Props.Color, Theme.Colors.Neutral.Main)
 
 	local Running = Scope:Value(false)
 	local Runs = Scope:Value(0)
@@ -48,15 +55,17 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 			Arguments = {},
 		}, CommandValue or {})
 	end)
-	local Color = Scope:Computed(function(Use)
+	local EffectiveColor = Scope:Computed(function(Use)
+		local ColorValue = Use(Color)
+
 		if Use(Running) then
 			return Use(Theme.Colors.Primary.Main)
 		else
-			return Use(Theme.Colors.Neutral.Main)
+			return ColorValue
 		end
 	end)
 	local ContentColor = Scope:Computed(function(Use)
-		return ColorUtils.Emphasize(Use(Color), 1)
+		return ColorUtils.Emphasize(Use(EffectiveColor), 1)
 	end)
 	local TasksRunning = Scope:Computed(function(Use)
 		local TasksValue = Use(States.Commands.Tasks)
@@ -71,8 +80,28 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 		return false
 	end)
 
+	local function RunCommand()
+		local IdValue = Fusion.peek(Id)
+		local ArgumentsValue = Fusion.peek(Arguments)
+
+		Future.Try(function()
+			Callbacks.RunCommand(IdValue, ArgumentsValue)
+		end):After(function(Success, Result)
+			if not Success then
+				warn(Result)
+			end
+		end)
+
+		task.spawn(function()
+			Runs:set(Fusion.peek(Runs) + 1)
+			Running:set(true)
+			task.wait(25 / Fusion.peek(Theme.SpringSpeed["1"]))
+			Running:set(false)
+		end)
+	end
+
 	return Scope:Button(OnyxUI.Util.CombineProps(Props, {
-		Color = Scope:Spring(Color, Theme.SpringSpeed["1"], Theme.SpringDampening["1.5"]),
+		Color = Scope:Spring(EffectiveColor, Theme.SpringSpeed["1"], Theme.SpringDampening["1.5"]),
 		List = {
 			HorizontalAlignment = Enum.HorizontalAlignment.Left,
 			Padding = Scope:UDim(0, Theme.Spacing["0.25"]),
@@ -89,10 +118,15 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 
 		OnActivate = function()
 			local IdValue = Fusion.peek(Id)
+			local QuickRunValue = Fusion.peek(QuickRun)
 
 			if IdValue ~= nil then
-				Panel.PagesData.Execute.CommandId:set(IdValue)
-				PanelsStateMod.ToPage(Panel, "Execute")
+				if QuickRunValue then
+					RunCommand()
+				else
+					Panel.PagesData.Execute.CommandId:set(IdValue)
+					PanelsStateMod.ToPage(Panel, "Execute")
+				end
 			end
 		end,
 
@@ -110,24 +144,7 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 				},
 
 				OnActivate = function()
-					local IdValue = Fusion.peek(Id)
-
-					if IdValue ~= nil then
-						Future.Try(function()
-							Callbacks.RunCommand(IdValue, {})
-						end):After(function(Success, Result)
-							if not Success then
-								warn(Result)
-							end
-						end)
-					end
-
-					task.spawn(function()
-						Runs:set(Fusion.peek(Runs) + 1)
-						Running:set(true)
-						task.wait(25 / Fusion.peek(Theme.SpringSpeed["1"]))
-						Running:set(false)
-					end)
+					RunCommand()
 				end,
 
 				[Children] = {
@@ -147,8 +164,23 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 			Scope:Text {
 				Text = Scope:Computed(function(Use)
 					local SafeCommandValue = Use(SafeCommand)
+					local PrefixValue = Use(States.Settings.Prefix)
+					local TextValue = Use(Text)
 
-					return `{Use(States.Settings.Prefix)}{SafeCommandValue.Name}`
+					if string.len(TextValue) >= 1 then
+						return Text
+					else
+						return `{PrefixValue}{SafeCommandValue.Name}`
+					end
+				end),
+				TextXAlignment = Scope:Computed(function(Use)
+					local TextValue = Use(Text)
+
+					if string.len(TextValue) >= 1 then
+						return Enum.TextXAlignment.Center
+					else
+						return Enum.TextXAlignment.Left
+					end
 				end),
 				TextColor = Scope:Spring(ContentColor, Theme.SpringSpeed["1"], Theme.SpringDampening["1.5"]),
 				TextWrapped = false,
@@ -159,9 +191,20 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 			Scope:IconButton {
 				Image = CONFIG.Icons.StopFill,
 				Active = TasksRunning,
-				Visible = TasksRunning,
+				Color = Scope:Spring(
+					Scope:Computed(function(Use)
+						local TasksRunningValue = Use(TasksRunning)
+
+						if TasksRunningValue then
+							return Use(ContentColor)
+						else
+							return Use(EffectiveColor)
+						end
+					end),
+					Theme.SpringSpeed["1"],
+					Theme.SpringDampening["1.5"]
+				),
 				Style = "Ghost",
-				Color = Theme.Colors.Primary.Contrast,
 				Padding = {
 					Top = Scope:UDim(0, Theme.Padding["0.75"]),
 					Bottom = Scope:UDim(0, Theme.Padding["0.75"]),

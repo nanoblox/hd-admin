@@ -15,6 +15,7 @@ local Children = Fusion.Children
 
 local SettingGroup = require(script.Parent.Parent.SettingGroup)
 local CustomButton = require(script.Parent.Parent.CustomButton)
+local CommandButton = require(script.Parent.Parent.CommandButton)
 
 export type Props = OnyxUI.FrameProps & {}
 
@@ -22,6 +23,7 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 	local Scope = Fusion.innerScope(Scope, Fusion, OnyxUI.Components, OnyxUI.Util, {
 		SettingGroup = SettingGroup,
 		CustomButton = CustomButton,
+		CommandButton = CommandButton,
 	})
 
 	local Theme = OnyxUI.Themer.Theme:now()
@@ -110,18 +112,12 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 						BackgroundTransparency = 0,
 						BackgroundColor3 = Theme.Colors.Neutral.Main,
 					},
-					Scope:Button {
-						Content = { "Run" },
+					Scope:CommandButton {
+						Id = CommandId,
+						QuickRun = true,
 						Color = Theme.Colors.Primary.Main,
-						SizeVariant = "ExtraLarge",
-						ContentSize = Theme.TextSize["1"],
-
-						OnActivate = function()
-							Callbacks.RunCommand(
-								Fusion.peek(Panel.PagesData.Execute.CommandId),
-								Fusion.peek(ArgumentSettingValues)
-							)
-						end,
+						Arguments = ArgumentSettingValues,
+						Text = "Run",
 					},
 				},
 			},
