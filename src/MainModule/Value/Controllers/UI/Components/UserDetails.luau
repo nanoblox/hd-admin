@@ -1,10 +1,10 @@
 local Main = script:FindFirstAncestor("MainModule")
 local Packages = Main.Value.Packages
 local UI = Main.Value.Controllers.UI
+
 local OnyxUI = require(Packages.OnyxUI)
 local Fusion = require(Packages.Fusion)
-local Sift = require(Packages.Sift)
-local UserInformant = require(UI.Utils.UserInformant)
+local UserStateMod = require(UI.StateMods.UserStateMod)
 
 local Children = Fusion.Children
 
@@ -19,29 +19,7 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 
 	local UserId = OnyxUI.Util.Fallback(Props.UserId, 1)
 
-	local UserInfo = Scope:Value(nil)
-	local UserInfoSafe = Scope:Computed(function(Use)
-		local UserInfoValue = Use(UserInfo) or {}
-
-		return Sift.Dictionary.merge({
-			UserId = 1,
-			Username = "Username",
-			DisplayName = "Name",
-		}, UserInfoValue)
-	end)
-
-	local function UpdateDetails()
-		local UserIdValue = Fusion.peek(UserId)
-
-		UserInfo:set(UserInformant.User(UserIdValue))
-	end
-
-	Scope:Observer(UserId):onChange(function()
-		UpdateDetails()
-	end)
-	task.spawn(function()
-		UpdateDetails()
-	end)
+	local UserInfo = UserStateMod.GetSafe(Scope, UserStateMod.Get(Scope, UserId))
 
 	return Scope:Frame(OnyxUI.Util.CombineProps(Props, {
 		Name = script.Name,
@@ -77,13 +55,13 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 				[Children] = {
 					Scope:Text {
 						Text = Scope:Computed(function(Use)
-							return `{Use(UserInfoSafe).DisplayName}`
+							return `{Use(UserInfo).DisplayName}`
 						end),
 						TextWrapped = false,
 					},
 					Scope:Text {
 						Text = Scope:Computed(function(Use)
-							return `@{Use(UserInfoSafe).Username}`
+							return `@{Use(UserInfo).Username}`
 						end),
 						TextColor3 = Theme.Colors.NeutralContent.Dark,
 						TextWrapped = false,

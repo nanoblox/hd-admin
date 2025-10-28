@@ -3,14 +3,12 @@ local Packages = Main.Value.Packages
 local UI = Main.Value.Controllers.UI
 local OnyxUI = require(Packages.OnyxUI)
 local Fusion = require(Packages.Fusion)
-local States = require(UI.States)
-local UserInformant = require(UI.Utils.UserInformant)
-local Sift = require(Packages.Sift)
 local PanelsStateMod = require(UI.StateMods.PanelsStateMod)
 
 local Children = Fusion.Children
 
 local CustomButton = require(script.Parent.CustomButton)
+local UserDetails = require(script.Parent.UserDetails)
 
 export type Props = OnyxUI.ButtonProps & {
 	UserId: Fusion.UsedAs<string>?,
@@ -22,6 +20,7 @@ export type Props = OnyxUI.ButtonProps & {
 return function(Scope: Fusion.Scope<any>, Props: Props)
 	local Scope = Fusion.innerScope(Scope, Fusion, OnyxUI.Util, OnyxUI.Components, {
 		CustomButton = CustomButton,
+		UserDetails = UserDetails,
 	})
 	local Theme = OnyxUI.Themer.Theme:now()
 	local Panel = PanelsStateMod.Panel:now()
@@ -30,28 +29,6 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 	local Checked = Scope:EnsureValue(OnyxUI.Util.Fallback(Props.Checked, false))
 	local Label = OnyxUI.Util.Fallback(Props.Label, {})
 	local OnCheck = OnyxUI.Util.Fallback(Props.OnCheck, function() end)
-
-	local UserInfo = Scope:Value({})
-
-	local function UpdateUserInfo()
-		pcall(function()
-			local UserIdValue = Fusion.peek(UserId)
-
-			UserInfo:set(Sift.Dictionary.merge({
-				UserId = 1,
-				Username = "Username",
-				DisplayName = "Name",
-			}, UserInformant.User(UserIdValue)))
-		end)
-	end
-
-	Scope:Observer(UserId):onChange(function()
-		UpdateUserInfo()
-	end)
-
-	task.spawn(function()
-		UpdateUserInfo()
-	end)
 
 	return Scope:Button(OnyxUI.Util.CombineProps(Props, {
 		Name = script.Name,
@@ -115,54 +92,8 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 					},
 				},
 			},
-			Scope:Frame {
-				Name = "Details",
-				List = {
-					FillDirection = Enum.FillDirection.Horizontal,
-					VerticalAlignment = Enum.VerticalAlignment.Center,
-					Padding = Scope:UDim(0, Theme.Spacing["0.5"]),
-				},
-				Flex = {
-					Mode = Enum.UIFlexMode.Fill,
-				},
-
-				[Children] = {
-					Scope:Avatar {
-						Image = Scope:Computed(function(Use)
-							return `rbxthumb://type=AvatarHeadShot&id={Use(UserId)}&w=150&h=150`
-						end),
-						Size = Scope:Computed(function(Use)
-							return UDim2.fromOffset(Use(Theme.TextSize["1.5"]), Use(Theme.TextSize["1.5"]))
-						end),
-						Corner = {
-							Radius = Scope:Computed(function(Use)
-								return UDim.new(0, Use(Theme.CornerRadius.Full))
-							end),
-						},
-					},
-					Scope:Frame {
-						Name = "Details",
-						List = {
-							Padding = Scope:UDim(0, Theme.Spacing["0"]),
-						},
-
-						[Children] = {
-							Scope:Text {
-								Text = Scope:Computed(function(Use)
-									return `{Use(UserInfo).DisplayName}`
-								end),
-								TextWrapped = false,
-							},
-							Scope:Text {
-								Text = Scope:Computed(function(Use)
-									return `@{Use(UserInfo).Username}`
-								end),
-								TextColor3 = Theme.Colors.NeutralContent.Dark,
-								TextWrapped = false,
-							},
-						},
-					},
-				},
+			Scope:UserDetails {
+				UserId = UserId,
 			},
 			Scope:IconText {
 				Name = "Label",
