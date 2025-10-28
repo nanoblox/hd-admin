@@ -116,7 +116,7 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 								},
 							}
 						elseif ActiveTabValue == 2 then
-							return Scope:ForValues(MemberCategories, function(Use, Scope)
+							return Scope:ForValues(MemberCategories, function(Use, Scope, MemberCategory)
 								return OnyxUI.Themer.Theme:is(Theme):during(function()
 									return PanelsStateMod.Panel:is(Panel):during(function()
 										return Scope:Frame {
@@ -127,7 +127,7 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 
 											[Children] = {
 												Scope:IconText {
-													Content = Category.Label,
+													Content = MemberCategory.Label,
 													ContentSize = Theme.TextSize["1.125"],
 													ContentFontFace = Scope:Computed(function(Use)
 														return Font.new(
@@ -138,7 +138,7 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 													ContentWrapped = false,
 												},
 												Scope:Users {
-													UserIds = Category.Users,
+													UserIds = MemberCategory.Users,
 													ButtonType = "Button",
 													ButtonProps = function(UserInfo)
 														return {

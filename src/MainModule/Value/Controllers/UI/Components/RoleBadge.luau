@@ -79,9 +79,9 @@ return function(Scope: Fusion.Scope<>, Props: Props)
 			},
 			Scope:Computed(function(Use)
 				local UserIdValue = Use(UserId)
-				local RoleValue = Use(Id)
+				local IdValue = Use(Id)
 
-				if UserIdValue ~= nil then
+				if (UserIdValue ~= nil) and (IdValue ~= nil) then
 					return Scope:IconButton {
 						Image = CONFIG.Icons.Close,
 						ContentSize = Theme.TextSize["0.75"],
@@ -95,8 +95,10 @@ return function(Scope: Fusion.Scope<>, Props: Props)
 						},
 
 						OnActivate = function()
-							Panel.PagesData.Execute.CommandId:set("RemoveRole")
-							PanelsStateMod.ToPage(Panel, "Execute")
+							Callbacks.RunCommand("removerole", {
+								UserIdValue,
+								IdValue,
+							})
 						end,
 					}
 				end

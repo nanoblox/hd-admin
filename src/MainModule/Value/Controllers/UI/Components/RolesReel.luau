@@ -27,6 +27,7 @@ return function(Scope: Fusion.Scope<>, Props: Props)
 		RoleBadge = RoleBadge,
 		CustomButton = CustomButton,
 	})
+
 	local Theme = OnyxUI.Themer.Theme:now()
 	local Panel = PanelsStateMod.Panel:now()
 
@@ -104,6 +105,30 @@ return function(Scope: Fusion.Scope<>, Props: Props)
 						Content = { `+{#RolesValue - 1}` },
 						ContentColor = Theme.Colors.NeutralContent.Dark,
 					}))
+				end
+			end),
+			Scope:Computed(function(Use)
+				local TruncatedValue = Use(Truncated)
+
+				if not TruncatedValue then
+					return Scope:IconButton {
+						Image = CONFIG.Icons.Add,
+						Color = Theme.Colors.Base.Main,
+						Corner = {
+							Radius = Scope:UDim(0, Theme.CornerRadius.Full),
+						},
+						Stroke = {
+							Color = Theme.Colors.Neutral.Main,
+							Gradient = {
+								Enabled = false,
+							},
+						},
+
+						OnActivate = function()
+							Panel.PagesData.Execute.CommandId:set("role")
+							PanelsStateMod.ToPage(Panel, "Execute")
+						end,
+					}
 				end
 			end),
 		},
