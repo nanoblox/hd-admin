@@ -16,7 +16,7 @@ local Users = require(script.Parent.Parent.Users)
 local RoleButton = require(script.Parent.Parent.RoleButton)
 local Category = require(script.Parent.Parent.Category)
 local UserButton = require(script.Parent.Parent.UserButton)
-local RoleBadge = require(script.Parent.Parent.RoleBadge)
+local RolesReel = require(script.Parent.Parent.RolesReel)
 
 export type Props = OnyxUI.FrameProps & {}
 
@@ -26,7 +26,7 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 		RoleButton = RoleButton,
 		UserButton = UserButton,
 		Category = Category,
-		RoleBadge = RoleBadge,
+		RolesReel = RolesReel,
 	})
 	local Theme = OnyxUI.Themer.Theme:now()
 	local Panel = PanelsStateMod.Panel:now()
@@ -116,7 +116,7 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 								},
 							}
 						elseif ActiveTabValue == 2 then
-							return Scope:ForValues(MemberCategories, function(Use, Scope, Category)
+							return Scope:ForValues(MemberCategories, function(Use, Scope)
 								return OnyxUI.Themer.Theme:is(Theme):during(function()
 									return PanelsStateMod.Panel:is(Panel):during(function()
 										return Scope:Frame {
@@ -140,13 +140,21 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 												Scope:Users {
 													UserIds = Category.Users,
 													ButtonType = "Button",
-													ButtonProps = function(UserId)
+													ButtonProps = function(UserInfo)
 														return {
+															List = {
+																VerticalFlex = Enum.UIFlexAlignment.Fill,
+															},
+
 															[Children] = {
-																Scope:RoleBadge {
-																	UserId = UserId,
-																	Role = "Admin",
-																	LayoutOrder = 4,
+																Scope:RolesReel {
+																	UserId = UserInfo.UserId,
+																	Roles = UserInfo.Roles,
+																	LayoutOrder = 3,
+																	AutomaticSize = Enum.AutomaticSize.X,
+																	List = {
+																		VerticalAlignment = Enum.VerticalAlignment.Center,
+																	},
 																},
 															},
 														}
