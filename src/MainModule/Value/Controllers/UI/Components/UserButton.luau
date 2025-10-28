@@ -4,7 +4,6 @@ local UI = Main.Value.Controllers.UI
 local OnyxUI = require(Packages.OnyxUI)
 local Fusion = require(Packages.Fusion)
 local UserInformant = require(UI.Utils.UserInformant)
-local States = require(UI.States)
 local PanelsStateMod = require(UI.StateMods.PanelsStateMod)
 
 local Children = Fusion.Children

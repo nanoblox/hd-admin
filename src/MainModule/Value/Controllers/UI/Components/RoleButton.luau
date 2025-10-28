@@ -55,7 +55,9 @@ return function(Scope: Fusion.Scope<>, Props: Props)
 					return Use(Role).Color
 				end),
 				BackgroundTransparency = 0,
-				Size = Scope:UDim2Offset(Theme.TextSize["0.75"], Theme.TextSize["0.75"]),
+				Size = Scope:Computed(function(Use)
+					return UDim2.fromOffset(Use(Theme.TextSize["1"]) / 2, Use(Theme.TextSize["1"]) / 2)
+				end),
 				AutomaticSize = Enum.AutomaticSize.None,
 				Corner = {
 					Radius = Scope:UDim(0, Theme.CornerRadius.Full),
