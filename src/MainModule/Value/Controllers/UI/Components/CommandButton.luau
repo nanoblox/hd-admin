@@ -58,6 +58,18 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 	local ContentColor = Scope:Computed(function(Use)
 		return ColorUtils.Emphasize(Use(Color), 1)
 	end)
+	local TasksRunning = Scope:Computed(function(Use)
+		local TasksValue = Use(States.Commands.Tasks)
+		local CommandIdValue = Use(Id)
+
+		for _, Task in TasksValue do
+			if Task.CommandId == CommandIdValue then
+				return true
+			end
+		end
+
+		return false
+	end)
 
 	return Scope:Button(OnyxUI.Util.CombineProps(Props, {
 		Color = Scope:Spring(Color, Theme.SpringSpeed["1"], Theme.SpringDampening["1.5"]),
@@ -146,8 +158,8 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 			},
 			Scope:IconButton {
 				Image = CONFIG.Icons.StopFill,
-				Active = Running,
-				Visible = Running,
+				Active = TasksRunning,
+				Visible = TasksRunning,
 				Style = "Ghost",
 				Color = Theme.Colors.Primary.Contrast,
 				Padding = {

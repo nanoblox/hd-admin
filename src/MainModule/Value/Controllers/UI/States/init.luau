@@ -26,7 +26,9 @@ local States = {
 	Users = {
 		Profiles = Scope:Value({}),
 	},
-	Commands = Scope:Value({}),
+	Commands = {
+		Tasks = Scope:Value({}),
+	},
 	Perks = {
 		Cosmetics = {
 			Worn = Scope:Value({}),
