@@ -28,6 +28,8 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 	local Panel = PanelsStateMod.Panel:now()
 
 	local CommandId = Panel.PagesData.Execute.CommandId
+	local TextPromptToShow = Scope:Value("")
+
 	local Command = Scope:Computed(function(Use)
 		local CommandIdValue = Use(CommandId)
 
@@ -41,7 +43,6 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 	local SafeArguments = Scope:Computed(function(Use)
 		return Use(Command).Arguments
 	end)
-
 	local ArgumentSettings = Scope:ForValues(SafeArguments, function(Use, Scope, Argument)
 		return {
 			Name = Argument.Name,
@@ -53,14 +54,12 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 	local ArgumentSettingValues = Scope:ForValues(ArgumentSettings, function(Use, Scope, ArgumentSetting)
 		return Fusion.peek(ArgumentSetting.Value)
 	end)
-
-	local TextPrompt = Scope:Value("")
-
-	local TextPromptComputed = Scope:Computed(function(Use)
+	local TextPrompt = Scope:Computed(function(Use)
 		return `{Use(States.Settings.Prefix)}{Use(Command).Name} <arg1> <arg2>`
 	end)
-	Scope:Observer(TextPromptComputed):onChange(function()
-		TextPrompt:set(Fusion.peek(TextPromptComputed))
+
+	Scope:Observer(function()
+		TextPromptToShow:set(Fusion.peek(TextPrompt))
 	end)
 
 	return Scope:Frame(OnyxUI.Util.CombineProps(Props, {
