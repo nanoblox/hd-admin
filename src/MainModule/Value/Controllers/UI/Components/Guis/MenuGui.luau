@@ -1,6 +1,7 @@
 local Main = script:FindFirstAncestor("MainModule")
 local Packages = Main.Value.Packages
 local UI = Main.Value.Controllers.UI
+
 local Fusion = require(Packages.Fusion)
 local OnyxUI = require(Packages.OnyxUI)
 local States = require(UI.States)
@@ -51,22 +52,12 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 		return Sift.Array.merge(UndoHistoryValue, HistoryValue)
 	end)
 	local RenderedPages = Scope:Computed(function(Use)
-		local PageValue = Use(Panel.Page)
 		local PageHistoryValue = Use(Panel.PageHistory)
-		local PageUndoHistoryValue = Use(Panel.PageUndoHistory)
-
-		local ValidValues = {
-			PageValue,
-			PageHistoryValue[#PageHistoryValue - 1],
-			PageUndoHistoryValue[#PageUndoHistoryValue - 1],
-		}
-
-		if PAGES[PageValue] == nil then
-			table.insert(ValidValues, "Placeholder")
-		end
+		local PagesToRender =
+			Sift.Array.prepend(Sift.Array.slice(Sift.Array.reverse(PageHistoryValue), 1, 5), "Placeholder")
 
 		return Sift.Dictionary.keys(Sift.Dictionary.filter(PAGES, function(_, Name)
-			return table.find(ValidValues, Name) ~= nil
+			return table.find(PagesToRender, Name) ~= nil
 		end))
 	end)
 
