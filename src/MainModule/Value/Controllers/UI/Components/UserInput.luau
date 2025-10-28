@@ -20,6 +20,8 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 
 	local UserIds = Scope:EnsureValue(OnyxUI.Util.Fallback(Props.UserIds, {}))
 
+	local TextToRender = Scope:Value("Nobody")
+
 	local UserInfos = Scope:ForValues(UserIds, function(Use, Scope, UserId)
 		return UserStateMod.GetSafe(Scope, UserStateMod.Get(Scope, UserId))
 	end)
@@ -29,7 +31,7 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 		if #UserInfosValue > 0 then
 			return `{table.concat(
 				Sift.Array.map(UserInfosValue, function(UserInfo)
-					local UserInfoValue = Use(UserInfo)
+					local UserInfoValue = Fusion.peek(UserInfo)
 
 					return UserInfoValue.Username or `[{UserInfoValue.UserId}]`
 				end),
@@ -38,6 +40,10 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 		else
 			return "Nobody"
 		end
+	end)
+
+	Scope:Observer(Text):onChange(function()
+		TextToRender:set(Fusion.peek(Text))
 	end)
 
 	return Scope:BaseButton(OnyxUI.Util.CombineProps(Props, {
@@ -59,7 +65,7 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 
 		[Children] = {
 			Scope:TextInput {
-				Text = Text,
+				Text = TextToRender,
 				PlaceholderText = Text,
 				TextEditable = false,
 				Active = false,
