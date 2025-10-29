@@ -21,23 +21,6 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 		Prompts = Prompts,
 	})
 
-	local GUIS = {
-		Prompts = {
-			Component = Prompts,
-			Props = {
-				AnchorPoint = Vector2.new(1, 1),
-				Position = UDim2.fromScale(1, 1),
-			},
-		},
-		Menu = {
-			Component = Menu,
-			Props = {
-				AnchorPoint = Vector2.new(1, 0.5),
-				Position = UDim2.fromScale(1, 0.5) + UDim2.fromOffset(-20, 0),
-			},
-		},
-	}
-
 	return Scope:Frame(OnyxUI.Util.CombineProps(Props, {
 		Parent = Props.Parent,
 		Active = false,

@@ -41,6 +41,11 @@ local States = {
 	Screen = {
 		Resolution = Scope:Value(Vector2.zero),
 	},
+	Guide = {
+		Image = Scope:Value(nil),
+		ImageCallback = Scope:Value(nil),
+		Open = Scope:Value(true),
+	},
 }
 
 return States
