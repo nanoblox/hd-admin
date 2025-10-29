@@ -8,6 +8,7 @@ local ICONS = {
 		Perks = "rbxassetid://97918051441396",
 		Moderation = "rbxassetid://119198041377142",
 		Commands = "rbxassetid://116538790441934",
+		Logs = "rbxassetid://132595521661383",
 	},
 	Close = "rbxassetid://80218226919142",
 	ArrowLeft = "rbxassetid://13846120661",

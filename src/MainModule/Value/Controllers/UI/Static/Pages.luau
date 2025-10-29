@@ -63,7 +63,7 @@ local PAGES = {
 	},
 	Logs = {
 		Id = "Logs",
-		Icon = CONFIG.Icons.TerminalFill,
+		Icon = CONFIG.Icons.Pages.Logs,
 	},
 }
 
