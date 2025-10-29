@@ -11,6 +11,18 @@ local Sift = require(Packages.Sift)
 
 local UserStateMod = {}
 
+function UserStateMod.IsBanned(
+	Scope: Fusion.Scope<typeof(Fusion)>,
+	User: typeof(UserStateMod.GetSafe(Fusion.scoped(), 1))
+)
+	return Scope:Computed(function(Use)
+		local UserValue = Use(User)
+		local LatestBan = UserValue.Bans[#UserValue.Bans]
+
+		return (LatestBan.Timestamp + LatestBan.Duration) >= os.time()
+	end)
+end
+
 function UserStateMod.GetSafe(
 	Scope: Fusion.Scope<typeof(Fusion)>,
 	User: typeof(UserStateMod.Get(Fusion.scoped(), 1))

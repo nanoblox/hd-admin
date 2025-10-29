@@ -55,6 +55,7 @@ local ICONS = {
 	TagLockFill = "rbxassetid://14899095238",
 	TagFill = "rbxassetid://14899088442",
 	RobuxFill = "rbxassetid://11560341132",
+	DeviceRecover = "rbxassetid://88073856209792",
 	Logos = {
 		OnyxUI = "rbxassetid://117638619043810",
 		Fusion = "rbxassetid://138940190831315",

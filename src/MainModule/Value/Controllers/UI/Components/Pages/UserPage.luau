@@ -1,11 +1,15 @@
+local Players = game:GetService("Players")
+
 local Main = script:FindFirstAncestor("MainModule")
 local Packages = Main.Value.Packages
 local UI = Main.Value.Controllers.UI
+
 local Fusion = require(Packages.Fusion)
 local OnyxUI = require(Packages.OnyxUI)
 local Config = require(UI.Config)
 local PanelsStateMod = require(UI.StateMods.PanelsStateMod)
 local UserStateMod = require(UI.StateMods.UserStateMod)
+local States = require(UI.States)
 
 local CONFIG = Config:Get()
 
@@ -14,19 +18,6 @@ local Children = Fusion.Children
 local InfoCard = require(script.Parent.Parent.InfoCard)
 local CustomButton = require(script.Parent.Parent.CustomButton)
 local RolesReel = require(script.Parent.Parent.RolesReel)
-
-local MODERATION_ACTIONS = {
-	{
-		Name = "Kick",
-		Content = { "Kick", CONFIG.Icons.Close },
-		Command = "Kick",
-	},
-	{
-		Name = "Ban",
-		Content = { "Ban", CONFIG.Icons.ProhibitedFill },
-		Command = "Ban",
-	},
-}
 
 export type Props = OnyxUI.FrameProps & {}
 
@@ -41,6 +32,41 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 
 	local UserId = Panel.PagesData.User.UserId
 	local UserInfo = UserStateMod.GetSafe(Scope, UserStateMod.Get(Scope, UserId))
+
+	local ModerationActions = {
+		{
+			Name = "Kick",
+			Content = { CONFIG.Icons.Close, "Kick" },
+			Command = "kick",
+			Disabled = Scope:Computed(function(Use)
+				local PlayersValue = Use(States.Session.Players)
+				local UserIdValue = Use(UserId)
+
+				for _, Player in PlayersValue do
+					if Player.UserId == UserIdValue then
+						return false
+					end
+				end
+
+				return true
+			end),
+			Done = true,
+		},
+		{
+			Name = "Ban",
+			Content = { CONFIG.Icons.ProhibitedFill, "Ban" },
+			Command = "ban",
+			Primary = true,
+			Done = Scope:Computed(function(Use, Scope)
+				return not Use(UserStateMod.IsBanned(Scope, UserInfo))
+			end),
+			Undo = {
+				Name = "Unban",
+				Content = { CONFIG.Icons.DeviceRecover, "Unban" },
+				Command = "unban",
+			},
+		},
+	}
 
 	return Scope:Frame(OnyxUI.Util.CombineProps(Props, {
 		Name = script.Name,
@@ -201,12 +227,27 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 				},
 
 				[Children] = {
-					Scope:ForValues(MODERATION_ACTIONS, function(Use, Scope, Action)
+					Scope:ForValues(ModerationActions, function(Use, Scope, Action)
 						return Scope:Button {
-							Content = Action.Content,
+							Content = Scope:Computed(function(Use)
+								local DoneValue = Use(Action.Done)
+
+								if DoneValue then
+									return Action.Content
+								else
+									return Action.Undo.Content
+								end
+							end),
 							ContentSize = Theme.TextSize["1"],
 							SizeVariant = "ExtraLarge",
-							Color = Theme.Colors.Primary.Main,
+							Disabled = Action.Disabled,
+							Color = Scope:Computed(function()
+								if Action.Primary == true then
+									return Use(Theme.Colors.Primary.Main)
+								else
+									return Use(Theme.Colors.Neutral.Main)
+								end
+							end),
 
 							OnActivate = function()
 								Panel.PagesData.Execute.CommandId:set(Action.Command)
