@@ -33,9 +33,8 @@ local Players = game:GetService("Players")
 local Remote = require(modules.Objects.Remote)
 local stateReplication: Remote.Class?, stateReplicationRequest: Remote.Class? = nil, nil
 local replicationHandlers = {}
-local hasFirstFetchRequested = false
+local firstFetchCallbacks: {[string]: (boolean | {any})} = {}
 local State = {}
-State.firstFetchRequested = Signal.new()
 State.__index = State
 
 
@@ -55,6 +54,26 @@ end
 function State.getPathway(pathwayKey: string): {string}
 	local pathway = string.split(pathwayKey, BINDING)
 	return pathway
+end
+
+function State.verifyFirstFetch(firstPathwayKey: string, yieldableCallback: (any) -> (any))
+	local callbacksInGroup = firstFetchCallbacks[firstPathwayKey] :: any
+	if yieldableCallback == nil then
+		error("State.verifyFirstFetch requires a callback function")
+	end
+	if typeof(callbacksInGroup) == "boolean" then
+		-- If true, then it means the first fetch has already occurred
+		task.defer(function()
+			yieldableCallback()
+		end)
+		return
+	end
+	if callbacksInGroup == nil then
+		-- If nil, we create for the first time
+		callbacksInGroup = {}
+		firstFetchCallbacks[firstPathwayKey] = callbacksInGroup
+	end
+	table.insert(callbacksInGroup, yieldableCallback)
 end
 
 
@@ -98,11 +117,15 @@ type Disconnect = {disconnect: (any?) -> ()}
 
 
 -- METHODS
-function State.get(self: Class, ...: string): any?
+function State.get(self: Class, ...: string | {string}): any?
 	-- Returns a deep copy of the data that was set
 	local pathway = {...} :: {[number]: string}
+	local tablePathway = pathway[1]
+	if typeof(tablePathway) == "table" then
+		pathway = tablePathway
+	end
 	local value = self._data
-	for _, key in pathway do
+	for _, key in pathway :: any do
 		value = value[key] :: any
 		if value == nil then
 			return nil
@@ -123,7 +146,7 @@ function State.getAll(self: Class, getSerialized: boolean?): {[string]: any}
 	return normalCopy
 end
 
-function State.set(self: Class, ...: string | any)
+function State.set(self: Class, ...: string | {string} | any)
 	-- If the pathway does not exist, it is built automatically
 	-- If the pathway does exist, but is not built up of tables, then an error is thrown
 	if self.isActive ~= true then
@@ -136,13 +159,16 @@ function State.set(self: Class, ...: string | any)
 	if totalArgs == #pathwayAndValue then
 		table.remove(pathwayAndValue, totalArgs)
 	end
+	local tablePathway = pathwayAndValue[1]
+	if typeof(tablePathway) == "table" then
+		pathwayAndValue = tablePathway
+	end
 	if self.dataMustBeSerializable == true and not Serializer.isValid(value) then
 		error(`State has 'dataMustBeSerializable' enabled, but the value '{tostring(value)}' (type: {typeof(value)}) is not serializable`)
 	end
 	local data = self._data
-	local pathway = {} :: {[number]: string}
 	local callbacksToCall = {} :: {{(any) -> (any)}}
-	local function buildPathway(keyToAdd: string, dataTable: any?, useGivenValue: boolean?)
+	local function buildPathway(keyToAdd: string, dataTable: any?, nextPathway: any?, useGivenValue: boolean?)
 		-- Every time the pathway develops, we check for listeners and call if present
 		if typeof(keyToAdd) ~= "string" then
 			error("Keys must be strings")
@@ -161,6 +187,7 @@ function State.set(self: Class, ...: string | any)
 		if typeof(dataValue) == "table" then
 			dataTable = dataValue :: any
 		end
+		local pathway = deepCopyTable(nextPathway)
 		table.insert(pathway, keyToAdd)
 		local pathwayKey = State.getPathwayKey(pathway)
 		local callbacksArray = self._listeners[pathwayKey]
@@ -170,32 +197,32 @@ function State.set(self: Class, ...: string | any)
 				table.insert(callbacksToCall :: any, {callback, dataValue})
 			end
 		end
-		return dataTable
+		return dataTable, pathway
 	end
-	local function addValueTablesToPathwayRecursive(valueToCheck: any, dataTable: any)
+	local function addValueTablesToPathwayRecursive(valueToCheck: any, dataTable: any, pathway : any)
 		-- This allows us to listen to changes within value (if present) in addition
 		-- to the given pathway of the key
 		if typeof(valueToCheck) == "table" then
 			for subKey, subValue in (valueToCheck :: {[any]: any}) do
 				if typeof(subKey) == "string" then
-					local nextDataTable = buildPathway(subKey, dataTable, nil)
-					addValueTablesToPathwayRecursive(subValue, nextDataTable)
+					local nextDataTable, nextPathway = buildPathway(subKey, dataTable, pathway, nil)
+					addValueTablesToPathwayRecursive(subValue, nextDataTable, nextPathway)
 				end
 			end
 		end
 	end
 	local finalIndex = #pathwayAndValue
-	local nextDataTable = data
+	local nextDataTable, nextPathway = data, {}
 	for i, keyToAdd in pathwayAndValue do
-		nextDataTable = buildPathway(keyToAdd, nextDataTable, i == finalIndex)
+		nextDataTable, nextPathway = buildPathway(keyToAdd, nextDataTable, nextPathway, i == finalIndex)
 	end
-	addValueTablesToPathwayRecursive(value, nextDataTable)
+	addValueTablesToPathwayRecursive(value, nextDataTable, nextPathway)
 	for _, callbackDetail in callbacksToCall do
 		local callback = callbackDetail[1]
 		local dataValue = callbackDetail[2]
 		task.spawn(callback, dataValue)
 	end
-	local pathwayKey = State.getPathwayKey(pathway)
+	local pathwayKey = State.getPathwayKey(pathwayAndValue)
 	for _, callback in self._changedCallbacks do
 		task.spawn(callback, pathwayKey, value)
 	end
@@ -223,7 +250,7 @@ function State.clear(self: Class)
 	self:setAll({})
 end
 
-function State.update(self: Class, ...: string | any)
+function State.update(self: Class, ...: string | {string} | any)
 	-- This is the same as set, but the value is a function that returns the new value
 	local totalArgs = select("#", ...)
 	local finalArg = select(totalArgs, ...)
@@ -232,12 +259,16 @@ function State.update(self: Class, ...: string | any)
 	if totalArgs == #pathwayAndCallback then
 		table.remove(pathwayAndCallback, totalArgs)
 	end
+	local tablePathway = pathwayAndCallback[1]
+	if typeof(tablePathway) == "table" then
+		pathwayAndCallback = tablePathway
+	end
 	if typeof(callback) ~= "function" then
 		error("Final argument must be a function")
 	end
 	local currentValue = self:get(table.unpack(pathwayAndCallback))
 	local newValue = callback(currentValue)
-	self:set(table.unpack(pathwayAndCallback), newValue)
+	self:set(pathwayAndCallback, newValue)
 end
 
 function State.changed(self: Class, callback: (pathwayKey: string, value: any) -> (...any))
@@ -264,7 +295,7 @@ function State._createConnection(self: Class, disconnectCallback): Disconnect
 	return connection
 end
 
-function State.listen(self: Class, ...: string | (...any) -> (...any)): Disconnect
+function State.listen(self: Class, ...: string | {string} | (...any) -> (...any)): Disconnect
 	local totalArgs = select("#", ...)
 	local finalArg = select(totalArgs, ...)
 	local pathwayAndCallback = {...}
@@ -275,13 +306,17 @@ function State.listen(self: Class, ...: string | (...any) -> (...any)): Disconne
 	if totalArgs == #pathwayAndCallback then
 		table.remove(pathwayAndCallback, totalArgs)
 	end
-	local pathwayKey = State.getPathwayKey(pathwayAndCallback)
+	local tablePathway = pathwayAndCallback[1]
+	if typeof(tablePathway) == "table" then
+		pathwayAndCallback = tablePathway
+	end
+	local pathwayKey = State.getPathwayKey(pathwayAndCallback :: any)
 	local callbacksArray = self._listeners[pathwayKey]
 	if not callbacksArray then
 		callbacksArray = {}
 		self._listeners[pathwayKey] = callbacksArray
 	end
-	table.insert(callbacksArray :: any, callback :: any) 
+	table.insert(callbacksArray :: any, callback :: any)
 	if self._bindingReplicationKey then
 		task.spawn(function()
 			self:fetchAsync(table.unpack(pathwayAndCallback :: {string}))
@@ -298,7 +333,7 @@ function State.listen(self: Class, ...: string | (...any) -> (...any)): Disconne
 	end)
 end
 
-function State.observe(self: Class, ...: string | (...any) -> (...any)): {disconnect: (any?) -> ()}
+function State.observe(self: Class, ...: string | {string} | (...any) -> (...any)): {disconnect: (any?) -> ()}
 	-- This is the same as listen, but the callback is called immediately with the current value
 	local totalArgs = select("#", ...)
 	local finalArg = select(totalArgs, ...)
@@ -310,6 +345,11 @@ function State.observe(self: Class, ...: string | (...any) -> (...any)): {discon
 	if totalArgs == #pathway then
 		table.remove(pathway, totalArgs)
 	end
+	local tablePathway = pathway[1]
+	if typeof(tablePathway) == "table" then
+		pathway = tablePathway
+	end
+	pathway = pathway :: {string}
 	local pathwayKey = State.getPathwayKey(pathway)
 	local successfulBindings = self._successfulBindings :: {[string]: any}
 	if self._bindingReplicationKey == nil or successfulBindings[pathwayKey] then
@@ -318,7 +358,7 @@ function State.observe(self: Class, ...: string | (...any) -> (...any)): {discon
 	return self:listen(...)
 end
 
-function State.replicate(self: Class, player: Player, replicationName: string, pathwaysToLimitTo: {{string}}?)
+function State.replicate(self: Class, player: Player, replicationName: string, pathwaysToLimitTo: {{string}}?, fetchCallback: ((Player, {string}) -> (...any))?)
 	if RunService:IsServer() == false then
 		error("State.replicate can only be called on the server")
 	end
@@ -346,13 +386,11 @@ function State.replicate(self: Class, player: Player, replicationName: string, p
 			if typeof(incomingReplicationKey) ~= "string" then
 				return false, "Replication name must be a string"
 			end
+			local User = require(modules.Objects.User) :: any
+			local user = User.getUser(player)
 			local replicationHandler = replicationHandlers[incomingReplicationKey] :: (...any) -> (boolean, string | {any})?
 			if not replicationHandler then
 				return false, "Replication handler does not exist"
-			end
-			if not hasFirstFetchRequested then
-				hasFirstFetchRequested = true
-				State.firstFetchRequested:Fire()
 			end
 			return replicationHandler(player, ...)
 		end)
@@ -403,6 +441,34 @@ function State.replicate(self: Class, player: Player, replicationName: string, p
 				return false, "Total active listeners exceeded maximum size"
 			end
 		end
+		-- Here we call fetchCallback if present which can yield
+		-- This is useful for, for example, yielding until Perm data has loaded
+		if fetchCallback then
+			local success, result = pcall(fetchCallback, player, pathway)
+			if not success then
+				return false, `HD Admin: Fetch callback error: {result}`
+			end
+		end
+		-- Here we check if any other services need setting up before we can return our first value
+		local firstPathwayKey = pathway[1]
+		local callbacksInGroup = firstFetchCallbacks[firstPathwayKey]
+		if callbacksInGroup == true then
+			-- The callbacks are currently being processed by another thread,
+			-- so we yield until they are done
+			while firstFetchCallbacks[firstPathwayKey] == true do
+				task.wait(0.05)
+			end
+		elseif typeof(callbacksInGroup) == "table" then
+			firstFetchCallbacks[firstPathwayKey] = true
+			for _, callbackToRun in callbacksInGroup do
+				local success, result = pcall(callbackToRun)
+				if not success then
+					warn("HD Admin: First fetch callback error:", result)
+				end
+			end
+			firstFetchCallbacks[firstPathwayKey] = false
+		end
+		-- Continue
 		if activeListeners[pathwayKey] then
 			return false, `Already listening for pathway '{pathwayKey}'`
 		end
@@ -473,13 +539,13 @@ function State.bind(self: Class, replicationName: string)
 		if replicationKey ~= self._bindingReplicationKey then
 			return
 		end
-		table.insert(pathway :: any, value)
-		selfClass:set(table.unpack(pathway))
+		--!!! WHY DOES THIS NOT WORK? table.insert(pathway :: any, value)
+		selfClass:set(pathway, value)
 	end))
 	return
 end
 
-function State.fetch(self: Class, ...: string | (...any) -> (...any))
+function State.fetch(self: Class, ...: string | {string} | (...any) -> (...any))
 	-- Same as fetchAsync, but this has a one time optional callback
 	-- This can be useful for scenarios where you want to load data from the server
 	-- and to then listen for it via :changed, because all you have to then do is
@@ -493,6 +559,10 @@ function State.fetch(self: Class, ...: string | (...any) -> (...any))
 		callback = finalArg
 		table.remove(pathway, totalArgs)
 	end
+	local tablePathway = pathway[1]
+	if typeof(tablePathway) == "table" then
+		pathway = tablePathway
+	end
 	task.spawn(function()
 		local success, value = self:fetchAsync(table.unpack(pathway :: {string}))
 		if success and callback then
@@ -501,17 +571,22 @@ function State.fetch(self: Class, ...: string | (...any) -> (...any))
 	end)
 end
 
-function State.fetchAsync(self: Class, ...: string): (boolean, string | {any})
+function State.fetchAsync(self: Class, ...: string | {string}): (boolean, string | {any})
 	-- This is useful for when you want to fetch the data from the server and to then
 	-- have its value passed in the given callback.
 	-- This can only be used on the client
-	local pathway = {...} :: {string}
 	if RunService:IsClient() == false then
 		error("State.bind can only be called on the client")
 	end
 	if self._bindingReplicationKey == nil then
 		error("State.fetchAsync can only be called after State.bind")
 	end
+	local pathway = {...} :: {string}
+	local tablePathway = pathway[1]
+	if typeof(tablePathway) == "table" then
+		pathway = tablePathway
+	end
+	pathway = pathway :: {string}
 	local pathwayKey = State.getPathwayKey(pathway)
 	local requestingBindings = self._requestingBindings :: {[string]: any}
 	local successfulBindings = self._successfulBindings :: {[string]: any}
@@ -532,7 +607,7 @@ function State.fetchAsync(self: Class, ...: string): (boolean, string | {any})
 		error("StateReplicationRequest remote does not exist")
 	end
 	stateReplicationRequest = stateReplicationRequest :: Remote.Class
-	local success, approved, value = stateReplicationRequest:invokeServerAsync(self._bindingReplicationKey, ...)
+	local success, approved, value = stateReplicationRequest:invokeServerAsync(self._bindingReplicationKey, table.unpack(pathway))
 	requestingBindings[pathwayKey] = nil
 	if not success then
 		return false, approved

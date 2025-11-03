@@ -8,7 +8,7 @@ local commands: Task.Commands = {
 		name = script.Name,
 		aliases = {},
 		args = {"Player", "Speed"},
-		cooldown = 3,
+		cooldown = 0,
 		run = function(task: Task.Class, args)
 			task:keep("UntilTargetRespawns")
 			task.client:run(task.target, "HOLA AMIGO")

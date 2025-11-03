@@ -48,12 +48,17 @@ function TaskServer.replicate(self: Class, ...)
 	local thisRemote = requestReplication
 	local packedArgs = table.pack(...)
 	task.defer(function()
+		print("task.isActive (1) =", task.isActive)
+		if not task.isActive then
+			return
+		end
 		local success, approved, warning = thisRemote:invokeServerAsync(taskUID, unpack(packedArgs))
-		if not success then
+		print("task.isActive (2) =", task.isActive, success, approved, warning)
+		if not success or not task.isActive then
 			return
 		end
 		if not approved then
-			warn("Future HD Admin warning: ".. tostring(warning))
+			warn("!!! notice: Future HD Admin warning: ".. tostring(warning))
 			return
 		end
 	end)

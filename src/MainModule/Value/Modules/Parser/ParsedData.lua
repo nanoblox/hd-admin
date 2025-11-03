@@ -6,11 +6,12 @@ local Commands = require(services.Commands)
 local ParserTypes = require(modules.Parser.ParserTypes)
 local Args = require(modules.Parser.Args)
 local Config = require(modules.Config)
+local ConfigSettings = require(modules.Config.Settings)
 
 
 -- TYPES
 type QualifierRequired = ParserTypes.QualifierRequired
-type PlayerSearch = ParserTypes.PlayerSearch
+type PlayerSearch = ConfigSettings.PlayerSearch
 type ParserRejection = ParserTypes.ParserRejection
 type ParsedStatement = ParserTypes.ParsedStatement
 type ParsedBatch = ParserTypes.ParsedBatch

@@ -17,7 +17,6 @@ local Teams = game:GetService("Teams")
 local modules = script:FindFirstAncestor("MainModule").Value.Modules
 local services = modules.Parent.Services
 local Qualifiers = {}
-local User = require(modules.Objects.User)
 local requiresUpdating = true
 local sortedNameAndAliasLengthArray = {}
 local lowerCaseDictionary = {}
@@ -124,6 +123,7 @@ Qualifiers.items = {
 		description	= "Default action, returns players with matching shorthand names.",
 		getTargets = function(callerUserId, stringToParse, useDisplayName)
 			local ParserUtility = require(script.Parent.ParserUtility)
+			local User = require(modules.Objects.User)
 			local callerUser = User.getUser(callerUserId)
 			local targets = ParserUtility.getPlayersFromString(stringToParse :: string, callerUser)
 			return targets
@@ -142,14 +142,15 @@ Qualifiers.items = {
 	}),
 
 	["All"] = register({
-		description = "Every player in a server.",
+		description = "Every player in the server.",
 		getTargets = function()
 			return Players:GetPlayers()
 		end,
 	}),
 
 	["Random"] = register({
-		description = "One randomly selected player from a pool. To define a pool, do ``random(qualifier1,qualifier2,...)``. If not defined, the pool defaults to 'all'.",
+		description = "Selects one random player in a qualifier pool, e.g. ;bring random(others). Defaults to 'all'.",
+		isCustomizable = true,
 		getTargets = function(callerUserId, ...)
 			local subQualifiers = {...}
 			if #subQualifiers == 0 then
@@ -188,7 +189,8 @@ Qualifiers.items = {
 	}),
 
 	["Radius"] = register({
-		description = "Players within x amount of studs from you. To specify studs, do ``radius(studs)``. If not defined, studs defaults to '10'.",
+		description = "Players x studs radius from you, e.g. ;bring radius(50). Defaults to 10.",
+		isCustomizable = true,
 		getTargets = function(callerUserId, radiusString)
 			local targets = {}
 			local radius = tonumber(radiusString) or 10
@@ -207,7 +209,8 @@ Qualifiers.items = {
 	}),
 
 	["Team"] = register({
-		description = "Players within the specified team(s).",
+		description = "Players in the given team(s), e.g. ;bring team(korblox,redcliff)",
+		isCustomizable = true,
 		getTargets = function(_, ...)
 			local targets = {}
 			local teamNames = table.pack(...)
@@ -239,7 +242,8 @@ Qualifiers.items = {
 	}),
 
 	["Group"] = register({
-		description	= "Players who are in the specified Roblox groupIds(s).",
+		description	= "Players in the given GroupIds, e.g. ;bring group(123456,654321)",
+		isCustomizable = true,
 		getTargets = function(_, ...)
 			local targets = {}
 			local groupIds = {}
@@ -262,7 +266,8 @@ Qualifiers.items = {
 	}),
 
 	["Role"] = register({
-		description = "Players who have the specified role(s).",
+		description = "Players who have the given role(s), e.g. ;bring role(admin,mod)",
+		isCustomizable = true,
 		getTargets = function(_, ...)
 			local targets = {}
 			local roleNames = table.pack(...)
@@ -286,6 +291,7 @@ Qualifiers.items = {
 			if #selectedRoleKeys == 0 then
 				return {}
 			end
+			local User = require(modules.Objects.User)
 			local users = User.getUsers()
 			for i, user in users do
 				local function isValidUser()
@@ -306,7 +312,8 @@ Qualifiers.items = {
 	}),
 
 	["Percent"] = register({
-		description = "Randomly selects x percent of players within a server. To define the percentage, do ``percent(number)``. If not defined, the percent defaults to '50'.",
+		description = "Select x% of players in server, e.g. ;bring percent(10). Defaults to 50%.",
+		isCustomizable = true,
 		getTargets = function(_, percentString)
 			local targets = {}
 			local maxPercent = tonumber(percentString) or 50
@@ -326,42 +333,8 @@ Qualifiers.items = {
 		end,
 	}),
 
-	["Staff"] = register({
-		description = "Selects all player's who are staff",
-		getTargets = function(_)
-			local targets = {}
-			local users = User.getUsers()
-			local isStaff = require(services.Roles.isStaff)
-			for i, user in users do
-				if isStaff(user) and user.player then
-					table.insert(targets, user.player)
-				end
-			end
-			return targets
-		end,
-	}),
-
-	["Admins"] = Qualifiers.createAliasOf("Staff"),
-	
-	["NonStaff"] = register({
-		description = "Selects all player's who are not staff",
-		getTargets = function(_)
-			local targets = {}
-			local users = User.getUsers()
-			local isStaff = require(services.Roles.isStaff)
-			for i, user in users do
-				if isStaff(user) == false and user.player then
-					table.insert(targets, user.player)
-				end
-			end
-			return targets
-		end,
-	}),
-
-	["NonAdmins"] = Qualifiers.createAliasOf("NonStaff"),
-
 	["Premium"] = register({
-		description = "Players with Roblox Premium membership",
+		description = "Players with Roblox Premium",
 		getTargets = function(_)
 			local targets = {}
 			for _, player in (Players:GetPlayers()) do
@@ -396,6 +369,7 @@ export type QualifierDetail = {
 	getTargets: any, --(callerUserId: number?, stringToParse: string?, useDisplayName: boolean?) -> {Player},
 	aliases: {[Qualifier]: boolean}?,
 	isHidden: boolean?, -- Does this appear within the Commands Preview menu?
+	isCustomizable: boolean?, -- Can this qualifier have custom arguments (i.e. sub-qualifiers)?,
 	mustCreateAliasOf: any?,
 	aliasOf: any?,
 	name: any?,

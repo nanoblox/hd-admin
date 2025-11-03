@@ -22,10 +22,7 @@ local modules = script:FindFirstAncestor("MainModule").Value.Modules
 local services = modules.Parent.Services
 local Modifiers = {}
 local Players = game:GetService("Players")
-local Args = require(script.Parent.Args)
-local forEveryCommand = require(script.Parent.Parent.CommandUtil.forEveryCommand)
 local ParserTypes = require(modules.Parser.ParserTypes)
-local User = require(modules.Objects.User)
 local requiresUpdating = true
 local sortedNameAndAliasLengthArray = {}
 local lowerCaseDictionary = {}
@@ -190,6 +187,7 @@ Modifiers.items = {
 		description = "Ends all Tasks that match the given command name(s). To end a task across all servers, the 'global' modifier must be included.",
 		preAction = function(callerUserId: number, statement: Statement)
 			local Commands = require(services.Commands)
+			local Args = require(script.Parent.Args)
 			for commandName, _ in statement.commands do
 				local command = Commands.getCommand(commandName)
 				if not command then
@@ -222,6 +220,7 @@ Modifiers.items = {
 
 	["Epoch"] = register({
 		description = "Waits until the given epoch time before executing. If the epoch time has already passed, the command will be executed right away. Combine with 'global' and 'perm' for a permanent game effect. Example: ``;globalPermEpoch(3124224000)message(green) Happy new year!``",
+		isCustomizable = true,
 		executeRightAway = false,
 		executeAfterThread = true,
 		yieldUntilThreadComplete = true,
@@ -240,6 +239,7 @@ Modifiers.items = {
 
 	["Delay"] = register({
 		description = "Waits x amount of time before executing the command. Time can be represented in seconds as 's', minutes as 'm', hours as 'h', days as 'd', weeks as 'w' and years as 'y'. Example: ``;delay(3s)kill all``.",
+		isCustomizable = true,
 		executeRightAway = false,
 		executeAfterThread = true,
 		yieldUntilThreadComplete = true,
@@ -256,6 +256,7 @@ Modifiers.items = {
 
 	["Loop"] = register({
 		description = "Repeats a command for x iterations every y time delay. If not specified, x defaults to ∞ and y to 1s. Time can be represented in seconds as 's', minutes as 'm', hours as 'h', days as 'd', weeks as 'w' and years as 'y'. Example: ``;loop(50,1s)jump me``.",
+		isCustomizable = true,
 		executeRightAway = true,
 		executeAfterThread = false,
 		yieldUntilThreadComplete = false,
@@ -308,6 +309,7 @@ Modifiers.items = {
 
 	["Expire"] = register({
 		description = "Revokes the command after its first execution plus the given time. Time can be represented in seconds as 's', minutes as 'm', hours as 'h', days as 'd', weeks as 'w' and years as 'y'. Example: ``;expire(2m30s)mute player``.",
+		isCustomizable = true,
 		executeRightAway = true,
 		executeAfterThread = false,
 		yieldUntilThreadComplete = false,

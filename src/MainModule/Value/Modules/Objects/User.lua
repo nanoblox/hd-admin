@@ -50,7 +50,6 @@ local User = {}
 User.__index = User
 
 
-
 -- PUBLIC
 User.userAdded = Signal.new()
 User.userLoaded = Signal.new()
@@ -270,7 +269,10 @@ function User._loadAndAutoSaveData(self: Class, dataStoreName: string)
 		end
 		local permLimiters = getPathwaysToLimitTo("perm")
 		local tempLimiters = getPathwaysToLimitTo("temp")
-		janitor:add(perm:replicate(player, `UserPerm`, permLimiters))
+		local function yieldUntilLoaded()
+			User.getUserAsync(self.realKey)
+		end
+		janitor:add(perm:replicate(player, `UserPerm`, permLimiters, yieldUntilLoaded))
 		janitor:add(temp:replicate(player, `UserTemp`, tempLimiters))
 		janitor:add(User.everyone:replicate(player, `UserEveryone`))
 	end
@@ -378,7 +380,7 @@ function User._loadAndAutoSaveData(self: Class, dataStoreName: string)
 	if retries > 0 then
 		warn(`HD Admin finally loaded data for '{realKey}' from '{dataStoreName} after {retries} retries`)
 	end
-
+	
 	-- Deserialize data if was originally serialized
 	if typeof(loadedData) == "table" and loadedData._isSerialized == true then
 		loadedData = loadedData :: any

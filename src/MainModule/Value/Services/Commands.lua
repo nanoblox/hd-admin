@@ -7,7 +7,6 @@ local CLIENT_PROPERTIES_TO_EXCLUDE = {
 
 local CLIENT_PROPERTIES_TO_PREVIEW = {
 	"name",
-	"tags",
 }
 
 
@@ -29,6 +28,7 @@ local clientDataCommandInfo: {[string]: any} = {}
 
 
 -- TYPES
+export type MessageSource = "Chat" | "ChatCommand" | "Script" | "ClientCommandBar" | "ClientPreviewRun" | "ClientRun" | "ClientCommand" | "Other" | "Unknown"
 type User = User.Class
 type Batch = ParserTypes.ParsedBatch
 type Statement = ParserTypes.ParsedStatement
@@ -165,11 +165,14 @@ function Commands.getCommandPrefixes()
 	return commandPrefixes
 end
 
-function Commands.request(user: User.Class, message: string): (boolean, {any}, {Task})
+function Commands.request(user: User.Class, message: string, messageSource: MessageSource?): (boolean, {any}, {Task})
 	-- It's essential that in addition to checking the maximum commands a player can use, that
 	-- we also check the maximum requests they are making too, so to avoid malicious spamming
 	-- of messages which could overwhelm the parser (e.g. 100,000 characters every milisecond).
 	-- If detected, we simply ignore the message from that user.
+	if not messageSource then
+		messageSource = "Unknown" :: MessageSource
+	end
 	local getDataSize = require(modules.VerifyUtil.getDataSize)
 	local bypassLimits = false --!!! roles: CHECK IF USER ROLES
 	local limits = Config.getSetting("Limits")
@@ -202,6 +205,15 @@ function Commands.request(user: User.Class, message: string): (boolean, {any}, {
 	end
 	--
 	return approved, notices, tasks :: {Task}
+end
+
+function Commands.processNotices(notices: {any})
+	for _, noticeTable in notices do
+		local isWarning = noticeTable[1] == false
+		local string = noticeTable[2]
+		local initial = `[HD Admin {isWarning and "WARNING" or "Notice"}]: `
+		warn(initial..string)
+	end
 end
 
 function Commands.processStatementAsync(callerUser: User, statement: Statement): (boolean, string | {Task})
@@ -477,10 +489,11 @@ function Commands.executeStatement(callerUserId: number, statement: Statement): 
 	
 	-- If 'player' instance detected within qualifiers, convert to player.Name
 	local ParserTypes = require(parser.ParserTypes)
+	local ConfigSettings = require(modules.Config.Settings)
 	for qualifierKey, qualifierTable in pairs(statement.qualifiers) do
 		if typeof(qualifierKey) == "Instance" and qualifierKey:IsA("Player") then
 			local callerUser = User.getUserByUserId(callerUserId)
-			local playerDefinedSearch: ParserTypes.PlayerSearch = Config.getSetting("PlayerDefinedSearch", callerUser)
+			local playerDefinedSearch: ConfigSettings.PlayerSearch = Config.getSetting("PlayerDefinedSearch", callerUser)
 			local playerName = qualifierKey.Name
 			if playerDefinedSearch == "UserName" or playerDefinedSearch == "UserNameAndDisplayName" then
 				local playerIdentifier = Config.getSetting("PlayerIdentifier", callerUser)
@@ -588,6 +601,13 @@ function Commands.executeStatement(callerUserId: number, statement: Statement): 
 
 	return tasks :: {Task}
 end
+
+
+-- SETUP
+-- This is essential to ensure data fetched via User.everyone is accurate
+local State = require(modules.Objects.State)
+State.verifyFirstFetch("Commands", Commands.updateCommands)
+State.verifyFirstFetch("CommandInfo", Commands.updateCommands)
 
 
 return Commands

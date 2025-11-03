@@ -35,21 +35,6 @@ local rolesRequireUpdating = true
 export type Role = typeof(DEFAULT_ROLE)
 
 
--- SETUP
--- These set restrictions on what the client can see, and which clients
-local getStateVerifier = require(modules.VerifyUtil.getStateVerifier)
-User.everyone:verify(getStateVerifier(
-	"Roles",
-	"OnlyInclude",
-	CLIENT_PROPERTIES_TO_PREVIEW
-))
-User.everyone:verify(getStateVerifier(
-	"RoleInfo",
-	"Exclude",
-	CLIENT_PROPERTIES_TO_EXCLUDE
-))
-
-
 -- FUNCTIONS
 function Roles.updateRoles(forceUpdate: boolean?): boolean
 	if not rolesRequireUpdating and not forceUpdate then
@@ -57,33 +42,37 @@ function Roles.updateRoles(forceUpdate: boolean?): boolean
 	end
 	local newLowerCaseNameToRoles = {}
 	rolesRequireUpdating = false
-	rolesOrdered = {} :: any
-	
+	rolesOrdered = {}
+
 	-- Get role data from config
 	-- (in the future, we'll also retrieve it from datastores)
 	local configRoles = Framework.getInstance(modules.Config, "Roles")
 	local deepCopyTable = require(modules.TableUtil.deepCopyTable)
 	if configRoles then
 		local toCamelCase = require(modules.DataUtil.toCamelCase)
-		for _, configRole in configRoles:GetChildren() do
-			if not configRole:IsA("Configuration") then
-				continue
-			end
-			local name = configRole.Name
-			local nameLower = name:lower()
-			local role = deepCopyTable(DEFAULT_ROLE) :: any
-			role.displayName = name
-			role.name = nameLower
-			for attName, attValue in configRole:GetAttributes() do
-				local attNameCorrected = toCamelCase(attName)
-				if not DEFAULT_ROLE[attNameCorrected] then
+		local function scanForRoles(instanceToScan: Instance)
+			for _, configRole in instanceToScan:GetChildren() do
+				if not configRole:IsA("Configuration") then
 					continue
 				end
-				role[attNameCorrected] = attValue
+				local name = configRole.Name
+				local nameLower = name:lower()
+				local role = deepCopyTable(DEFAULT_ROLE) :: any
+				role.displayName = name
+				role.name = nameLower
+				for attName, attValue in configRole:GetAttributes() do
+					local attNameCorrected = toCamelCase(attName)
+					if not DEFAULT_ROLE[attNameCorrected] then
+						continue
+					end
+					role[attNameCorrected] = attValue
+				end
+				table.insert(rolesOrdered :: any, role)
+				newLowerCaseNameToRoles[nameLower] = role
+				scanForRoles(configRole)
 			end
-			table.insert(rolesOrdered, role)
-			newLowerCaseNameToRoles[nameLower] = role
 		end
+		scanForRoles(configRoles)
 	end
 	
 	table.sort(rolesOrdered, function(a: Role, b: Role): boolean
@@ -92,7 +81,6 @@ function Roles.updateRoles(forceUpdate: boolean?): boolean
 	--!!! to-do: when lowerCaseNameToRoles is changed, also update everyone("Roles") and everyone("RoleInfo")
 	--!!! but make sure to disconnect previous listeners first
 	lowerCaseNameToRoles:setAll(newLowerCaseNameToRoles)
-	print("SET HERE:", rolesOrdered, newLowerCaseNameToRoles)
 	User.everyone:set("Roles", rolesOrdered)
 	User.everyone:set("RoleInfo", newLowerCaseNameToRoles)
 	
@@ -110,6 +98,26 @@ function Roles.getRoles()
 	Roles.updateRoles()
 	return rolesOrdered
 end
+
+
+-- SETUP
+-- These set restrictions on what the client can see, and which clients
+local getStateVerifier = require(modules.VerifyUtil.getStateVerifier)
+User.everyone:verify(getStateVerifier(
+	"Roles",
+	"OnlyInclude",
+	CLIENT_PROPERTIES_TO_PREVIEW
+))
+User.everyone:verify(getStateVerifier(
+	"RoleInfo",
+	"Exclude",
+	CLIENT_PROPERTIES_TO_EXCLUDE
+))
+
+-- This is essential to ensure data fetched via User.everyone is accurate
+local State = require(modules.Objects.State)
+State.verifyFirstFetch("Roles", Roles.updateRoles)
+State.verifyFirstFetch("RoleInfo", Roles.updateRoles)
 
 
 return Roles

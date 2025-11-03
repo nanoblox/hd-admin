@@ -16,13 +16,14 @@ local UI = {
 }
 
 local function start()
+	UI.Started = true --!!! REMOVE THIS
 	assert(UI.Started == false, "Frontend cannot be started twice!")
 
 	local appIcon = require(Modules.References.appIcon)
 	appIcon:bindEvent("toggled", function()
 		UI.toggleOpen()
 	end)
-
+	
 	States.Theme:set(DarkTheme)
 	StateMods:Initialize()
 

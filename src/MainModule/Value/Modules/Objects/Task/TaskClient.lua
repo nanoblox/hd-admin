@@ -24,7 +24,7 @@ local function setupReplicateListener()
 	end
 	local Task = require(script.Parent) :: any
 	requestReplication:onServerInvoke(function(fromPlayer: Player, incomingUID, ...)
-		-- Aim to keep requests to every 0.25 seconds or higher or you'll be rate limited
+		-- Aim to keep requests to every 0.25 seconds or longer or you'll be rate limited
 		-- The incoming arguments are also size-restricted (see below for amount)
 		-- This is to minimise abuse
 		local DELAY_BETWEEN_EACH_REQUEST = 0.1
@@ -60,11 +60,11 @@ local function setupReplicateListener()
 			end
 			return true, "Success"
 		end
-		local success1, warning1 = checkCooldown("Cooldown1", 1, DELAY_BETWEEN_EACH_REQUEST)
+		local success1, warning1 = checkCooldown("Cooldown1", 4, DELAY_BETWEEN_EACH_REQUEST*2)
 		if not success1 then
 			return false, warning1
 		end
-		local success2, warning2 = checkCooldown("Cooldown2", LIMIT_PER_SECOND*2, 2)
+		local success2, warning2 = checkCooldown("Cooldown2", LIMIT_PER_SECOND*3, 2)
 		if not success2 then
 			return false, warning2
 		end

@@ -19,7 +19,6 @@
 ]]
 
 
-
 local Framework = {}
 local APPLICATION_NAME = "HD Admin"
 local appNameClean = APPLICATION_NAME:gsub(" ", "") -- Removes spaces
@@ -244,34 +243,40 @@ function Framework.startServer()
 	-- confusions which can occur from the modules being located under Configuration instances
 	local configRoles = loaderConfig and loaderConfig:FindFirstChild("Roles")
 	if configRoles then
+		local deepCopyTable = require(modules.TableUtil.deepCopyTable)
 		local forEveryCommand = require(modules.CommandUtil.forEveryCommand)
-		for _, roleConfig in configRoles:GetChildren() do
-			if not roleConfig:IsA("Configuration") then
-				continue
-			end
-			local role = roleConfig.Name
-			for _, commandModule in roleConfig:GetChildren() do
-				if commandModule:IsA("ModuleScript") then
-					local reference = require(commandModule)
-					forEveryCommand(reference, function(command)
-						command.role = role
-					end)
-					for _, child in commandModule:GetChildren() do
-						-- We set a 'Child' attribute for all child modules named 'Client'
-						-- in case the creator of the command forgets to tag the module
-						-- with the 'Client' attribute (which exposes the instance to the client)
-						if not child:IsA("ModuleScript") then
-							continue
-						end
-						if child.Name:lower() ~= "client" then
-							continue
-						end
-						child:SetAttribute("Client", true)
-					end
-					commandModule.Parent = sharedValue.Services.Commands
+		local function checkForRolesAndCommands(instanceToCheck, rolesArray)
+			for _, roleConfigOrModule in instanceToCheck:GetChildren() do
+				if roleConfigOrModule:IsA("Configuration") then
+					local newRolesArray = deepCopyTable(rolesArray)
+					local role = roleConfigOrModule.Name
+					table.insert(newRolesArray, role)
+					checkForRolesAndCommands(roleConfigOrModule, newRolesArray)
+					continue
 				end
+				if not roleConfigOrModule:IsA("ModuleScript") then
+					continue
+				end
+				local reference = require(roleConfigOrModule)
+				forEveryCommand(reference, function(command)
+					command.roles = rolesArray
+				end)
+				for _, child in roleConfigOrModule:GetChildren() do
+					-- We set a 'Child' attribute for all child modules named 'Client'
+					-- in case the creator of the command forgets to tag the module
+					-- with the 'Client' attribute (which exposes the instance to the client)
+					if not child:IsA("ModuleScript") then
+						continue
+					end
+					if child.Name:lower() ~= "client" then
+						continue
+					end
+					child:SetAttribute("Client", true)
+				end
+				roleConfigOrModule.Parent = sharedValue.Services.Commands
 			end
 		end
+		checkForRolesAndCommands(configRoles, {})
 	end
 
 	-- Merge Loader Config items into the core

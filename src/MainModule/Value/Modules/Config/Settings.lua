@@ -25,11 +25,12 @@ local Settings = {
 	-- will observe this change and automatically change their settings to your newly
 	-- changed values.
 	["PlayerSettings"] = {
-		HelloWorldThisIStest3 = true,
 		Prefix = ";", -- The character you use before every command (e.g. ';jump me')
-		AppTheme = "Blurple", -- The theme of the app
-		SoundProperties = { -- Min: 0, Max: 2
-			Hello = true,
+		Theme = {
+			DarkMode = true,
+			PrimaryColor = Color3.fromRGB(94, 86, 213),
+		},
+		Sound = { -- Min: 0, Max: 2
 			Volume = {
 				Music = 1,
 				Command = 1,
@@ -65,8 +66,8 @@ local Settings = {
 			CommandsPerMinute = 60, -- Maximum number of commands a player can run per minute
 		},
 
-		-- App Colors
-		AppThemes = {
+		-- Recommended colors when customizing theme settings
+		ThemeColors = {
 			{"Blurple", Color3.fromRGB(94, 86, 213)},
 			{"Red", Color3.fromRGB(199, 80, 82)},
 			{"Orange", Color3.fromRGB(152, 114, 69)},
@@ -78,7 +79,7 @@ local Settings = {
 		},
 
 		-- Colors to be used for commands with the Color arg
-		Colors = {
+		CommandColors = {
 			["Red"]	= Color3.fromRGB(255, 0, 0),
 			["Orange"] = Color3.fromRGB(250, 100, 0),
 			["Yellow"] = Color3.fromRGB(255, 255, 0),

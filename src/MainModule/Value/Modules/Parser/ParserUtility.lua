@@ -5,10 +5,11 @@ local modules = script:FindFirstAncestor("MainModule").Value.Modules
 local services = modules.Parent.Services
 local ParserTypes = require(modules.Parser.ParserTypes)
 local User = require(modules.Objects.User)
+local ConfigSettings = require(modules.Config.Settings)
 
 
 -- TYPES
-type PlayerSearch = ParserTypes.PlayerSearch
+type PlayerSearch = ConfigSettings.PlayerSearch
 type Statement = ParserTypes.ParsedStatement
 
 

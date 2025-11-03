@@ -1,8 +1,4 @@
 --!strict
-local config = script:FindFirstAncestor("MainModule").Value.Modules.Config
-local configSettings = require(config.Settings)
-
-
 export type ParsedBatch = {
 	ParsedStatement
 }
@@ -19,8 +15,6 @@ export type ParsedStatement = {
 	callerUserId: number?,
 	taskUID: string?,
 }
-
-export type PlayerSearch = configSettings.PlayerSearch
 
 export type ParserRejection =
 	"MissingCommandDescription" | -- parsedData was missing a commandDescription, previously

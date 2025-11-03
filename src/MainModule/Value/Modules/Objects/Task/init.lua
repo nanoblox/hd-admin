@@ -764,7 +764,6 @@ export type Command = {
 	undoAliases: {string}?, -- aliases to undone the command, e.g. "ice" might have "thaw"
 	description: string?,
 	groups: {string}?, -- all commands in the same group are *undone* when another is run
-	tags: {string}?,
 	cooldown: number?, -- if > 0, the command cannot be run again until finished and its cooldown expired
 	autoPreview: boolean?, -- if true, the command is viewed first in UI (useful for ban command)
 	contributors: {string}?,
