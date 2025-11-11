@@ -503,10 +503,24 @@ function State.replicate(self: Class, player: Player, replicationName: string, p
 	-- Replicate all valid changes to the client
 	local stateEvent = stateReplication :: any
 	repJanitor:add(self:changed(function(pathwayKey: string, value: any)
-		if activeListeners[pathwayKey] then
-			local pathway = State.getPathway(pathwayKey)
-			stateEvent:fireClient(player, replicationKey, pathway, value)
+		local hasListener = activeListeners[pathwayKey]
+		if not hasListener then
+			-- Sometimes a higher pathway is listened for (such as "FavoritedEmotes"), while
+			-- a lower pathway (such as "FavoritedEmotes_79795305221612") is changed. In this
+			-- scenario, FavoritedEmotes_79795305221612 may not be labelled as an activePathway,
+			-- despite being valid, so we also check for its parent pathways
+			for possibleParentKey, _ in activeListeners do
+				if possibleParentKey == string.sub(pathwayKey, 1, #possibleParentKey) then
+					hasListener = true
+					break
+				end
+			end
 		end
+		if not hasListener then
+			return
+		end
+		local pathway = State.getPathway(pathwayKey)
+		stateEvent:fireClient(player, replicationKey, pathway, value)
 	end))
 
 	return self:_createConnection(function()
@@ -539,7 +553,6 @@ function State.bind(self: Class, replicationName: string)
 		if replicationKey ~= self._bindingReplicationKey then
 			return
 		end
-		--!!! WHY DOES THIS NOT WORK? table.insert(pathway :: any, value)
 		selfClass:set(pathway, value)
 	end))
 	return
@@ -607,17 +620,13 @@ function State.fetchAsync(self: Class, ...: string | {string}): (boolean, string
 		error("StateReplicationRequest remote does not exist")
 	end
 	stateReplicationRequest = stateReplicationRequest :: Remote.Class
-	local success, approved, value = stateReplicationRequest:invokeServerAsync(self._bindingReplicationKey, table.unpack(pathway))
+	local success, value = stateReplicationRequest:invokeServerAsync(self._bindingReplicationKey, table.unpack(pathway))
 	requestingBindings[pathwayKey] = nil
-	if not success then
-		return false, approved
-	end
-	if not approved or value == nil then
+	if not success or value == nil then
 		return false, value
 	end
 	successfulBindings[pathwayKey] = true
-	table.insert(pathway, value)
-	self:set(table.unpack(pathway))
+	self:set(pathway, value)
 	return true, value
 end
 

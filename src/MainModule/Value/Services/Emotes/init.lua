@@ -102,15 +102,17 @@ function Emotes.getEmotesAsync(): (boolean, EmoteTable | string)
 		allEmotes[emoteId] = emote
 	end
 	local itemsRemaining = 0
+	local Assets = require(modules.Parent.Services.Assets)
 	for emoteId, emote in allEmotes do
 		-- We have to use LoadAssetAsync on the EmoteId to retrieve the animationId
 		-- the animationId which is used by the client to display an animated rig
-		local animationId = emote.animationId
-		if animationId then
-			continue
-		end
 		local emoteIdNumber = tonumber(emoteId)
 		if not emoteIdNumber then
+			continue
+		end
+		Assets.permitAsset(emoteIdNumber)
+		local animationId = emote.animationId
+		if animationId then
 			continue
 		end
 		itemsRemaining += 1
@@ -180,10 +182,11 @@ Remote.new("FavoriteEmote", "Function"):onServerInvoke(function(player: Player, 
 	end
 	if shouldFavorite then
 		perm:set("FavoritedEmotes", emoteId, emote)
+		return true, emote
 	else
 		perm:set("FavoritedEmotes", emoteId, nil)
+		return true, nil
 	end
-	return true, emote
 end)
 
 

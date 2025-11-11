@@ -33,8 +33,8 @@ local perm = clientUser.perm
 perm:observe("YouSettings", function(value)
 	print("TEST YouSettings:", value)
 end)
-perm:observe("FavoritedEmotes", TEST_EMOTE_ID, function(value)
-	print(`TEST FavoritedEmotes {TEST_EMOTE_ID} changed to:`, value)
+perm:observe("FavoritedEmotes", function(value)
+	print(`TEST FavoritedEmotes changed to:`, value)
 end)
 
 
@@ -45,8 +45,19 @@ task.defer(function()
 	while true do
 		task.wait(3)
 		local isFavorited = perm:get("FavoritedEmotes", TEST_EMOTE_ID) ~= nil
-		local success, approved, result = favoriteEmote:invokeServerAsync(TEST_EMOTE_ID, not isFavorited)
+		print("isFavorited =", isFavorited)
+		local success, result = favoriteEmote:invokeServerAsync(TEST_EMOTE_ID, not isFavorited)
+		print("success, result =", success, result)
 	end
+end)
+
+
+task.delay(3, function()
+	-- Test PromptBulkPurchase
+	local promptBulkPurchaseAsync = require(modules.AssetUtil.promptBulkPurchaseAsync)
+	local testAssetId = 115407270129592
+	local success, warning = promptBulkPurchaseAsync(testAssetId)
+	print(`PromptBulkPurchase result for assetId {testAssetId}:`, success, warning)
 end)
 
 

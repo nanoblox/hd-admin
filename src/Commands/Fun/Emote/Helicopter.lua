@@ -2,26 +2,18 @@
 local modules = script:FindFirstAncestor("HD Admin").Core.MainModule.Value.Modules
 local Task = require(modules.Objects.Task)
 local Args = require(modules.Parser.Args)
-local particlesArg = Args.create({
-	name = "Particles",
-	description = "Whether to spawn particles",
-	parse = function(self, stringToParse)
-		print("CUSTOM PARTICLE ARG HERE!!")
-		if math.random(1,2) == 1 then
-			return "FireParticles"
-		else
-			return "LightningParticles"
-		end
-	end,
+local particlesArg = Args.createAliasOf("Number", {
+	minValue = -100,
+	maxValue = 100,
 })
 local commands: Task.Commands = {
 
     --------------------
 	{
-		name = "Helicopter",
-		args = {"Player"},
+		name = "Particles",
+		args = {"Player", particlesArg},
 		run = function(task, args: {any})
-			print("helicopter (A)")
+			print("Particles (A)")
 		end
 	},
 	

@@ -52,12 +52,12 @@ function TaskServer.replicate(self: Class, ...)
 		if not task.isActive then
 			return
 		end
-		local success, approved, warning = thisRemote:invokeServerAsync(taskUID, unpack(packedArgs))
-		print("task.isActive (2) =", task.isActive, success, approved, warning)
-		if not success or not task.isActive then
+		local success, warning = thisRemote:invokeServerAsync(taskUID, unpack(packedArgs))
+		print("task.isActive (2) =", task.isActive, success, warning)
+		if not task.isActive then
 			return
 		end
-		if not approved then
+		if not success then
 			warn("!!! notice: Future HD Admin warning: ".. tostring(warning))
 			return
 		end
