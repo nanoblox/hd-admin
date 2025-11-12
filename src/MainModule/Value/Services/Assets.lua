@@ -29,5 +29,8 @@ Remote.new("PromptBulkPurchase", "Function"):onServerInvoke(function(player: Pla
 	return success, warning
 end)
 
+-- Initialize the Sound Handler
+require(modules.AssetUtil.registerSound)
+
 
 return Assets

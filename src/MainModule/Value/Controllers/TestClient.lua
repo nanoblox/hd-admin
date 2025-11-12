@@ -8,33 +8,32 @@ local TestController = {}
 
 
 -- Test replication everyone
-print("Start tests...")
 local clientUser = require(modules.References.clientUser)
 local everyone = clientUser.everyone
 everyone:observe("Emotes", function(value)
-	print("TEST Emotes:", value)
+	--print("TEST Emotes:", value)
 end)
 everyone:observe("Roles", function(value)
-	print("TEST Roles:", value)
+	--print("TEST Roles:", value)
 end)
 everyone:observe("RoleInfo", function(value)
-	print("TEST RoleInfo:", value)
+	--print("TEST RoleInfo:", value)
 end)
 everyone:observe("Commands", function(value)
-	print("TEST Commands:", value)
+	--print("TEST Commands:", value)
 end)
 everyone:observe("CommandInfo", function(value)
-	print("TEST CommandInfo:", value)
+	--print("TEST CommandInfo:", value)
 end)
 
 -- Test replication perm
 local TEST_EMOTE_ID = "79795305221612"
 local perm = clientUser.perm
 perm:observe("YouSettings", function(value)
-	print("TEST YouSettings:", value)
+	--print("TEST YouSettings:", value)
 end)
 perm:observe("FavoritedEmotes", function(value)
-	print(`TEST FavoritedEmotes changed to:`, value)
+	--print(`TEST FavoritedEmotes changed to:`, value)
 end)
 
 
@@ -59,6 +58,18 @@ task.delay(3, function()
 	local success, warning = promptBulkPurchaseAsync(testAssetId)
 	print(`PromptBulkPurchase result for assetId {testAssetId}:`, success, warning)
 end)
+
+
+-- Test sound settings changing
+local testSound = workspace:FindFirstChild("TestSound")
+if testSound and testSound:IsA("Sound") then
+	local registerSound = require(modules.AssetUtil.registerSound)
+	task.delay(0, function()
+		registerSound(testSound, "Command")
+		print('REGISTERED:', testSound)
+	end)
+	testSound:Play()
+end
 
 
 return TestController

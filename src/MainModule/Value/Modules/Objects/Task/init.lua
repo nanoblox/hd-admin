@@ -26,6 +26,7 @@ local deepCopyTable = require(modules.TableUtil.deepCopyTable)
 local generateUID = require(modules.DataUtil.generateUID)
 local getHumanoid = require(modules.PlayerUtil.getHumanoid)
 local getTargets = require(modules.PlayerUtil.getTargets)
+local registerSound = require(modules.AssetUtil.registerSound)
 local isServer = RunService:IsServer()
 local isClient = not isServer
 local Remote = require(modules.Objects.Remote)
@@ -665,6 +666,14 @@ function Task.getOriginalArg(self: Task, argNameOrIndex)
 	local argNameLower = tostring(argNameOrIndex):lower()
 	local originalValue = self.originalArgReturnValues[argNameLower]
 	return originalValue
+end
+
+function Task.register(self: Task, sound: Sound, soundType: registerSound.SoundType?)
+	if not soundType then
+		soundType = "Command"
+	end
+	local registerSound = require(modules.AssetUtil.registerSound)
+	registerSound(sound, soundType)
 end
 
 function Task.onEnded(self: Task, callback: () -> ())

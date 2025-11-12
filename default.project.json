@@ -41,6 +41,9 @@
               "Modules": {
                 "$path": "src/MainModule/Value/Modules"
               },
+			  "Items": {
+                 "$path": "src/MainModule/Value/Items"
+              },
               "Packages": {
                 "$path": "Packages"
               },

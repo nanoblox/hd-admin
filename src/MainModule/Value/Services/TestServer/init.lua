@@ -11,8 +11,14 @@ task.defer(function()
 		if success then
 			
 			-- Set prefix
-			--user.perm:set("PlayerSettings", "Prefix", "!")
+			--user.perm:set("YouSettings", "Prefix", "!")
 			
+			-- Set Volume/Pitch
+			user.perm:set("YouSettings", "Sound", "Pitch", "Command", 2)
+			task.delay(10, function()
+				user.perm:set("YouSettings", "Sound", "Pitch", "Command", 1)
+			end)
+
 			-- Cash Giver
 			while user.isActive do
 				user.perm:update("Cash", function(value: number)
