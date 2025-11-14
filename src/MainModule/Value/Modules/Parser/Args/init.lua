@@ -16,11 +16,17 @@ local TEXT_MAX_CHARACTERS = 420
 -- LOCAL
 local Args = {}
 local modules = script:FindFirstAncestor("MainModule").Value.Modules
+local hdConfig = script:FindFirstAncestor("HD Admin").Config
+local LoaderArgs = require(hdConfig.Args)
 local InputObjects = require(modules.Parser.InputObjects)
+local ArgTypes = require(modules.Parser.Args.ArgTypes)
 local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
 local requiresUpdating = true
 local sortedNameAndAliasLengthArray = {}
 local lowerCaseDictionary = {}
+local isServer = RunService:IsServer()
+
 
 -- LOCAL FUNCTIONS
 local function register(item: ArgumentDetail): ArgumentDetail
@@ -46,6 +52,27 @@ local function processDeveloperArg(argumentDetail: ArgumentDetail)
 	end
 	return argumentDetail
 end
+local function moveMultiKeysIntoInputObject(argumentDetail: ArgumentDetail)
+	local keysToMove = {
+		"defaultValue",
+		"minValue",
+		"maxValue",
+		"stepAmount",
+	}
+	local inputObject = argumentDetail.inputObject :: any
+	if not argumentDetail.inputObject then
+		return
+	end
+	argumentDetail = argumentDetail :: any
+	for _, key in keysToMove do
+		local value = argumentDetail[key]
+		if value == nil then
+			continue
+		end
+		inputObject[key] = value
+	end
+	return argumentDetail
+end
 local function becomeArg(item: ArgumentDetail, toBecomeName: string)
 	local argToBecome = Args.items[toBecomeName]
 	local argNameCorrected = item.name
@@ -54,14 +81,26 @@ local function becomeArg(item: ArgumentDetail, toBecomeName: string)
 	end
 	argToBecome = argToBecome :: any
 	item = item :: any
+	local deepCopyTable = require(modules.TableUtil.deepCopyTable)
 	for k,v in argToBecome do
 		if not item[k] then
+			if typeof(v) == "table" then
+				v = deepCopyTable(v) -- This is essential for example for inputObjects
+			end
 			item[k] = v
 		end
 	end
 	item.mustCreateAliasOf = nil :: any
 	item.aliasOf = toBecomeName
+	moveMultiKeysIntoInputObject(item)
 end
+local function recordArg(argName: string, argDetail)
+	if Args.items[argName] and isServer then
+		warn(`HD Admin: Arg '{argName}' already exists. Strongly consider renaming your Custom Arg to avoid conflicts.`)
+	end
+	Args.items[argName] = argDetail
+end
+
 
 -- FUNCTIONS
 function Args.update()
@@ -140,12 +179,13 @@ function Args.getAll()
 end
 
 function Args.create(argumentDetail: ArgumentDetail)
-	local name = argumentDetail.name
+	moveMultiKeysIntoInputObject(argumentDetail)
 	processDeveloperArg(argumentDetail)
+	local name = argumentDetail.name
 	if name then
-		Args.items[name] = argumentDetail :: any
+		recordArg(name, argumentDetail)
 	end
-	return argumentDetail
+	return argumentDetail :: ArgumentDetail
 end
 
 function Args.createAliasOf(argName: Argument, argumentDetail: ArgumentDetail?): ArgumentDetail
@@ -169,13 +209,18 @@ function Args.createAliasOf(argName: Argument, argumentDetail: ArgumentDetail?):
 		-- set it's data once .get is called or 
 		argumentDetail.mustCreateAliasOf = argName
 	end
-	return argumentDetail
+	local name = argumentDetail.name
+	if name then
+		recordArg(name, argumentDetail)
+	end
+	return argumentDetail :: ArgumentDetail
 end
+
 
 -- PUBLIC
 local items = {
 
-	["Player"] = register({
+	["Player"] = Args.create({
 		inputObject = {
 			inputType = "ItemSelector",
 			pickerName = "Players",
@@ -232,7 +277,7 @@ local items = {
 		end,
 	}),
 
-	["Players"] = register({
+	["Players"] = Args.create({
 		inputObject = {
 			inputType = "ItemSelector",
 			pickerName = "Players",
@@ -253,7 +298,7 @@ local items = {
 		end,
 	}),
 
-	["SinglePlayer"] = register({
+	["SinglePlayer"] = Args.create({
 		inputObject = {
 			inputType = "ItemSelector",
 			pickerName = "Players",
@@ -271,7 +316,7 @@ local items = {
 		end,
 	}),
 
-	["OptionalPlayer"] = register({
+	["OptionalPlayer"] = Args.create({
 		inputObject = {
 			inputType = "ItemSelector",
 			pickerName = "Players",
@@ -293,7 +338,7 @@ local items = {
 		end,
 	}),
 
-	["OptionalPlayers"] = register({
+	["OptionalPlayers"] = Args.create({
 		inputObject = {
 			inputType = "ItemSelector",
 			pickerName = "Server & Offline Players",
@@ -311,7 +356,7 @@ local items = {
 		end,
 	}),
 
-	["AnyPlayer"] = register({
+	["AnyPlayer"] = Args.create({
 		-- Accepts qualifiers ("me", "all", "others") or players within game.Players
 		-- Accepts an Integer OR String OR Qualifier ("me", "all", "others")
 		inputObject = {
@@ -323,7 +368,7 @@ local items = {
 		displayName = "userNameOrId",
 		description = "Accepts an @userName, displayName, userId or qualifier and returns a userId.",
 		defaultValue = false,
-		parse = newParse(function(self, stringToParse, callerUserId)
+		parse = function(self, stringToParse, callerUserId)
 			--[[
 			local callerUser = main.modules.PlayerStore:getUserByUserId(callerUserId)
 			local playersInServer = Args.get("Player"):parse({[stringToParse] = {}}, callerUserId) --ParserUtility.getPlayersFromString(stringToParse, callerUser)
@@ -344,10 +389,10 @@ local items = {
 				return finalUserId
 			end
 			--]]
-		end),
+		end,
 	}),
 
-	["Roles"] = register({
+	["Roles"] = Args.create({
 		inputObject = {
 			inputType = "ItemSelector",
 			pickerName = "Leaderstats",
@@ -359,7 +404,7 @@ local items = {
 		description = "Accepts a string and returns a table of roles.",
 	}),
 
-	["Text"] = register({
+	["Text"] = Args.create({
 		inputObject = {
 			inputType = "TextInput",
 			filterText = true,
@@ -369,7 +414,7 @@ local items = {
 		defaultValue = "",
 		endlessArg = true,
 		maxCharacters = TEXT_MAX_CHARACTERS,
-		parse = newParse(function(self, textToFilter, callerUserId, targetUserId: number?)
+		parse = function(self, textToFilter, callerUserId, targetUserId: number?)
 			local TextService = game:GetService("TextService")
 			local success, result = pcall(function()
 				return TextService:FilterStringAsync(textToFilter, callerUserId)
@@ -401,12 +446,12 @@ local items = {
 				return filterForBroadcast()
 			end
 			return filteredText
-		end),
+		end,
 	}),
 
 	["String"] = Args.createAliasOf("Text"),
 	
-	["SingleText"] = register({
+	["SingleText"] = Args.create({
 		inputObject = {
 			inputType = "TextInput",
 			filterText = true,
@@ -415,12 +460,12 @@ local items = {
 		description = "Accepts a non-endless string (i.e. a string with no whitespace gaps) and filters it based upon the caller and target.",
 		defaultValue = "",
 		endlessArg = false,
-		parse = newParse(function(self, textToFilter)
+		parse = function(self, textToFilter)
 			return textToFilter
-		end),
+		end,
 	}),
 
-	["UnfilteredText"] = register({
+	["UnfilteredText"] = Args.create({
 		inputObject = {
 			inputType = "TextInput",
 			filterText = false,
@@ -429,25 +474,25 @@ local items = {
 		defaultValue = "",
 		endlessArg = true,
 		maxCharacters = TEXT_MAX_CHARACTERS,
-		parse = newParse(function(self, stringToParse)
+		parse = function(self, stringToParse)
 			return stringToParse
-		end),
+		end,
 	}),
 
 	["Code"] = Args.createAliasOf("UnfilteredText"),
 
-	["Number"] = register({
+	["Number"] = Args.create({
 		inputObject = {
 			inputType = "NumberInput",
 		},
 		description = "Accepts a number string and returns a Number",
 		defaultValue = 0,
-		parse = newParse(function(self, stringToParse)
+		parse = function(self, stringToParse)
 			-- The stringToParse is already filtered of dangerous numbers thanks to
 			-- Args.processStringToParse, so we don't need to worry about size limits
 			-- or NaN/Inf values here
 			return tonumber(stringToParse)
-		end),
+		end,
 	}),
 
 	["Integer"] = Args.createAliasOf("Number", register({
@@ -465,10 +510,10 @@ local items = {
 		},
 		description = "Accepts a number and returns a number which is considerate of scale limits.",
 		defaultValue = 1,
-		parse = newParse(function(self, stringToParse)
+		parse = function(self, stringToParse)
 			--local scaleValue = tonumber(stringToParse)
 			--return scaleValue
-		end),
+		end,
 		verifyCanUse = function(self, callerUser, valueToParse)
 			--[[
 			-- Check valid number
@@ -510,7 +555,7 @@ local items = {
 		defaultValue = 1,
 	})),
 
-	["Degrees"] = register({
+	["Degrees"] = Args.create({
 		inputObject = {
 			inputType = "NumberSlider",
 			minValue = 0,
@@ -520,7 +565,7 @@ local items = {
 		description = "Accepts a number and returns a value between 0 and 360.",
 		defaultValue = 0,
 		--[[
-		parse = newParse(function(self, stringToParse): number?
+		parse = function(self, stringToParse): number?
 			local number = tonumber(stringToParse)
 			if number then
 				return number % 360
@@ -530,24 +575,24 @@ local items = {
 		--]]
 	}),
 
-	["Duration"] = register({
+	["Duration"] = Args.create({
 		inputObject = {
 			inputType = "DurationSelector",
 		},
 		description = "Accepts a timestring (such as '5s7d8h') and returns the integer equivalent in seconds. Timestring letters are: seconds(s), minutes(m), hours(h), days(d), weeks(w), months(o) and years(y).",
 		defaultValue = 0,
-		parse = newParse(function(self, stringToParse)
+		parse = function(self, stringToParse)
 			--return main.modules.DataUtil.convertTimeStringToSeconds(tostring(stringToParse))
-		end),
+		end,
 	}),
 
-	["Color"] = register({
+	["Color"] = Args.create({
 		inputObject = {
 			inputType = "ColorPicker",
 		},
 		description = "Accepts a color name (such as 'red'), a hex code (such as '#FF0000') or an RGB capsule (such as '[255,0,0]') and returns a Color3.",
 		defaultValue = false,
-		parse = newParse(function(self, stringToParse)
+		parse = function(self, stringToParse)
 			--[[
 			-- This checks for a predefined color term within SystemSettings.colors, such as 'blue', 'red', etc
 			local lowerCaseColors = main.services.SettingService.getLowerCaseColors()
@@ -575,7 +620,7 @@ local items = {
 				end
 			end
 			--]]
-		end),
+		end,
 	}), 
 
 	["Colour"] = Args.createAliasOf("Color"),
@@ -588,13 +633,13 @@ local items = {
 		hidden = true,
 	})),
 
-	["Bool"] = register({
+	["Bool"] = Args.create({
 		inputObject = {
 			inputType = "Toggle",
 		},
 		description = "Accepts 'true', 'false', 'yes', 'y', 'no' or 'n' and returns a boolean.",
 		defaultValue = false,
-		parse = newParse(function(self, stringToParse)
+		parse = function(self, stringToParse)
 			--[[
 			local trueStrings = {
 				["true"] = true,
@@ -612,21 +657,21 @@ local items = {
 				return false
 			end
 			--]]
-		end),
+		end,
 	}),
 
 	["Toggle"] = Args.createAliasOf("Bool"),
 
-	["Options"] = register({
+	["Options"] = Args.create({
 		inputObject = {
 			inputType = "Options",
 			optionsArray = { "Yes", "No" },
 		},
 		description = "Accepts any value within the optionsArray and returns the value.",
 		defaultValue = false,
-		parse = newParse(function(self, stringToParse)
+		parse = function(self, stringToParse)
 			
-		end),
+		end,
 	}),
 
 	["ServersOptions"] = Args.createAliasOf("Options", register({
@@ -643,7 +688,7 @@ local items = {
 		},
 	})),
 
-	["Leaderstat"] = register({
+	["Leaderstat"] = Args.create({
 		-- Accepts the names of stats within the player's leaderstats:
 		-- https://create.roblox.com/docs/players/leaderboards
 		-- Leaderstats may not exist within the player, so must be checked for
@@ -658,16 +703,16 @@ local items = {
 		},
 		description = "Accepts a valid stat name and returns the stat (defined in Server/Modules/StatHandler). This requires the 'player' arg as the first argument to work.",
 		defaultValue = false,
-		parse = newParse(function(self, stringToParse, _, targetUserId)
+		parse = function(self, stringToParse, _, targetUserId)
 			--[[
 			local targetPlayer = Players:GetPlayerByUserId(targetUserId)
 			local stat = (targetPlayer and main.modules.StatHandler.get(targetPlayer, stringToParse))
 			return stat
 			--]]
-		end),
+		end,
 	}),
 
-	["Team"] = register({
+	["Team"] = Args.create({
 		inputObject = {
 			inputType = "ItemSelector",
 			pickerName = "Teams",
@@ -680,7 +725,7 @@ local items = {
 		displayName = "TeamName",
 		description = "Accepts a valid team name and returns the team instance.",
 		defaultValue = false,
-		parse = newParse(function(self, stringToParse)
+		parse = function(self, stringToParse)
 			--[[
 			local stringToParseLower = string.lower(stringToParse)
 			if string.len(stringToParseLower) > 0 then
@@ -692,10 +737,10 @@ local items = {
 				end
 			end
 			--]]
-		end),
+		end,
 	}),
 
-	["Material"] = register({
+	["Material"] = Args.create({
 		inputObject = {
 			inputType = "ItemSelector",
 			pickerName = "Materials",
@@ -707,17 +752,17 @@ local items = {
 		},
 		description = "Accepts a valid material and returns a Material enum.",
 		defaultValue = false,
-		parse = newParse(function(self, stringToParse)
+		parse = function(self, stringToParse)
 			--[[
 			local enumItem = materialEnumNamesLowercase[stringToParse:lower()]
 			if enumItem then
 				return enumItem
 			end
 			--]]
-		end),
+		end,
 	}),
 
-	["Gear"] = register({
+	["Gear"] = Args.create({
 		inputObject = {
 			inputType = "NumberInput",
 		},
@@ -725,7 +770,7 @@ local items = {
 		description = "Accepts a gearId (aka a CatalogId) and returns the Tool instance if valid. Do not use the returned Tool instance, clone it instead.",
 		defaultValue = false,
 		--[[
-		parse = newParse(function(self, stringToParse)
+		parse = function(self, stringToParse)
 			local storageDetail = Args.getStorage(self.name)
 			local cachedItem = storageDetail:get(stringToParse)
 			if cachedItem then
@@ -765,7 +810,7 @@ local items = {
 		--]]
 	}),
 
-	["BundleDescription"] = register({
+	["BundleDescription"] = Args.create({
 		inputObject = {
 			inputType = "NumberInput",
 		},
@@ -773,7 +818,7 @@ local items = {
 		description = "Accepts a bundleId and returns a HumanoidDescription associated with that bundle.",
 		defaultValue = false,
 		--[[
-		parse = newParse(function(self, stringToParse, _, targetUserId)
+		parse = function(self, stringToParse, _, targetUserId)
 			local humanoid = main.modules.PlayerUtil.getHumanoid(targetUserId)
 			local success, description = main.modules.MorphUtil.getDescriptionFromBundleId(stringToParse, humanoid):await()
 			if not success then
@@ -801,7 +846,7 @@ local items = {
 		--]]
 	}),
 
-	["UserDescription"] = register({
+	["UserDescription"] = Args.create({
 		inputObject = {
 			inputType = "ItemSelector",
 			pickerName = "Teams",
@@ -811,7 +856,7 @@ local items = {
 		description = "Accepts an @userName, displayName or userId and returns a HumanoidDescription.",
 		defaultValue = false,
 		--[[
-		parse = newParse(function(self, stringToParse, callerUserId, targetUserId)
+		parse = function(self, stringToParse, callerUserId, targetUserId)
 			local userId = Args.get("userId").parse(self, stringToParse, callerUserId, targetUserId)
 			if not userId then
 				return
@@ -846,7 +891,7 @@ local items = {
 		--]]
 	}),
 
-	["Fields"] = register({
+	["Fields"] = Args.create({
 		inputObject = {
 			inputType = "InputFields",
 			maxItems = 10,
@@ -857,20 +902,18 @@ local items = {
 Args.items = items
 
 
+-- SETUP
+-- Add the loader args to our items
+local loaderItems = LoaderArgs(Args :: any)
+for argName, argDetail in loaderItems :: any do
+	recordArg(argName, argDetail)
+	print("Added Arg:", argName)
+end
+
+
 -- TYPES
-export type Argument = keyof<typeof(items)>
-export type ArgumentDetail = {
-	inputObject: InputObjects.InputConfig?,
-	mustCreateAliasOf: string?,
-	aliasOf: string?,
-	description: string?,
-	playerArg: boolean?,
-	executeForEachPlayer: boolean?,
-	parse: any?, --((...any) -> (...any))?,
-	name: string?, -- Used for Arg.get(name)
-	displayName: string?, -- The actual name shown within the UI, defaults to name
-	defaultValue: any?,
-	maxCharacters: number?,
-}
+export type Argument = keyof<typeof(items)> | keyof<typeof(loaderItems)>
+export type ArgumentDetail = ArgTypes.ArgumentDetail
+
 
 return Args

@@ -1,0 +1,3 @@
+local AssetUtil = {}
+
+return AssetUtil

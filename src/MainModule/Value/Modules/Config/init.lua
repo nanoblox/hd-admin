@@ -1,3 +1,9 @@
+-- CONFIG
+local ACCESSIBLE = {
+	["Args"] = true,
+}
+
+
 -- LOCAL
 local Config = {}
 local modules = script:FindFirstAncestor("MainModule").Value.Modules
@@ -13,6 +19,15 @@ export type Setting = keyof<typeof(configSettings.PlayerSettings)> | keyof<typeo
 
 
 -- FUNCTIONS
+function Config.isAccessible(moduleName: string): boolean
+	-- Returns whether the specified module is accessible directly under Config on both client and server
+	return ACCESSIBLE[moduleName] == true
+end
+
+function Config.getAccessible()
+	return ACCESSIBLE
+end
+
 function Config.getSetting(settingName: Setting, optionalUser: User.Class?, forcedSettingType: SettingType?): any
 	-- If a user is specified, it returns the setting value of that users, otherwise
 	-- the default value (under the user's Config Settings) is returned

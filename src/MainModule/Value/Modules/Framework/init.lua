@@ -238,6 +238,70 @@ function Framework.startServer()
 		end
 	end
 
+	-- These are the containers in which the Server and Shared sit
+	local function createContainer(containerName: string, location: any): Folder
+		local container = Instance.new("Folder")
+		local service = game:GetService(location)
+		for _, child in service:GetChildren() do
+			if child.Name == containerName then
+				-- This is just incase the user places the loader in ReplicatedStorage
+				-- or ServerStorage which would have an identical conflicting name
+				child.Parent = nil
+			end
+		end
+		container.Name = containerName
+		container.Parent = service
+		local fakeCore = Instance.new("Folder")
+		fakeCore.Name = "Core"
+		fakeCore.Parent = container
+		local fakeConfig = Instance.new("Folder")
+		fakeConfig.Name = "Config"
+		fakeConfig.Parent = container
+		return container
+	end
+
+	-- This is the faux server MainModule
+	local serverContainer = createContainer(Framework.serverName, Framework.serverLocation)
+	local serverMainModule = Instance.new("ObjectValue")
+	serverMainModule.Name = sharedMainModule.Name
+	serverMainModule.Value = sharedValue
+	serverMainModule.Parent = serverContainer.Core
+
+	-- This is the primary client container
+	-- It's important we create this before merging Config items as 'Accessible'
+	-- items depend on it
+	local clientContainer = createContainer(Framework.sharedName, Framework.sharedLocation)
+
+	-- This handles the moving of 'ReferenceBackConfig' modules for items labelled
+	-- as 'Accessible' in Config, so that they can be referenced on both client and
+	-- server, *and* from within and outside of the Loader Config
+	-- It's important to perform this first otherwise some modules like CustomArgs
+	-- won't be findable
+	local framework = modules.Framework
+	local moduleReference = framework.ModuleReference
+	local referenceBack = framework.ReferenceBack
+	local referenceBackConfig = framework.ReferenceBackConfig
+	local emptyFunction = framework.EmptyFunction
+	local coreConfig = modules.Config
+	local CoreConfig = require(coreConfig) --loaderConfig
+	for moduleName, _ in CoreConfig.getAccessible() do
+		local loaderModule = loaderConfig and loaderConfig:FindFirstChild(moduleName)
+		local serverConfig = serverContainer.Config
+		local sharedConfig = clientContainer.Config
+		local referenceBackServer = referenceBackConfig:Clone()
+		local referenceBackShared = referenceBackConfig:Clone()
+		referenceBackServer.Name = moduleName
+		referenceBackShared.Name = moduleName
+		referenceBackServer.Parent = serverConfig
+		referenceBackShared.Parent = sharedConfig
+		if not loaderModule then
+			loaderModule = emptyFunction:Clone()
+			loaderModule.Name = moduleName
+			loaderModule.Parent = loaderConfig or coreConfig -- Doesn't matter which on, will still end up in same place
+		end
+		loaderModule:SetAttribute("Client", true)
+	end
+
 	-- First move Loader Commands from under Config Roles to under the Commands service
 	-- We do this to prevent long pathways being created, and to avoid any merging
 	-- confusions which can occur from the modules being located under Configuration instances
@@ -278,15 +342,12 @@ function Framework.startServer()
 		end
 		checkForRolesAndCommands(configRoles, {})
 	end
-
+	
 	-- Merge Loader Config items into the core
-	local framework = modules.Framework
-	local moduleReference = framework.ModuleReference
-	local referenceBack = framework.ReferenceBack
-	local coreConfig = modules.Config
 	if loaderConfig then
 		for _, child in loaderConfig:GetChildren() do
-			local existingInstance = coreConfig:FindFirstChild(child.Name)
+			local moduleName = child.Name
+			local existingInstance = coreConfig:FindFirstChild(moduleName)
 			if child:IsA("ModuleScript") and existingInstance then
 				local originalSettings = require(existingInstance) :: any
 				local newSettings = require(child) :: any
@@ -300,42 +361,15 @@ function Framework.startServer()
 					end
 				end
 				mergeTablesRecursively(originalSettings, newSettings)
-			else
-				
-				if existingInstance then
-					existingInstance:Destroy()
-				end
-				child.Parent = coreConfig
+				continue
 			end
+			if existingInstance then
+				existingInstance:Destroy()
+			end
+			child.Parent = coreConfig
 		end
 		loaderConfig:Destroy()
 	end
-
-	-- These are the containers in which the Server and Shared sit
-	local function createContainer(containerName: string, location: any): Folder
-		local container = Instance.new("Folder")
-		local service = game:GetService(location)
-		for _, child in service:GetChildren() do
-			if child.Name == containerName then
-				-- This is just incase the user places the loader in ReplicatedStorage
-				-- or ServerStorage which would have an identical conflicting name
-				child.Parent = nil
-			end
-		end
-		container.Name = containerName
-		container.Parent = service
-		local fakeCore = Instance.new("Folder")
-		fakeCore.Name = "Core"
-		fakeCore.Parent = container
-		return container
-	end
-
-	-- This is the faux server MainModule
-	local serverContainer = createContainer(Framework.serverName, Framework.serverLocation)
-	local serverMainModule = Instance.new("ObjectValue")
-	serverMainModule.Name = sharedMainModule.Name
-	serverMainModule.Value = sharedValue
-	serverMainModule.Parent = serverContainer.Core
 
 	-- These functions build the directories within server and shared
 	local function getServerParentFromPathway(pathway)
@@ -455,7 +489,6 @@ function Framework.startServer()
 	
 	-- It's important we do this after moving the modules above, so that
 	-- the client only has access to modules that they need to access
-	local clientContainer = createContainer(Framework.sharedName, Framework.sharedLocation)
 	sharedMainModule.Parent = clientContainer.Core
 	
 	-- Start Services

@@ -673,7 +673,7 @@ function Task.register(self: Task, sound: Sound, soundType: registerSound.SoundT
 		soundType = "Command"
 	end
 	local registerSound = require(modules.AssetUtil.registerSound)
-	registerSound(sound, soundType)
+	return registerSound(sound, soundType)
 end
 
 function Task.onEnded(self: Task, callback: () -> ())

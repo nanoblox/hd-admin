@@ -106,4 +106,5 @@ return function(sound: Sound, soundType: SoundType?)
 	end
 	sound:SetAttribute("HDAdminSoundType", soundType)
 	CollectionService:AddTag(sound, TAG)
+	return sound
 end
