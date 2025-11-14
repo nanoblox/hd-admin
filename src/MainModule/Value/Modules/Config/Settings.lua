@@ -42,14 +42,13 @@ local Settings = {
 				Interface = 1,
 			},
 		},
-		MinAccAge = 7 -- Prevents accounts from joining if they're below a specific number of days since creation. (0 to disable.)
 	},
 
 
 	-- System settings are specific to the game, and can only be configured
 	-- by the game owner, or users with the correct permissions
 	["SystemSettings"] = {
-		
+
 		-- Parser Settings (Configurable)
 		PlayerIdentifier = "@", -- The character used to identify players (e.g. ,fly @ForeverHD vs ,fly Ben)
 		PlayerUndefinedSearch = "DisplayName" :: PlayerSearch, -- 'Undefined' means *without* the 'playerIdentifier' (e.g. ",fly Ben)
@@ -66,6 +65,8 @@ local Settings = {
 			RequestsPerSecond = 10, -- Maximum message requests that can be parsed per second per second. When disabled, this is still capped to 20.
 			CommandsPerMinute = 60, -- Maximum number of commands a player can run per minute
 		},
+
+		MinimumAccountAge = 99999999999999999999999990, -- Kicks accounts younger than x days (0 to disable)
 
 		-- Recommended colors when customizing theme settings
 		ThemeColors = {

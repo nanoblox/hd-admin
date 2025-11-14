@@ -32,10 +32,5 @@ return function(Args)
 			maxValue = 10000,
 		})),
 
-		["Number"] = Args.createAliasOf("Number", register({
-			minValue = 0,
-			maxValue = 10000,
-		})),
-
 	}
 end
