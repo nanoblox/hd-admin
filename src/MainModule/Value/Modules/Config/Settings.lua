@@ -41,7 +41,8 @@ local Settings = {
 				Command = 1,
 				Interface = 1,
 			},
-		}
+		},
+		MinAccAge = 7 -- Prevents accounts from joining if they're below a specific number of days since creation. (0 to disable.)
 	},
 
 
