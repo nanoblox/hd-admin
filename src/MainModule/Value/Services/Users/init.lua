@@ -3,12 +3,18 @@ local Users = {}
 local Players = game:GetService("Players")
 local modules = script:FindFirstAncestor("MainModule").Value.Modules
 local services = modules.Parent.Services
-
+local configSettings = require(modules.Config.Settings)
+local minAccAge = configSettings.PlayerSettings.MinAccAge
 
 -- Setup player user objects (and their data saving and replication)
 local User = require(modules.Objects.User)
 local function playerAdded(player: Player)
-
+	-- Check if player's account is old enough to join.
+    if player.AccountAge < minAccAge then
+        player:Kick("🚫 Your account is too new to join! 🚫")
+        return
+    end
+	
 	-- Create user
 	User.new(player, "PlayerStore")
 
