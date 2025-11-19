@@ -2,18 +2,28 @@
 local modules = script:FindFirstAncestor("HD Admin").Core.MainModule.Value.Modules
 local Task = require(modules.Objects.Task)
 local Args = require(modules.Parser.Args)
-local particlesArg = Args.createAliasOf("Number", {
-	minValue = -100,
-	maxValue = 100,
-})
 local commands: Task.Commands = {
 
     --------------------
 	{
-		name = "Particles",
-		args = {"Player", particlesArg},
-		run = function(task, args: {any})
-			print("Particles (A)")
+		name = "Test",
+		args = {"Color", "Text"},
+		run = function(task: Task.Class, args: {any})
+			print("TEST RESULT:", unpack(args))
+		end
+	},
+	
+    --------------------
+	{
+		name = "Tool",
+		args = {"Tool"}, -- "Leaderstat", "Team"
+		run = function(task: Task.Class, args: {any})
+			local tool = args[1]
+			local toolClone = tool and tool:Clone()
+			local backpack = task.caller and task.caller.Backpack
+			if toolClone and backpack then
+				toolClone.Parent = backpack
+			end
 		end
 	},
 	
@@ -29,18 +39,9 @@ local commands: Task.Commands = {
 
     --------------------
 	{
-		name = "Test",
-		args = {"OptionalPlayers", "Text"},
-		run = function(task: Task.Class, args: {any})
-			print("Test (5):", unpack(args))
-		end
-	},
-
-    --------------------
-	{
 		name = "Message",
 		aliases = {"M"},
-		args = {"Player", "Text"},
+		args = {"Color", "Text"}, --"OptionalPlayer", "OptionalColor", "Text"
 		run = function(task, args: {any})
 			print("args =", unpack(args))
 		end

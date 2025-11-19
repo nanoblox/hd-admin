@@ -74,7 +74,7 @@ end
 
 
 -- Do the incoming strings match a real username?
-function ParserUtility.verifyAndParseUsername(callerUser, usernameString: string): (boolean, string?)
+function ParserUtility.verifyAndParseUsername(callerUser: unknown?, usernameString: string): (boolean, string?)
 	if not callerUser or not usernameString then
 		return false, nil
 	end

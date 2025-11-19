@@ -7,10 +7,10 @@ local Config = require(modules.Config)
 local User = require(modules.Objects.User)
 
 -- Setup player user objects (and their data saving and replication)
-local minimumAccountAge = Config.getSetting("MinimumAccountAge")
+local minimumAccountAge = tonumber(Config.getSetting("MinimumAccountAge")) or 0
 local function playerAdded(player: Player)
 	-- Check if player's account is old enough to join.
-    if player.AccountAge < minimumAccountAge then
+    if minimumAccountAge > 0 and player.AccountAge < minimumAccountAge then
         player:Kick("🚫 Your account is too new to join! 🚫")
         return
     end

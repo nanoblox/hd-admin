@@ -74,6 +74,7 @@ function DataStore.generateTemplate(user: User.Class?)
 			Cash = 0,
 			YouSettings = deepCopyTable(configSettings.PlayerSettings),
 			FavoritedEmotes = {},
+			Roles = {},
 		}},
 		
 		-- Data that is saved *but not* retrievable by the client

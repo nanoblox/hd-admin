@@ -99,6 +99,26 @@ function Roles.getRoles()
 	return rolesOrdered
 end
 
+function Roles.getOwnedRolesDict(player)
+	-- This takes roles from both temp and perm of a player's user, and collects
+	-- them all together. This is recommended instead of checking perm and temp
+	-- manually, as this covers potential changes to role storage in the future
+	local ownedRolesDict = {}
+	local user = User.getUser(player)
+	if not user then
+		return ownedRolesDict
+	end
+	local tempRoles = user.temp:get("Roles") or {}
+	local permRoles = user.perm:get("Roles") or {}
+	for _, roleName in tempRoles do
+		ownedRolesDict[roleName] = true
+	end
+	for _, roleName in permRoles do
+		ownedRolesDict[roleName] = true
+	end
+	return ownedRolesDict
+end
+
 
 -- SETUP
 -- These set restrictions on what the client can see, and which clients

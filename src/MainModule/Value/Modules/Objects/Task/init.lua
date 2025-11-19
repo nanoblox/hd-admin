@@ -316,7 +316,7 @@ function Task.run(self: Task)
 	-- If the job has no associated player *but* does contain qualifiers...
 	-- ...that require executing for each player (such as in ;globalKill all)
 	local targetPlayers = if firstArgItem then firstArgItem:parse(qualifiers, callerUserId) else nil
-	if firstArgItem and firstArgItem.executeForEachPlayer then -- If the firstArg has executeForEachPlayer, convert the job into subjobs for each player returned by the qualifiers
+	if firstArgItem and firstArgItem.runForEachPlayer then -- If the firstArg has runForEachPlayer, convert the job into subjobs for each player returned by the qualifiers
 		for i, plr in targetPlayers do
 			local subProperties: Properties = {
 				targetUserId = plr.UserId,

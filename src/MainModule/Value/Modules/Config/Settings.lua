@@ -49,24 +49,18 @@ local Settings = {
 	-- by the game owner, or users with the correct permissions
 	["SystemSettings"] = {
 
-		-- Parser Settings (Configurable)
+		-- Parser Settings
 		PlayerIdentifier = "@", -- The character used to identify players (e.g. ,fly @ForeverHD vs ,fly Ben)
-		PlayerUndefinedSearch = "DisplayName" :: PlayerSearch, -- 'Undefined' means *without* the 'playerIdentifier' (e.g. ",fly Ben)
-		PlayerDefinedSearch = "UserName" :: PlayerSearch, -- 'Defined' means *with* the 'playerIdentifier' (e.g. ",fly @ForeverHD)
-		
-		-- Parser Settings (Recommended NOT TO EDIT)
-		ArgCapsule = "(%s)", -- The characters used to encapsulute additional properties (e.g. ,loop(1,2)kill all)
-		Collective = ",", -- The character used to split up items (e.g. ,jump player1,player2,player3)
-		SpaceSeparator = " ", -- The character inbetween command arguments (e.g. setting it to '/' would change ',jump me' to ',jump/me')
-		BatchSeparator = " ", -- The character inbetween batch commands (e.g. setting it to '|' would change ',jump me ,fire me ,smoke me' to ',jump me | ,fire me | ,smoke me'
-		
+		PlayerUndefinedSearch = "DisplayName" :: PlayerSearch, -- 'Undefined' means *without* the 'playerIdentifier' (e.g. ";fly Ben)
+		PlayerDefinedSearch = "UserName" :: PlayerSearch, -- 'Defined' means *with* the 'playerIdentifier' (e.g. ";fly @ForeverHD)
+
 		Limits = { -- While strongly recommended, can be disabled by setting `BypassLimits` to false in Role attributes
 			RequestSize = 1000, -- Maximum number of characters in a message request until it's cutoff
 			RequestsPerSecond = 10, -- Maximum message requests that can be parsed per second per second. When disabled, this is still capped to 20.
 			CommandsPerMinute = 60, -- Maximum number of commands a player can run per minute
 		},
 
-		MinimumAccountAge = 99999999999999999999999990, -- Kicks accounts younger than x days (0 to disable)
+		MinimumAccountAge = 0, -- Kicks accounts younger than x days (0 to disable)
 
 		-- Recommended colors when customizing theme settings
 		ThemeColors = {

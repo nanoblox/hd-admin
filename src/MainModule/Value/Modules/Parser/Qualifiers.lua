@@ -268,43 +268,35 @@ Qualifiers.items = {
 	["Role"] = register({
 		description = "Players who have the given role(s), e.g. ;bring role(admin,mod)",
 		isCustomizable = true,
-		getTargets = function(_, ...)
-			local targets = {}
+		getTargets = function(callerUserId, ...)
 			local roleNames = table.pack(...)
-			local selectedRoleKeys = {}
 			if #roleNames == 0 then
 				return {}
 			end
+			local Args = require(modules.Parser.Args) :: any 
 			local Roles = require(services.Roles)
+			local ParserSettings = require(modules.Parser.ParserSettings)
+			local collective = ParserSettings.Collective
 			local roles = Roles.getRoles()
-			for _, role in roles do
-				local roleName = string.lower(role.name)
-				local roleKey = role.key
-				for _, selectedRoleName in (roleNames) do
-					local nameMatch = string.sub(roleName, 1, #selectedRoleName) == selectedRoleName
-					local keysMatch = roleKey == selectedRoleName
-					if nameMatch or keysMatch then
-						table.insert(selectedRoleKeys, roleKey)
-					end
-				end
-			end
-			if #selectedRoleKeys == 0 then
+			local rolesArg = Args.getArg("Roles")
+			if not rolesArg then
 				return {}
 			end
-			local User = require(modules.Objects.User)
-			local users = User.getUsers()
-			for i, user in users do
-				local function isValidUser()
-					for _, roleUID in (selectedRoleKeys) do
-						local roles = user.temp:get("Roles")
-						if roles[roleUID] then
-							return true
-						end
+			local roleNamesString = table.concat(roleNames, collective)
+			local selectedRoles = Args:parse(roleNamesString, callerUserId)
+			if #selectedRoles == 0 then
+				return {}
+			end
+			local Players = game:GetService("Players")
+			local targets = {}
+			for i, player in Players:GetPlayers() do
+				local ownedRolesDict = Roles.getOwnedRolesDict(player)
+				for _, roleToCheck in (selectedRoles) do
+					local toCheckName = roleToCheck.name
+					if ownedRolesDict[toCheckName] then
+						table.insert(targets, player)
+						break
 					end
-					return false
-				end
-				if isValidUser() and user.player then
-					table.insert(targets, user.player)
 				end
 			end
 			return targets

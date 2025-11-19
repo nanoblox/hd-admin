@@ -13,7 +13,6 @@ local HANDLERS = {
 		end
 		pitchShifter.Enabled = value <= 0.99 or value >= 1.01
 		pitchShifter.Octave = value
-		print(`Change Pitch of {soundGroup.Name} to {value} (PitchShift Enabled: {pitchShifter.Enabled})`)
 	end,
 }
 

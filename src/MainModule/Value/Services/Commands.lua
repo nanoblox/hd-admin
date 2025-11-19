@@ -199,6 +199,7 @@ function Commands.request(user: User.Class, message: string, messageSource: Mess
 	--
 	local Parser = require(modules.Parser) :: any -- 'Any' to remove cyclic warning
 	local batch = Parser.parseMessage(message, user)
+	print("BATCH =", batch)
 	local approved, notices, tasks = Commands.processBatchAsync(user, batch)
 	if not tasks then
 		tasks = {}

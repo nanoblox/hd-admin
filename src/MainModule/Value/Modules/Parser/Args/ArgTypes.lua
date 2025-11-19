@@ -8,7 +8,7 @@ export type ArgumentDetail = {
 	aliasOf: string?,
 	description: string?,
 	playerArg: boolean?,
-	executeForEachPlayer: boolean?,
+	runForEachPlayer: boolean?,
 	parse: any?, --((...any) -> (...any))?,
 	name: string?, -- Used for Arg.get(name)
 	displayName: string?, -- The actual name shown within the UI, defaults to name
@@ -16,7 +16,9 @@ export type ArgumentDetail = {
 	minValue: number?,
 	maxValue: number?,
 	stepAmount: number?,
+	divAmount: number?,
 	maxCharacters: number?,
+	hasUpdatedParse: boolean?,
 }
 
 return {}

@@ -13,6 +13,7 @@ local everyone = clientUser.everyone
 everyone:observe("Emotes", function(value)
 	--print("TEST Emotes:", value)
 end)
+local clientUser = require(modules.References.clientUser)
 everyone:observe("Roles", function(value)
 	--print("TEST Roles:", value)
 end)
@@ -43,10 +44,10 @@ task.defer(function()
 	local favoriteEmote = Remote.get("FavoriteEmote")
 	while true do
 		task.wait(3)
-		local isFavorited = perm:get("FavoritedEmotes", TEST_EMOTE_ID) ~= nil
-		print("isFavorited =", isFavorited)
-		local success, result = favoriteEmote:invokeServerAsync(TEST_EMOTE_ID, not isFavorited)
-		print("success, result =", success, result)
+		--local isFavorited = perm:get("FavoritedEmotes", TEST_EMOTE_ID) ~= nil
+		--print("isFavorited =", isFavorited)
+		--local success, result = favoriteEmote:invokeServerAsync(TEST_EMOTE_ID, not isFavorited)
+		--print("success, result =", success, result)
 	end
 end)
 
@@ -55,8 +56,8 @@ task.delay(3, function()
 	-- Test PromptBulkPurchase
 	local promptBulkPurchaseAsync = require(modules.AssetUtil.promptBulkPurchaseAsync)
 	local testAssetId = 115407270129592
-	local success, warning = promptBulkPurchaseAsync(testAssetId)
-	print(`PromptBulkPurchase result for assetId {testAssetId}:`, success, warning)
+	--local success, warning = promptBulkPurchaseAsync(testAssetId)
+	--print(`PromptBulkPurchase result for assetId {testAssetId}:`, success, warning)
 end)
 
 
@@ -65,10 +66,10 @@ local testSound = workspace:FindFirstChild("TestSound")
 if testSound and testSound:IsA("Sound") then
 	local registerSound = require(modules.AssetUtil.registerSound)
 	task.delay(0, function()
-		registerSound(testSound, "Command")
-		print('REGISTERED:', testSound)
+		--registerSound(testSound, "Command")
+		--print('REGISTERED:', testSound)
 	end)
-	testSound:Play()
+	--testSound:Play()
 end
 
 

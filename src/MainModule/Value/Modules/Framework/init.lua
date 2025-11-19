@@ -34,14 +34,14 @@ local function convertViewportToFolder(instance: Instance?)
 	-- https://devforum.roblox.com/t/worldmodels-too-costly-due-to-running-in-serial/3952084)
 	-- so we destroy these ViewportFrames and replace them with Folders.
 	if instance and instance:IsA("ViewportFrame") then
-		local folder = Instance.new("Folder")
-		folder.Name = instance.Name
+		local model = Instance.new("Model") -- Must be a model not folder to ensure everything is moved to server
+		model.Name = instance.Name
 		for _, child in instance:GetChildren() do
-			child.Parent = folder
+			child.Parent = model
 		end
-		folder.Parent = instance.Parent
+		model.Parent = instance.Parent
 		instance:Destroy()
-		return folder
+		return model
 	end
 	return nil
 end
@@ -226,7 +226,7 @@ function Framework.startServer()
 	if Framework.canStart() == false then
 		return
 	end
-
+	
 	-- Convert Viewports to Folders
 	local modules = sharedValue.Modules
 	local loader = Framework.getLoader()

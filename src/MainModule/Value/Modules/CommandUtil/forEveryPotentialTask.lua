@@ -45,16 +45,16 @@ return function(callerUserId: number, statement: Statement, callback: (command: 
 		local splitIntoUsers = false
 		local firstArgNameOrDetail = command.args[1]
 		local firstArg = Args.get(firstArgNameOrDetail)
-		local executeForEachPlayer = if firstArg then firstArg.executeForEachPlayer else false
+		local runForEachPlayer = if firstArg then firstArg.runForEachPlayer else false
 		if isPermModifier then
 			if isGlobalModifier then
 				addToPerm = true
-			elseif executeForEachPlayer then
+			elseif runForEachPlayer then
 				addToPerm = true
 				splitIntoUsers = true
 			end
 		else
-			splitIntoUsers = executeForEachPlayer
+			splitIntoUsers = runForEachPlayer
 		end
 
 		-- Define the properties that we'll create the task from arguments

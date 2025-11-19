@@ -1,7 +1,7 @@
 local modules = script:FindFirstAncestor("MainModule").Value.Modules
 local configSettings = require(modules.Config.Settings)
 local systemSettings = configSettings.SystemSettings
-local DESCRIPTOR_SEPARATOR = " "
+local ParserSettings = require(modules.Parser.ParserSettings)
 
 return {
 	commandStatementsFromBatchUnFormatted =
@@ -9,13 +9,13 @@ return {
 	,
 	descriptionsFromCommandStatement = string.format(
 		"%s?([^%s]+)",
-		DESCRIPTOR_SEPARATOR,
-		DESCRIPTOR_SEPARATOR
+		ParserSettings.SpaceSeparator,
+		ParserSettings.SpaceSeparator
 	),
 	argumentsFromCollection = string.format(
 		"([^%s]+)%s?",
-		systemSettings.Collective,
-		systemSettings.Collective
+		ParserSettings.Collective,
+		ParserSettings.Collective
 	),
 	capsuleFromKeyword = string.format(
 		"%%(%s%%)", --Capsule

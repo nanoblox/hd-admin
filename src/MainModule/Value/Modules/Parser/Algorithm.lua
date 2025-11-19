@@ -101,7 +101,7 @@ function Algorithm.parseQualifierDescription(qualifierDescription)
 		qualifierDescription,
 		Qualifiers.getSortedNameAndAliasLengthArray()
 	)
-
+	
 	local qualifiers = ParserUtility.getMatches(
 		qualifierDescriptionResidue,
 		ParserPatterns.argumentsFromCollection

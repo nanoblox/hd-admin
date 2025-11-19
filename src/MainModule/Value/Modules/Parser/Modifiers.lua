@@ -202,7 +202,7 @@ Modifiers.items = {
 						task:destroy()
 					end
 				end
-				if firstArgItem and firstArgItem.playerArg and firstArgItem.executeForEachPlayer then
+				if firstArgItem and firstArgItem.playerArg and firstArgItem.runForEachPlayer then
 					local playerArg = Args.get("Player")
 					local targets = (playerArg and playerArg:parse(statement.qualifiers, callerUserId)) or {}
 					for _, plr in targets do
