@@ -189,7 +189,7 @@ Qualifiers.items = {
 	}),
 
 	["Radius"] = register({
-		description = "Players x studs radius from you, e.g. ;bring radius(50). Defaults to 10.",
+		description = "Players x studs radius from you (except you), e.g. ;bring radius(50). Defaults to 10.",
 		isCustomizable = true,
 		getTargets = function(callerUserId, radiusString)
 			local targets = {}
@@ -223,7 +223,8 @@ Qualifiers.items = {
 				team = team :: Team
 				local teamName = string.lower(team.Name)
 				for _, selectedTeamName in (teamNames) do
-					if string.sub(teamName, 1, #selectedTeamName) == selectedTeamName then
+					local selectedLower = string.lower(tostring(selectedTeamName))
+					if string.sub(teamName, 1, #selectedLower) == selectedLower then
 						selectedTeams[tostring(team.TeamColor)] = true
 						validTeams = true
 					end
@@ -247,7 +248,7 @@ Qualifiers.items = {
 		getTargets = function(_, ...)
 			local targets = {}
 			local groupIds = {}
-			for _, groupId in (table.pack(...)) do
+			for _, groupId in ({...}) do
 				groupId = tonumber(groupId)
 				if groupId then
 					table.insert(groupIds, groupId)
@@ -269,31 +270,40 @@ Qualifiers.items = {
 		description = "Players who have the given role(s), e.g. ;bring role(admin,mod)",
 		isCustomizable = true,
 		getTargets = function(callerUserId, ...)
-			local roleNames = table.pack(...)
-			if #roleNames == 0 then
+			local roleNamesToCheck = {...}
+			if #roleNamesToCheck == 0 then
 				return {}
 			end
-			local Args = require(modules.Parser.Args) :: any 
 			local Roles = require(services.Roles)
-			local ParserSettings = require(modules.Parser.ParserSettings)
-			local collective = ParserSettings.Collective
 			local roles = Roles.getRoles()
-			local rolesArg = Args.getArg("Roles")
-			if not rolesArg then
+			local LIMIT_TO_CHECK = 20 -- limits abuse
+			local foundRolesDict = {}
+			local totalFound = 0
+			for i, roleName in roleNamesToCheck do
+				local toCheckName = tostring(roleName):lower()
+				for _, role in roles do
+					local roleNameLower = tostring(role.name):lower()
+					if string.sub(roleNameLower, 1, #toCheckName) == toCheckName then
+						if not foundRolesDict[roleNameLower] then
+							foundRolesDict[roleNameLower] = true
+							totalFound += 1
+						end
+					end
+				end
+				if i >= LIMIT_TO_CHECK then
+					break
+				end
+			end
+			if totalFound <= 0 then
 				return {}
 			end
-			local roleNamesString = table.concat(roleNames, collective)
-			local selectedRoles = Args:parse(roleNamesString, callerUserId)
-			if #selectedRoles == 0 then
-				return {}
-			end
-			local Players = game:GetService("Players")
 			local targets = {}
+			local Players = game:GetService("Players")
 			for i, player in Players:GetPlayers() do
-				local ownedRolesDict = Roles.getOwnedRolesDict(player)
-				for _, roleToCheck in (selectedRoles) do
-					local toCheckName = roleToCheck.name
-					if ownedRolesDict[toCheckName] then
+				local ownedRoles = Roles.getOwnedRoles(player)
+				for _, roleNameToCheck in ownedRoles do
+					local toCheckName = tostring(roleNameToCheck):lower()
+					if foundRolesDict[toCheckName] then
 						table.insert(targets, player)
 						break
 					end
@@ -307,20 +317,38 @@ Qualifiers.items = {
 		description = "Select x% of players in server, e.g. ;bring percent(10). Defaults to 50%.",
 		isCustomizable = true,
 		getTargets = function(_, percentString)
+			local givenPercent = tonumber(percentString) or 50
+			local percent = math.clamp(givenPercent, 0, 100) / 100
+			local playersInServer = Players:GetPlayers()
+			local totalPlayers = #playersInServer
+			local round = require(modules.MathUtil.round)
+			local numberToAdd = round(totalPlayers * percent)
 			local targets = {}
-			local maxPercent = tonumber(percentString) or 50
-			local players = Players:GetPlayers()
-			local interval = 100 / #players
-			if maxPercent >= (100 - (interval * 0.1)) then
-				return players
-			end
-			local selectedPercent = 0
-			repeat
-				local randomIndex = math.random(1, #players)
-				local selectedPlayer = players[randomIndex]
+			for i = 1, numberToAdd do
+				local randomIndex = math.random(1, #playersInServer)
+				local selectedPlayer = playersInServer[randomIndex]
 				table.insert(targets, selectedPlayer)
-				table.remove(players, randomIndex)
-			until #players == 0 or selectedPercent >= maxPercent
+				table.remove(playersInServer, randomIndex)
+			end
+			return targets
+		end,
+	}),
+
+	["Amount"] = register({
+		description = "Select x number of players in server, e.g. ;bring amount(10). Defaults to 5.",
+		isCustomizable = true,
+		getTargets = function(_, amountString)
+			local givenAmount = tonumber(amountString) or 5
+			local playersInServer = Players:GetPlayers()
+			local totalPlayers = #playersInServer
+			local numberToAdd = math.min(givenAmount, totalPlayers)
+			local targets = {}
+			for i = 1, numberToAdd do
+				local randomIndex = math.random(1, #playersInServer)
+				local selectedPlayer = playersInServer[randomIndex]
+				table.insert(targets, selectedPlayer)
+				table.remove(playersInServer, randomIndex)
+			end
 			return targets
 		end,
 	}),

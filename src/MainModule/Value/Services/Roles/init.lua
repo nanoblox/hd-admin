@@ -99,15 +99,15 @@ function Roles.getRoles()
 	return rolesOrdered
 end
 
-function Roles.getOwnedRolesDict(player)
+function Roles.getOwnedRoles(player): ({string}, {[string]: boolean})
 	-- This takes roles from both temp and perm of a player's user, and collects
 	-- them all together. This is recommended instead of checking perm and temp
 	-- manually, as this covers potential changes to role storage in the future
-	local ownedRolesDict = {}
 	local user = User.getUser(player)
 	if not user then
-		return ownedRolesDict
+		return {}, {}
 	end
+	local ownedRolesDict = {}
 	local tempRoles = user.temp:get("Roles") or {}
 	local permRoles = user.perm:get("Roles") or {}
 	for _, roleName in tempRoles do
@@ -116,7 +116,11 @@ function Roles.getOwnedRolesDict(player)
 	for _, roleName in permRoles do
 		ownedRolesDict[roleName] = true
 	end
-	return ownedRolesDict
+	local ownedRolesArray = {}
+	for roleName, _ in ownedRolesDict do
+		table.insert(ownedRolesArray, roleName)
+	end
+	return ownedRolesArray, ownedRolesDict
 end
 
 

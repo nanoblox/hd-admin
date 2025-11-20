@@ -7,9 +7,11 @@ local commands: Task.Commands = {
     --------------------
 	{
 		name = "Test",
-		args = {"Color", "Text"},
+		args = {"Player", "Text", "Fields"},
 		run = function(task: Task.Class, args: {any})
-			print("TEST RESULT:", unpack(args))
+			print("Arg (1):", args[1])
+			print("Arg (2):", args[2])
+			print("Arg (3):", args[3])
 		end
 	},
 	
@@ -41,9 +43,11 @@ local commands: Task.Commands = {
 	{
 		name = "Message",
 		aliases = {"M"},
-		args = {"Color", "Text"}, --"OptionalPlayer", "OptionalColor", "Text"
+		args = {"OptionalPlayer", "OptionalColor", "Text"},
 		run = function(task, args: {any})
-			print("args =", unpack(args))
+			print("Arg (1):", args[1])
+			print("Arg (2):", args[2])
+			print("Arg (3):", args[3])
 		end
 	},
 

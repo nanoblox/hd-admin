@@ -1,4 +1,5 @@
 --!nocheck
+local EncodingService = game:GetService("EncodingService")
 local ParsedData = {}
 local modules = script:FindFirstAncestor("MainModule").Value.Modules
 local services = modules.Parent.Services
@@ -81,16 +82,28 @@ function ParsedData.parsedDataSetRequiresQualifierFlag(parsedData, optionalUser)
 		end
 	end
 
-	if parsedDataRequiresQualifier ~= "Sometimes" then
-		parsedData.requiresQualifier = (parsedDataRequiresQualifier == "Always")
-	else
+	local function enableRequiresQualifier(ignoreRemover: boolean?)
+		if not parsedData.requiresQualifier and not ignoreRemover then
+			local extraArgs = parsedData.extraArgumentDescription
+			if extraArgs and #extraArgs > 0 then
+				table.remove(extraArgs, 1)
+			end
+		end
 		parsedData.requiresQualifier = true
+	end
+
+	if parsedDataRequiresQualifier ~= "Sometimes" then
+		if parsedDataRequiresQualifier == "Always" then
+			enableRequiresQualifier()
+		end
+	else
+		enableRequiresQualifier(true)
 		ParsedData.parseQualifierDescription(parsedData)
 		parsedData.prematureQualifierParsing = true
 		local areAllQualifiersRecognized = #parsedData.qualifierCaptures ~= #parsedData.unrecognizedQualifiers
 
 		if areAllQualifiersRecognized then
-			parsedData.requiresQualifier = true
+			enableRequiresQualifier()
 		else
 			local utilityModule = require(modules.Parser.ParserUtility)
 			local players = game:GetService("Players"):GetPlayers()
@@ -125,7 +138,7 @@ function ParsedData.parsedDataSetRequiresQualifierFlag(parsedData, optionalUser)
 
 				if isUserNameSearch or isUserNameAndDisplayNameSearch then
 					if table.find(userNames, qualifierWithoutIdentifier:lower()) then
-						parsedData.requiresQualifier = true
+						enableRequiresQualifier()
 						return
 					end
 				end
@@ -259,7 +272,7 @@ function ParsedData.parseCommandStatement(parsedData)
 	parsedData.commandDescription = descriptions[1]
 	parsedData.qualifierDescription = descriptions[2]
 	parsedData.extraArgumentDescription = descriptions[3]
-
+	
 	ParsedData.parsedDataUpdateIsValidFlag(parsedData, "MissingCommandDescription")
 	ParsedData.parsedDataUpdateIsValidFlag(parsedData, "UnbalancedCapsulesInCommandDescription")
 	ParsedData.parsedDataUpdateIsValidFlag(parsedData, "UnbalancedCapsulesInQualifierDescription")
@@ -313,8 +326,7 @@ function ParsedData.parseExtraArgumentDescription(parsedData, allParsedDatas, or
 	local givenPrefix = parsedData.givenPrefix
 	local totalEndlessArguments = parsedData.totalEndlessArguments or 0
 	local haveMoreThanOneEAs = totalEndlessArguments > 1
-	print("totalEndlessArguments =", totalEndlessArguments)
-	if totalEndlessArguments == 0 or haveMoreThanOneEAs then
+	if totalEndlessArguments == 0 then
 		if not parsedData.requiresQualifier then
 			table.insert(parsedData.extraArgumentDescription, 1, parsedData.qualifierDescription)
 			parsedData.qualifierDescription = nil
@@ -326,21 +338,6 @@ function ParsedData.parseExtraArgumentDescription(parsedData, allParsedDatas, or
 				end
 			end
 		end
-
-		if haveMoreThanOneEAs then
-			-- This is a temporary patch to support multiple endless arguments
-			-- however is not scalable when ParserSettings.SpaceSeparator is changed.
-			-- A re-work of this in the future would be necessary if ParserSettings
-			-- are to be moved into configurable SystemSettings
-			print("---------------")
-			for _, capture in parsedData.commandCaptures do
-				for commandName, arguments in capture do
-					print("commandName, arguments =", commandName, arguments)
-				end
-			end
-			print("---------------")
-		end
-
 		return
 	end
 
@@ -350,9 +347,13 @@ function ParsedData.parseExtraArgumentDescription(parsedData, allParsedDatas, or
 	end
 	foundIndex = select(2, string.find(originalMessage, parsedData.commandDescription, foundIndex + 1, true)) + 2
 	if parsedData.requiresQualifier then
-		foundIndex = select(2, string.find(originalMessage, parsedData.qualifierDescription, foundIndex, true)) + 2
+		local newFoundIndex = select(2, string.find(originalMessage, parsedData.qualifierDescription, foundIndex, true))
+		if newFoundIndex then
+			foundIndex = newFoundIndex + 2
+		end
 	end
 	local extraArgumentsBeforeText = math.huge
+	local totalHiddenArguments = 0
 	for _, capture in parsedData.commandCaptures do
 		for commandName, arguments in capture do
 			local command = Commands.getCommand(commandName, givenPrefix)
@@ -361,19 +362,40 @@ function ParsedData.parseExtraArgumentDescription(parsedData, allParsedDatas, or
 			local firstArgumentNameOrDetail = commandArgumentNames[1]
 			local firstArgument = Args.get(firstArgumentNameOrDetail)
 			local isPlayerArgument = firstArgument.playerArg == true
+			
+			-- This primarily helps to account for scenarios where there are *two* or
+			-- more endless arguments within a string (e.g. ;poll <title> <fields>).
+			local firstEndlessOrHiddenArgPos = nil
+			for i, argNameOrDetail in commandArgumentNames do
+				local arg = Args.get(argNameOrDetail)
+				local isEndless = arg and arg.endlessArg == true
+				if isEndless and not firstEndlessOrHiddenArgPos then
+					firstEndlessOrHiddenArgPos = i
+					break
+				end
+			end
 
-			local lastArgumentNameOrDetail = commandArgumentNames[#commandArgumentNames]
-			local lastArgument = Args.get(lastArgumentNameOrDetail)
-			local hasEndlessArgument = lastArgument.endlessArg == true
-
-			local commandArguments = #commandArgumentNames
+			-- It also accounts for hidden arguments that come before endless arguments,
+			-- where the hidden argument must be ignored when passed through normal means,
+			-- such as ";m red hello world", but can be accepted through captures, such as
+			-- ";m(red) hello world".
+			for i, argNameOrDetail in commandArgumentNames do
+				local arg = Args.get(argNameOrDetail)
+				local isHiddenButNotPlayerArg = arg and arg.playerArg ~= true and arg.hidden == true
+				if isHiddenButNotPlayerArg then
+					totalHiddenArguments += 1 -- This is for arg.hidden = true
+					firstEndlessOrHiddenArgPos = nil -- Ignore all non-capsule args
+				end
+			end
+			
+			local commandArguments = firstEndlessOrHiddenArgPos or #commandArgumentNames
 			local capsuleArguments = #arguments
 
 			local commandArgumentsInExtraArguments = commandArguments
 				- capsuleArguments
 				- (isPlayerArgument and 1 or 0)
 
-			if hasEndlessArgument then
+			if firstEndlessOrHiddenArgPos then
 				extraArgumentsBeforeText = math.min(extraArgumentsBeforeText, commandArgumentsInExtraArguments - 1)
 			end
 		end
@@ -389,13 +411,43 @@ function ParsedData.parseExtraArgumentDescription(parsedData, allParsedDatas, or
 			break
 		end
 	end
+	
 	local extraArgument = foundIndex and string.sub(originalMessage, foundIndex :: any) or nil
 	for _, capture in parsedData.commandCaptures do
 		for _, arguments in capture do
 			for counter = 1, extraArgumentsBeforeText do
-				table.insert(arguments, parsedData.extraArgumentDescription[counter])
+				local valueToAdd = parsedData.extraArgumentDescription[counter]
+				table.insert(arguments, valueToAdd)
+			end
+			for i = 1, totalHiddenArguments do
+				if not arguments[i] then
+					table.insert(arguments, "")
+				end
 			end
 			table.insert(arguments, extraArgument)
+		end
+	end
+
+	-- This is a temporary patch to support multiple endless arguments
+	-- however is not scalable when ParserSettings.SpaceSeparator is changed.
+	-- A re-work of this in the future would be necessary if ParserSettings
+	-- are to be moved into configurable SystemSettings
+	if haveMoreThanOneEAs then
+		local ParserSettings = require(modules.Parser.ParserSettings)
+		for _, capture in parsedData.commandCaptures do
+			for commandName, arguments in capture do
+				local newArguments = {}
+				for _, argValue in arguments do
+					if typeof(argValue) ~= "string" then
+						table.insert(newArguments, argValue)
+					end
+					local endlessArgsSplit = string.split(argValue, ParserSettings.EndlessArgPattern)
+					for _, splitString in endlessArgsSplit do
+						table.insert(newArguments, splitString)
+					end
+				end
+				capture[commandName] = newArguments
+			end
 		end
 	end
 

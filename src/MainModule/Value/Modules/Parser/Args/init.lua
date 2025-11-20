@@ -337,6 +337,7 @@ local items = {
 		hidden = true,
 		runForEachPlayer = true,
 		parse = function(self, qualifiers, callerUserId)
+			print("qualifiers =", qualifiers)
 			local isTableEmpty = require(modules.TableUtil.isTableEmpty)
 			local defaultToAll = qualifiers == nil or isTableEmpty(qualifiers)
 			if defaultToAll then
@@ -883,10 +884,15 @@ local items = {
 			maxItems = 10,
 		},
 		endlessArg = true,
-		defaultValue = "Unnamed Title",
+		defaultValue = {},
 		maxCharacters = TEXT_MAX_CHARACTERS,
-		parse = function(self, stringToParse)
-			return stringToParse
+		parse = function(self, stringToParse): {string}?
+			if typeof(stringToParse) ~= "string" then
+				return nil
+			end
+			local ParserSettings = require(modules.Parser.ParserSettings)
+			local endlessArgsSplit = string.split(stringToParse, ParserSettings.EndlessFieldsPattern)
+			return endlessArgsSplit
 		end,
 	}),
 

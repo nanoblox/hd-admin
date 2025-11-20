@@ -43,15 +43,16 @@ function Algorithm.getCommandStatementsFromBatch(batch, prefixUsed)
 end
 
 function Algorithm.getDescriptionsFromCommandStatement(commandStatement)
-	local ParserUtility =  require(modules.Parser.ParserUtility)
+	local ParserUtility = require(modules.Parser.ParserUtility)
 	local descriptions = ParserUtility.getMatches(
 		commandStatement,
 		ParserPatterns.descriptionsFromCommandStatement
 	)
 	
 	local extraArgumentDescription = {}
-	if #descriptions >= 3 then
-		for counter = 3, #descriptions do
+	local readFromIndex = 2 -- if parsedData.requiresQualifier LATER ON then remove the first index (so it becomes effectively 3)
+	if #descriptions >= readFromIndex then
+		for counter = readFromIndex, #descriptions do
 			table.insert(extraArgumentDescription, descriptions[counter])
 		end
 	end
