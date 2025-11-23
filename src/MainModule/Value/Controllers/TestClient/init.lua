@@ -92,5 +92,13 @@ local finalString = Parser.unparse("Test", {"GLOBAL", "LOOP"}, unpack(testValues
 print("finalString =", finalString)
 
 
+local selectedPlayers = {game.Players.ForeverHD, "random", "role(admin)"}
+local materialEnum = Enum.Material.Sandstone
+local colorValue = Color3.fromRGB(255,0,0)
+local announcementText = "Hello this is a test announcement"
+print("Generating...")
+print(Parser.unparse("Material", {}, selectedPlayers, materialEnum, colorValue, announcementText))
+
+
 
 return TestController

@@ -8,6 +8,9 @@ local TestArgs = require(modules.Parent.Controllers.TestClient.TestArgs)
 local testArgs = TestArgs[1]
 local testValues = TestArgs[2]
 
+local Parser = require(modules.Parser)
+print("Parser.addCapsule =", Parser.addCapsule("loop", "5"))
+print("Parser.addCapsule =", Parser.addCapsule("loop", ""))
 print("testArgs =", TestArgs, testArgs)
 --
 
@@ -26,12 +29,13 @@ local commands: Task.Commands = {
 	
     --------------------
 	{
-		name = "Test2",
-		args = {"Player", "Text", "Fields"},
+		name = "Material",
+		args = {"Player", "Material", "Color", "Text"},
 		run = function(task: Task.Class, args: {any})
 			print("Arg (1):", args[1])
 			print("Arg (2):", args[2])
 			print("Arg (3):", args[3])
+			print("Arg (4):", args[3])
 		end
 	},
 	

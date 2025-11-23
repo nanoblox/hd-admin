@@ -194,7 +194,10 @@ function Parser.addCapsule(baseString: string, capsuleStringOrStrings: string | 
 	if typeof(capsuleStringOrStrings) == "table" then
 		capsuleString = table.concat(capsuleStringOrStrings, collective)
 	end
-	return `({capsuleString})`
+	if capsuleString == "" or capsuleString == " " then
+		return baseString
+	end
+	return `{baseString}({capsuleString})`
 end
 
 function Parser.unparse(commandName: string, modifiers: {string}, ...: any): string
@@ -206,7 +209,6 @@ function Parser.unparse(commandName: string, modifiers: {string}, ...: any): str
 	-- First we make sure the command is an actual command otherwise the args can't be unparsed
 	local getCommand = require(modules.CommandUtil.getCommand)
 	local command = getCommand(commandName)
-	print("command =", command)
 	if not command then
 		return ";unknownResult"
 	end
@@ -234,7 +236,6 @@ function Parser.unparse(commandName: string, modifiers: {string}, ...: any): str
 			totalEndlessArgs = totalEndlessArgs + 1
 		end
 	end)
-	print("totalEndlessArgs =", totalEndlessArgs)
 	
 	-- Now we unparse each arg with its given value (to become stringified)
 	local ParserSettings = require(modules.Parser.ParserSettings)
