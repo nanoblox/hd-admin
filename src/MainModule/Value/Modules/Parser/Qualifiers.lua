@@ -151,6 +151,7 @@ Qualifiers.items = {
 	["Random"] = register({
 		description = "Selects one random player in a qualifier pool, e.g. ;bring random(others). Defaults to 'all'.",
 		isCustomizable = true,
+		requiresCapsule = true,
 		getTargets = function(callerUserId, ...)
 			local subQualifiers = {...}
 			if #subQualifiers == 0 then
@@ -191,6 +192,7 @@ Qualifiers.items = {
 	["Radius"] = register({
 		description = "Players x studs radius from you (except you), e.g. ;bring radius(50). Defaults to 10.",
 		isCustomizable = true,
+		requiresCapsule = true,
 		getTargets = function(callerUserId, radiusString)
 			local targets = {}
 			local radius = tonumber(radiusString) or 10
@@ -211,6 +213,7 @@ Qualifiers.items = {
 	["Team"] = register({
 		description = "Players in the given team(s), e.g. ;bring team(korblox,redcliff)",
 		isCustomizable = true,
+		requiresCapsule = true,
 		getTargets = function(_, ...)
 			local targets = {}
 			local teamNames = table.pack(...)
@@ -245,6 +248,7 @@ Qualifiers.items = {
 	["Group"] = register({
 		description	= "Players in the given GroupIds, e.g. ;bring group(123456,654321)",
 		isCustomizable = true,
+		requiresCapsule = true,
 		getTargets = function(_, ...)
 			local targets = {}
 			local groupIds = {}
@@ -269,6 +273,7 @@ Qualifiers.items = {
 	["Role"] = register({
 		description = "Players who have the given role(s), e.g. ;bring role(admin,mod)",
 		isCustomizable = true,
+		requiresCapsule = true,
 		getTargets = function(callerUserId, ...)
 			local roleNamesToCheck = {...}
 			if #roleNamesToCheck == 0 then
@@ -316,6 +321,7 @@ Qualifiers.items = {
 	["Percent"] = register({
 		description = "Select x% of players in server, e.g. ;bring percent(10). Defaults to 50%.",
 		isCustomizable = true,
+		requiresCapsule = true,
 		getTargets = function(_, percentString)
 			local givenPercent = tonumber(percentString) or 50
 			local percent = math.clamp(givenPercent, 0, 100) / 100
@@ -337,6 +343,7 @@ Qualifiers.items = {
 	["Amount"] = register({
 		description = "Select x number of players in server, e.g. ;bring amount(10). Defaults to 5.",
 		isCustomizable = true,
+		requiresCapsule = true,
 		getTargets = function(_, amountString)
 			local givenAmount = tonumber(amountString) or 5
 			local playersInServer = Players:GetPlayers()
@@ -391,6 +398,7 @@ export type QualifierDetail = {
 	isHidden: boolean?, -- Does this appear within the Commands Preview menu?
 	isCustomizable: boolean?, -- Can this qualifier have custom arguments (i.e. sub-qualifiers)?,
 	mustCreateAliasOf: any?,
+	requiresCapsule: boolean?,
 	aliasOf: any?,
 	name: any?,
 }
