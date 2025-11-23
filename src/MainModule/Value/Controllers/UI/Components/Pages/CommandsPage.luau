@@ -36,8 +36,6 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 	local Theme = OnyxUI.Themer.Theme:now()
 	local Panel = PanelsStateMod.Panel:now()
 
-	local Open = OnyxUI.Util.Fallback(Props.Open, false)
-
 	local SearchQuery = Scope:Value("")
 	local RoleTags = Panel.PagesData.Commands.ActiveTags
 	local CategoryTags = Scope:Value({})
@@ -103,13 +101,18 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 		)
 	end)
 
-	Scope:Observer(Open):onChange(function()
-		local OpenValue = Fusion.peek(Open)
+	local function DelayHideTags()
+		task.delay(0.4, function()
+			local TagsValue = Fusion.peek(RoleTags)
 
-		if not OpenValue then
-			RoleTags:set({})
-			TagsShown:set(false)
-		end
+			if #TagsValue == 0 then
+				TagsShown:set(false)
+			end
+		end)
+	end
+
+	Scope:Observer(RoleTags):onChange(function()
+		DelayHideTags()
 	end)
 
 	return Scope:Frame(OnyxUI.Util.CombineProps(Props, {
@@ -147,6 +150,9 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 
 								OnFocus = function()
 									TagsShown:set(true)
+								end,
+								OnFocusEnd = function()
+									DelayHideTags()
 								end,
 							},
 							Scope:IconToggle {
