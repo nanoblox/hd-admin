@@ -73,4 +73,24 @@ if testSound and testSound:IsA("Sound") then
 end
 
 
+-- Test Settings
+local modules = script:FindFirstAncestor("MainModule").Value.Modules
+local clientUser = require(modules.References.clientUser)
+local everyone = clientUser.everyone
+local success, value = everyone:fetchAsync("GameSettings", "PlayerIdentifier")
+
+
+
+
+-- Items here, test Parser
+local Parser = require(modules.Parser)
+local TestArgs = require(modules.Parent.Controllers.TestClient.TestArgs)
+local testArgs = TestArgs[1]
+local testValues = TestArgs[2] :: {any}
+print("Starting final string...")
+local finalString = Parser.unparse("Test", {"GLOBAL", "LOOP"}, unpack(testValues))
+print("finalString =", finalString)
+
+
+
 return TestController

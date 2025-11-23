@@ -16,7 +16,7 @@ local modules = script:FindFirstAncestor("MainModule").Value.Modules
 local parser = modules.Parser
 local User = require(modules.Objects.User)
 local ParserTypes = require(parser.ParserTypes)
-local Config = require(modules.Config)
+local Config = require(modules.Parent.Services.Config)
 local Task = require(modules.Objects.Task)
 local commandsArray: Task.Commands = {}
 local lowerCaseNameAndAliasCommandsDictionary: {[string]: Command} = {}
@@ -198,7 +198,7 @@ function Commands.request(user: User.Class, message: string, messageSource: Mess
 	user.temp:set("RequestsThisSecond", newRequestsThisSecond)
 	--
 	local Parser = require(modules.Parser) :: any -- 'Any' to remove cyclic warning
-	local batch = Parser.parseMessage(message, user)
+	local batch = Parser.parse(message, user)
 	print("BATCH =", batch)
 	local approved, notices, tasks = Commands.processBatchAsync(user, batch)
 	if not tasks then
@@ -490,7 +490,7 @@ function Commands.executeStatement(callerUserId: number, statement: Statement): 
 	
 	-- If 'player' instance detected within qualifiers, convert to player.Name
 	local ParserTypes = require(parser.ParserTypes)
-	local ConfigSettings = require(modules.Config.Settings)
+	local ConfigSettings = require(modules.Parent.Services.Config.Settings)
 	for qualifierKey, qualifierTable in pairs(statement.qualifiers) do
 		if typeof(qualifierKey) == "Instance" and qualifierKey:IsA("Player") then
 			local callerUser = User.getUserByUserId(callerUserId)

@@ -48,12 +48,12 @@ local Settings = {
 	-- System settings are specific to the game, and can only be configured
 	-- by the game owner, or users with the correct permissions
 	["SystemSettings"] = {
-
+		
 		-- Parser Settings
 		PlayerIdentifier = "@", -- The character used to identify players (e.g. ,fly @ForeverHD vs ,fly Ben)
 		PlayerUndefinedSearch = "DisplayName" :: PlayerSearch, -- 'Undefined' means *without* the 'playerIdentifier' (e.g. ";fly Ben)
 		PlayerDefinedSearch = "UserName" :: PlayerSearch, -- 'Defined' means *with* the 'playerIdentifier' (e.g. ";fly @ForeverHD)
-
+		
 		Limits = { -- While strongly recommended, can be disabled by setting `BypassLimits` to false in Role attributes
 			RequestSize = 1000, -- Maximum number of characters in a message request until it's cutoff
 			RequestsPerSecond = 10, -- Maximum message requests that can be parsed per second per second. When disabled, this is still capped to 20.

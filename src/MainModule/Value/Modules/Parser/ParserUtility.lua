@@ -5,7 +5,7 @@ local modules = script:FindFirstAncestor("MainModule").Value.Modules
 local services = modules.Parent.Services
 local ParserTypes = require(modules.Parser.ParserTypes)
 local User = require(modules.Objects.User)
-local ConfigSettings = require(modules.Config.Settings)
+local ConfigSettings = require(modules.Parent.Services.Config.Settings)
 
 
 -- TYPES
@@ -20,7 +20,7 @@ function ParserUtility.getPlayersFromString(playerString: string, optionalUser: 
 	local selectedPlayers = {}
 	local players = game:GetService("Players"):GetPlayers()
 
-	local Config = require(modules.Config)
+	local Config = require(modules.Parent.Services.Config)
 	local playerIdentifier = Config.getSetting("PlayerIdentifier", optionalUser)
 	local playerDefinedSearch: PlayerSearch = Config.getSetting("PlayerDefinedSearch", optionalUser)
 	local playerUndefinedSearch: PlayerSearch = Config.getSetting("PlayerUndefinedSearch", optionalUser)
@@ -78,7 +78,7 @@ function ParserUtility.verifyAndParseUsername(callerUser: unknown?, usernameStri
 	if not callerUser or not usernameString then
 		return false, nil
 	end
-	local Config = require(modules.Config)
+	local Config = require(modules.Parent.Services.Config)
 	local playerIdentifier = Config.getSetting("PlayerIdentifier", callerUser)
 
 	if string.sub(usernameString, 1, 1) == playerIdentifier then

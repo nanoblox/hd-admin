@@ -3,7 +3,7 @@ local Users = {}
 local Players = game:GetService("Players")
 local modules = script:FindFirstAncestor("MainModule").Value.Modules
 local services = modules.Parent.Services
-local Config = require(modules.Config)
+local Config = require(modules.Parent.Services.Config)
 local User = require(modules.Objects.User)
 
 -- Setup player user objects (and their data saving and replication)

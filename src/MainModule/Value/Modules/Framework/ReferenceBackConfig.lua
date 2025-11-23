@@ -4,6 +4,6 @@ local hd = script:FindFirstAncestor("HD Admin")
 local modules = hd.Core.MainModule.Value.Modules
 local Framework = require(modules.Framework)
 local sharedContainer = Framework.getSharedContainer()
-local sharedConfig = sharedContainer.Core.MainModule["Value"].Modules.Config
+local sharedConfig = sharedContainer.Core.MainModule["Value"].Services.Config
 local ourNewModule = sharedConfig[script.Name]
 return require(ourNewModule)

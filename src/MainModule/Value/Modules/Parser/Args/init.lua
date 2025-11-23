@@ -111,6 +111,36 @@ local function recordArg(argName: string, argDetail)
 	end
 	Args.items[argName] = argDetail
 end
+local function unparsePlayer(tableOfPlayersOrQualifiers: any): string
+	-- It's recommended to pass in an array of Players and Qualifiers. E.g:
+	-- {Players.ForeverHD, Players.ImAvafe, "others", "role(admin)"}
+	if typeof(tableOfPlayersOrQualifiers) == "Instance" and tableOfPlayersOrQualifiers:IsA("Player") then
+		tableOfPlayersOrQualifiers = {tableOfPlayersOrQualifiers}
+	elseif typeof(tableOfPlayersOrQualifiers) == "string" then
+		tableOfPlayersOrQualifiers = {tableOfPlayersOrQualifiers}
+	elseif typeof(tableOfPlayersOrQualifiers) ~= "table" then
+		tableOfPlayersOrQualifiers = {}
+	end
+	local PlayerSettings = require(modules.Parser.ParserSettings)
+	local getGameSetting = require(modules.CommandUtil.getGameSetting)
+	local playerIdentifier = tostring((getGameSetting("PlayerIdentifier") or ""))
+	local collective = PlayerSettings.Collective
+	local stringsArray: {string} = {}
+	for _, playerOrPlayerString in (tableOfPlayersOrQualifiers) do
+		local nameString
+		if typeof(playerOrPlayerString) == "Instance" and playerOrPlayerString:IsA("Player") then
+			-- This could be improved in the future by also accounting for PlayerDefinedSearch
+			nameString = playerIdentifier..playerOrPlayerString.Name
+		elseif typeof(playerOrPlayerString) == "string" then
+			nameString = playerOrPlayerString
+		end
+		if nameString then
+			table.insert(stringsArray, nameString :: string)
+		end
+	end
+	local originalString = table.concat(stringsArray, collective)
+	return tostring(originalString)
+end
 
 
 -- FUNCTIONS
@@ -239,8 +269,8 @@ local items = {
 		description = "Accepts qualifiers (e.g. 'raza', '@ForeverHD', 'others' from ';paint raza,@ForeverHD,others'), calls the command *for each player*, and returns a single Player instance.",
 		playerArg = true,
 		runForEachPlayer = true,
-		stringify = function(self, original)
-
+		unparse = function(self, arrayOfPlayers: {QualifierInput} | QualifierInput)
+			return unparsePlayer(arrayOfPlayers)
 		end,
 		parse = function(self, qualifiers: any, callerUserId, additional: any)
 			local ParserUtility = require(modules.Parser.ParserUtility)
@@ -297,6 +327,9 @@ local items = {
 		defaultValue = {},
 		playerArg = true,
 		runForEachPlayer = false,
+		unparse = function(self, arrayOfPlayers: {QualifierInput})
+			return unparsePlayer(arrayOfPlayers)
+		end,
 		parse = function(self, qualifiers, callerUserId)
 			local ParserUtility = require(modules.Parser.ParserUtility)
 			if ParserUtility.isQualifiersEmpty(qualifiers) then
@@ -319,6 +352,9 @@ local items = {
 		defaultValue = false,
 		playerArg = true,
 		runForEachPlayer = true,
+		unparse = function(self, arrayOfPlayers: {QualifierInput} | QualifierInput)
+			return unparsePlayer(arrayOfPlayers)
+		end,
 		parse = function(self, qualifiers, callerUserId)
 			local argPlayer = Args.get("Player" :: any)
 			local players = if argPlayer then argPlayer:parse(qualifiers, callerUserId, {ignoreDefault = true}) else {}
@@ -336,6 +372,9 @@ local items = {
 		playerArg = true,
 		hidden = true,
 		runForEachPlayer = true,
+		unparse = function(self, arrayOfPlayers: {QualifierInput} | QualifierInput)
+			return unparsePlayer(arrayOfPlayers)
+		end,
 		parse = function(self, qualifiers, callerUserId)
 			print("qualifiers =", qualifiers)
 			local isTableEmpty = require(modules.TableUtil.isTableEmpty)
@@ -360,6 +399,9 @@ local items = {
 		playerArg = true,
 		hidden = true,
 		runForEachPlayer = false,
+		unparse = function(self, arrayOfPlayers: {QualifierInput})
+			return unparsePlayer(arrayOfPlayers)
+		end,
 		parse = function(self, qualifiers, callerUserId)
 			local argPlayer = Args.get("OptionalPlayer" :: any)
 			local players = if argPlayer then argPlayer:parse(qualifiers, callerUserId) else {}
@@ -377,6 +419,11 @@ local items = {
 		displayName = "userNameOrId",
 		description = "Accepts an @userName, displayName, userId or qualifier and returns a userId.",
 		defaultValue = 0,
+		unparse = function(self, userId: number)
+			local whenNumber = tonumber(userId)
+			local stringUserId = tostring(whenNumber) or ""
+			return stringUserId
+		end,
 		parse = function(self, stringToParse, callerUserId): number?
 			local userId = tonumber(stringToParse)
 			if userId then
@@ -419,6 +466,12 @@ local items = {
 		},
 		defaultValue = {},
 		description = "Accepts a string and returns a table of roles.",
+		unparse = function(self, arrayOfRoleNames: {string})
+			local PlayerSettings = require(modules.Parser.ParserSettings)
+			local collective = PlayerSettings.Collective
+			local rolesToString = table.concat(arrayOfRoleNames, collective)
+			return rolesToString
+		end,
 		parse = function(self, stringToParse, callerUserId)
 			local roleStrings = splitByCollective(stringToParse)
 			local roleStringsDict = {}
@@ -442,11 +495,11 @@ local items = {
 					end
 				end
 			end
-			local selectedRoles = {}
+			local selectedRoleNames = {}
 			for _, role in selectedRolesDict do
-				table.insert(selectedRoles, role)
+				table.insert(selectedRoleNames, role)
 			end
-			return selectedRoles
+			return selectedRoleNames
 		end,
 	}),
 
@@ -460,6 +513,14 @@ local items = {
 		defaultValue = "",
 		endlessArg = true,
 		maxCharacters = TEXT_MAX_CHARACTERS,
+		unparse = function(self, text: string)
+			-- This removes everything in text that contains endlessArgPattern
+			local ParserSettings = require(modules.Parser.ParserSettings)
+			local endlessArgPattern = ParserSettings.EndlessArgPattern
+			local stringSplit = text:split(endlessArgPattern)
+			local processedText = table.concat(stringSplit, "")
+			return processedText
+		end,
 		parse = function(self, textToFilter, callerUserId, targetUserId: number?)
 			local TextService = game:GetService("TextService")
 			local success, result = pcall(function()
@@ -506,6 +567,9 @@ local items = {
 		description = "Accepts a non-endless string (i.e. a string with no whitespace gaps) and filters it based upon the caller and target.",
 		defaultValue = "",
 		endlessArg = false,
+		unparse = function(self, text: string)
+			return text
+		end,
 		parse = function(self, textToFilter)
 			return textToFilter
 		end,
@@ -520,6 +584,9 @@ local items = {
 		defaultValue = "",
 		endlessArg = true,
 		maxCharacters = TEXT_MAX_CHARACTERS,
+		unparse = function(self, text: string)
+			return text
+		end,
 		parse = function(self, stringToParse)
 			return stringToParse
 		end,
@@ -533,6 +600,10 @@ local items = {
 		},
 		description = "Accepts a number string and returns a Number",
 		defaultValue = 0,
+		unparse = function(self, number: number)
+			local safeNumberString = Args.processStringToParse(tostring(number))
+			return safeNumberString
+		end,
 		parse = function(self, stringToParse): number?
 			-- The stringToParse is already filtered of dangerous numbers thanks to
 			-- Args.processStringToParse, so we don't need to worry about size limits
@@ -590,6 +661,14 @@ local items = {
 		},
 		description = "Accepts a timestring (such as '5s7d8h') and returns the integer equivalent in seconds. Timestring letters are: seconds(s), minutes(m), hours(h), days(d), weeks(w), months(o) and years(y).",
 		defaultValue = 0,
+		unparse = function(self, seconds: number)
+			local value = tonumber(seconds) or 0
+			if value < 0 then
+				value = 0
+			end
+			local convertSecondsToTimeString = require(modules.DataUtil.convertSecondsToTimeString)
+			return convertSecondsToTimeString(value)
+		end,
 		parse = function(self, stringToParse)
 			local convertTimeStringToSeconds = require(modules.DataUtil.convertTimeStringToSeconds)
 			return convertTimeStringToSeconds(stringToParse)
@@ -602,9 +681,20 @@ local items = {
 		},
 		description = "Accepts a color name (such as 'red'), a hex code (such as '#FF0000') or an RGB capsule (such as '[255,0,0]') and returns a Color3.",
 		defaultValue = Color3.fromRGB(255, 255, 255),
+		unparse = function(self, color: Color3)
+			if typeof(color) ~= "Color3" then
+				color = Color3.fromRGB(255, 255, 255)
+			end
+			local round = require(modules.MathUtil.round)
+			local R = round(color.R * 255)
+			local G = round(color.G * 255)
+			local B = round(color.B * 255)
+			local rgbString = `{R},{G},{B}`
+			return rgbString
+		end,
 		parse = function(self, stringToParse: string): Color3?
 			-- This checks for a predefined color term within SystemSettings.colors, such as 'blue', 'red', etc
-			local Config = require(modules.Config)
+			local Config = require(modules.Parent.Services.Config)
 			local lowerCommandColors = self.lowerCommandColors
 			if not lowerCommandColors then
 				local commandColors = Config.getSetting("CommandColors")
@@ -657,6 +747,13 @@ local items = {
 		},
 		description = "Accepts 'true', 'false', 'yes', 'y', 'no' or 'n' and returns a boolean.",
 		defaultValue = false,
+		unparse = function(self, bool: boolean)
+			if bool == true then
+				return "true"
+			else
+				return "false"
+			end	
+		end,
 		parse = function(self, stringToParse): boolean?
 			local stringLower = stringToParse:lower()
 			local trueStrings = {
@@ -688,6 +785,9 @@ local items = {
 			optionsArray = {"Yes", "No"},
 		},
 		description = "Accepts any value within the optionsArray and returns the value.",
+		unparse = function(self, option: string)
+			return option
+		end,
 		parse = function(self, stringToParse)
 			local stringLower = stringToParse:lower()
 			local stringLen = #stringLower :: any
@@ -739,6 +839,12 @@ local items = {
 		},
 		description = "Accepts a valid stat name and returns the stat (defined in Server/Modules/StatHandler)",
 		defaultValue = false,
+		unparse = function(self, leaderstat: Instance?)
+			if typeof(leaderstat) == "Instance" then
+				return leaderstat.Name
+			end
+			return ""
+		end,
 		parse = function(self, stringToParse, callerUserId, targetUserId: number?): Instance?
 			local userIdToFind = tonumber(targetUserId or callerUserId)
 			local targetPlayer = userIdToFind and Players:GetPlayerByUserId(userIdToFind)
@@ -783,6 +889,12 @@ local items = {
 		displayName = "TeamName",
 		description = "Accepts a valid team name and returns the team instance.",
 		defaultValue = false,
+		unparse = function(self, team: Team?)
+			if typeof(team) == "Instance" then
+				return team.Name
+			end
+			return ""
+		end,
 		parse = function(self, stringToParse): Team?
 			local Teams = game:GetService("Teams")
 			local stringToParseLower = string.lower(stringToParse)
@@ -810,6 +922,12 @@ local items = {
 		},
 		description = "Accepts a valid material and returns a Material enum.",
 		defaultValue = Enum.Material.Plastic,
+		unparse = function(self, material: Enum.Material?)
+			if typeof(material) == "EnumItem" then
+				return material.Name
+			end
+			return ""
+		end,
 		parse = function(self, stringToParse): Enum.Material?
 			local materialEnumNamesLowercase = self.materialEnumNamesLowercase
 			if not materialEnumNamesLowercase then
@@ -846,6 +964,12 @@ local items = {
 		displayName = "Tool",
 		description = "Accepts a name and returns a copy of any matching tool located in ServerStorage, ReplicatedStorage, StarterPack, Lighting. You MUST Clone this returned tool before using.",
 		defaultValue = false,
+		unparse = function(self, tool: Instance?)
+			if typeof(tool) == "Instance" or (typeof(tool) == "table" and typeof(tool.Name) == "string") then
+				return tool.Name
+			end
+			return ""
+		end,
 		parse = function(self, stringToParse): any?
 			local getTools = require(modules.CommandUtil.getTools)
 			local _, toolLowerNamesDict = getTools()
@@ -886,6 +1010,12 @@ local items = {
 		endlessArg = true,
 		defaultValue = {},
 		maxCharacters = TEXT_MAX_CHARACTERS,
+		unparse = function(self, optionsArray: {string})
+			local ParserSettings = require(modules.Parser.ParserSettings)
+			local endlessFieldsPattern = ParserSettings.EndlessFieldsPattern
+			local joinedString = table.concat(optionsArray, endlessFieldsPattern)
+			return joinedString
+		end,
 		parse = function(self, stringToParse): {string}?
 			if typeof(stringToParse) ~= "string" then
 				return nil
@@ -911,6 +1041,7 @@ end
 -- TYPES
 export type Argument = keyof<typeof(items)> | keyof<typeof(loaderItems)>
 export type ArgumentDetail = ArgTypes.ArgumentDetail
+type QualifierInput = Player | string
 
 
 return Args

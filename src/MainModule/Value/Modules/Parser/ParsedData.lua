@@ -6,8 +6,8 @@ local services = modules.Parent.Services
 local Commands = require(services.Commands)
 local ParserTypes = require(modules.Parser.ParserTypes)
 local Args = require(modules.Parser.Args)
-local Config = require(modules.Config)
-local ConfigSettings = require(modules.Config.Settings)
+local Config = require(modules.Parent.Services.Config)
+local ConfigSettings = require(modules.Parent.Services.Config.Settings)
 
 
 -- TYPES

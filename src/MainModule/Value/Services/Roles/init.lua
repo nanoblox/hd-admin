@@ -46,7 +46,7 @@ function Roles.updateRoles(forceUpdate: boolean?): boolean
 
 	-- Get role data from config
 	-- (in the future, we'll also retrieve it from datastores)
-	local configRoles = Framework.getInstance(modules.Config, "Roles")
+	local configRoles = Framework.getInstance(modules.Parent.Services.Config, "Roles")
 	local deepCopyTable = require(modules.TableUtil.deepCopyTable)
 	if configRoles then
 		local toCamelCase = require(modules.DataUtil.toCamelCase)

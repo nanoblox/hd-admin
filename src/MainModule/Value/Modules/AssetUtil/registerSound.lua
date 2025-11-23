@@ -43,7 +43,7 @@ if isServer then
 	local audio = Instance.new("Folder")
 	audio.Name = "Audio"
 	audio.Parent = modules.Parent
-	local Config = require(modules.Config)
+	local Config = require(modules.Parent.Services.Config)
 	local soundSettings = Config.getSetting(SOUND_KEY)
 	local soundGroups = createGroup("Groups", audio)
 	for soundAction, details in soundSettings do

@@ -282,7 +282,7 @@ function Framework.startServer()
 	local referenceBack = framework.ReferenceBack
 	local referenceBackConfig = framework.ReferenceBackConfig
 	local emptyFunction = framework.EmptyFunction
-	local coreConfig = modules.Config
+	local coreConfig = modules.Parent.Services.Config
 	local CoreConfig = require(coreConfig) --loaderConfig
 	for moduleName, _ in CoreConfig.getAccessible() do
 		local loaderModule = loaderConfig and loaderConfig:FindFirstChild(moduleName)

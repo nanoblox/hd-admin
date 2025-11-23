@@ -17,7 +17,7 @@
             "$path": "src/Commands"
           },
 		  "Settings": {
-            "$path": "src/MainModule/Value/Modules/Config/Settings.lua"
+            "$path": "src/MainModule/Value/Services/Config/Settings.lua"
           }
         },
         "Core": {

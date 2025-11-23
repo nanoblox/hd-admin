@@ -1,5 +1,5 @@
 local modules = script:FindFirstAncestor("MainModule").Value.Modules
-local configSettings = require(modules.Config.Settings)
+local configSettings = require(modules.Parent.Services.Config.Settings)
 local systemSettings = configSettings.SystemSettings
 local ParserSettings = require(modules.Parser.ParserSettings)
 
