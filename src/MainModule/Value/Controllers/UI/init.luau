@@ -18,6 +18,7 @@ local UI = {
 }
 
 local function start()
+	UI.Started = true --!!! REMOVE THIS
 	assert(UI.Started == false, "Frontend cannot be started twice!")
 
 	local Panel = PanelsStateMod.New(UI.Scope)
@@ -26,7 +27,7 @@ local function start()
 	appIcon:bindEvent("toggled", function()
 		UI.toggleAllOpen()
 	end)
-
+	
 	States.Theme:set(DarkTheme)
 	StateMods:Initialize()
 

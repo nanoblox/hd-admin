@@ -18,9 +18,9 @@ InputObjects.items = {
 		local getPickerItemsFromAnyPlayer = inputConfig.getPickerItemsFromAnyPlayer
 		local getPickerItemsFromServerPlayers = inputConfig.getPickerItemsFromServerPlayers
 		local pickerName = inputConfig.pickerName
-		local pickerItems = inputConfig.pickerItems
-		if pickerItems then
-			local items = pickerItems()
+		local pickerGetter = inputConfig.pickerGetter
+		if pickerGetter then
+			local items = pickerGetter()
 			for _, item in items do
 				if typeof(item) == "Instance" then
 					if item:IsA("Player") then
@@ -107,7 +107,7 @@ export type InputConfig = {
 	stepAmount: number?,
 	pickerName: string?,
 	pickerText: string?,
-	pickerItems: ((any) -> (any))?,
+	pickerGetter: ((...any) -> ({any}))?,
 	getPickerItemsFromServerPlayers: boolean?,
 	getPickerItemsFromAnyPlayer: boolean?,
 	preventWhitespaces: boolean?,

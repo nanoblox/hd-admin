@@ -5,10 +5,11 @@ local modules = script:FindFirstAncestor("MainModule").Value.Modules
 local services = modules.Parent.Services
 local ParserTypes = require(modules.Parser.ParserTypes)
 local User = require(modules.Objects.User)
+local ConfigSettings = require(modules.Parent.Services.Config.Settings)
 
 
 -- TYPES
-type PlayerSearch = ParserTypes.PlayerSearch
+type PlayerSearch = ConfigSettings.PlayerSearch
 type Statement = ParserTypes.ParsedStatement
 
 
@@ -19,7 +20,7 @@ function ParserUtility.getPlayersFromString(playerString: string, optionalUser: 
 	local selectedPlayers = {}
 	local players = game:GetService("Players"):GetPlayers()
 
-	local Config = require(modules.Config)
+	local Config = require(modules.Parent.Services.Config)
 	local playerIdentifier = Config.getSetting("PlayerIdentifier", optionalUser)
 	local playerDefinedSearch: PlayerSearch = Config.getSetting("PlayerDefinedSearch", optionalUser)
 	local playerUndefinedSearch: PlayerSearch = Config.getSetting("PlayerUndefinedSearch", optionalUser)
@@ -73,11 +74,11 @@ end
 
 
 -- Do the incoming strings match a real username?
-function ParserUtility.verifyAndParseUsername(callerUser, usernameString: string): (boolean, string?)
+function ParserUtility.verifyAndParseUsername(callerUser: unknown?, usernameString: string): (boolean, string?)
 	if not callerUser or not usernameString then
 		return false, nil
 	end
-	local Config = require(modules.Config)
+	local Config = require(modules.Parent.Services.Config)
 	local playerIdentifier = Config.getSetting("PlayerIdentifier", callerUser)
 
 	if string.sub(usernameString, 1, 1) == playerIdentifier then
@@ -278,7 +279,7 @@ function ParserUtility.convertStatementToRealNames(statement: Statement)
 		["commands"] = {services.Commands, "getCommand"},
 		["modifiers"] = {modules.Parser.Modifiers, "get"},
 	}
-	for tableName, getMethodDetail in pairs(tablesToConvertToRealNames) do
+	for tableName, getMethodDetail in tablesToConvertToRealNames do
 		local table = statement[tableName]
 		if table then
 			local getModule = getMethodDetail[1] :: any
@@ -287,11 +288,12 @@ function ParserUtility.convertStatementToRealNames(statement: Statement)
 			local newTable = {}
 			local originalTableName = "original"..tableName:sub(1,1):upper()..tableName:sub(2)
 			local originalTable = {}
-			for name, value in pairs(table) do
+			for name, value in table do
 				local returnValue = getMethod(name)
-				local realName = returnValue and string.lower(returnValue.name)
-				if realName then
-					newTable[realName] = value
+				local realName = returnValue and (returnValue.aliasOf or returnValue.name)
+				local realNameLower = realName and string.lower(realName)
+				if realNameLower then
+					newTable[realNameLower] = value
 				end
 				originalTable[name] = true
 			end

@@ -26,6 +26,7 @@ local deepCopyTable = require(modules.TableUtil.deepCopyTable)
 local generateUID = require(modules.DataUtil.generateUID)
 local getHumanoid = require(modules.PlayerUtil.getHumanoid)
 local getTargets = require(modules.PlayerUtil.getTargets)
+local registerSound = require(modules.AssetUtil.registerSound)
 local isServer = RunService:IsServer()
 local isClient = not isServer
 local Remote = require(modules.Objects.Remote)
@@ -97,6 +98,7 @@ function Task.construct(properties: Properties)
 		janitor = janitor,
 		UID = UID,
 		isActive = true :: any,
+		bypassLimits = false :: any,  --!!! roles: CHECK IF USER ROLES
 		caller = if callerUserId then Players:GetPlayerByUserId(callerUserId) else nil,
 		target = if targetUserId then Players:GetPlayerByUserId(targetUserId) else nil,
 		client = TaskClient.new(UID),
@@ -314,7 +316,7 @@ function Task.run(self: Task)
 	-- If the job has no associated player *but* does contain qualifiers...
 	-- ...that require executing for each player (such as in ;globalKill all)
 	local targetPlayers = if firstArgItem then firstArgItem:parse(qualifiers, callerUserId) else nil
-	if firstArgItem and firstArgItem.executeForEachPlayer then -- If the firstArg has executeForEachPlayer, convert the job into subjobs for each player returned by the qualifiers
+	if firstArgItem and firstArgItem.runForEachPlayer then -- If the firstArg has runForEachPlayer, convert the job into subjobs for each player returned by the qualifiers
 		for i, plr in targetPlayers do
 			local subProperties: Properties = {
 				targetUserId = plr.UserId,
@@ -354,7 +356,7 @@ function Task.unregisterHold(self: Task, callback: () -> ()?, remainingTime: num
 			resumed = self.janitor:add(Signal.new())
 			self.resumed = resumed
 		end
-		self.resumed:wait()
+		self.resumed:Wait()
 		remainingTime = durationRemaining :: number
 	end
 	if remainingTime and remainingTime > 0 and self.isActive then
@@ -395,7 +397,7 @@ function Task.resume(self: Task)
 		end)
 	end
 	if self.resumed then
-		self.resumed:fire()
+		self.resumed:Fire()
 	end
 end
 
@@ -637,7 +639,7 @@ function Task.keep(self: Task, persistence: Persistence?)
 	end
 	if isRespawns or isDies then
 		local loadCharacterStarted = require(modules.PlayerUtil.loadCharacterStarted)
-		self.janitor:add(loadCharacterStarted:connect(function(incomingPlayer)
+		self.janitor:add(loadCharacterStarted:Connect(function(incomingPlayer)
 			if incomingPlayer == trackingPlayer then
 				self:destroy()
 			end
@@ -664,6 +666,14 @@ function Task.getOriginalArg(self: Task, argNameOrIndex)
 	local argNameLower = tostring(argNameOrIndex):lower()
 	local originalValue = self.originalArgReturnValues[argNameLower]
 	return originalValue
+end
+
+function Task.register(self: Task, sound: Sound, soundType: registerSound.SoundType?)
+	if not soundType then
+		soundType = "Command"
+	end
+	local registerSound = require(modules.AssetUtil.registerSound)
+	return registerSound(sound, soundType)
 end
 
 function Task.onEnded(self: Task, callback: () -> ())
@@ -763,7 +773,6 @@ export type Command = {
 	undoAliases: {string}?, -- aliases to undone the command, e.g. "ice" might have "thaw"
 	description: string?,
 	groups: {string}?, -- all commands in the same group are *undone* when another is run
-	tags: {string}?,
 	cooldown: number?, -- if > 0, the command cannot be run again until finished and its cooldown expired
 	autoPreview: boolean?, -- if true, the command is viewed first in UI (useful for ban command)
 	contributors: {string}?,

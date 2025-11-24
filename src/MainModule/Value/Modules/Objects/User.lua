@@ -50,7 +50,6 @@ local User = {}
 User.__index = User
 
 
-
 -- PUBLIC
 User.userAdded = Signal.new()
 User.userLoaded = Signal.new()
@@ -182,12 +181,12 @@ function User.new(playerOrKey: UserKey, dataStoreName: string?)
 		oldUser:destroy()
 	end
 	users[realKey] = self
-	User.userAdded:fire(self)
+	User.userAdded:Fire(self)
 	janitor:add(function()
 		if users[realKey] == self then
 			users[realKey] = nil
 		end
-		User.userRemoved:fire(self)
+		User.userRemoved:Fire(self)
 	end)
 
 	-- If a player is present, then destroy this user when the player leaves
@@ -270,7 +269,10 @@ function User._loadAndAutoSaveData(self: Class, dataStoreName: string)
 		end
 		local permLimiters = getPathwaysToLimitTo("perm")
 		local tempLimiters = getPathwaysToLimitTo("temp")
-		janitor:add(perm:replicate(player, `UserPerm`, permLimiters))
+		local function yieldUntilLoaded()
+			User.getUserAsync(self.realKey)
+		end
+		janitor:add(perm:replicate(player, `UserPerm`, permLimiters, yieldUntilLoaded))
 		janitor:add(temp:replicate(player, `UserTemp`, tempLimiters))
 		janitor:add(User.everyone:replicate(player, `UserEveryone`))
 	end
@@ -378,7 +380,7 @@ function User._loadAndAutoSaveData(self: Class, dataStoreName: string)
 	if retries > 0 then
 		warn(`HD Admin finally loaded data for '{realKey}' from '{dataStoreName} after {retries} retries`)
 	end
-
+	
 	-- Deserialize data if was originally serialized
 	if typeof(loadedData) == "table" and loadedData._isSerialized == true then
 		loadedData = loadedData :: any
@@ -432,7 +434,7 @@ function User._loadAndAutoSaveData(self: Class, dataStoreName: string)
 			isReleasingProfile = true
 		end
 		local beforeSaving = self.beforeSaving :: Signal.Class
-		beforeSaving:fire(isReleasingProfile) -- This is fired before saving, so that any data can be modified before saving
+		beforeSaving:Fire(isReleasingProfile) -- This is fired before saving, so that any data can be modified before saving
 		local dataToSave = perm:getAll(true)
 		User.incrementSavesThisMinute(dataToSave)
 		dataToSave._isSerialized = true
@@ -464,7 +466,7 @@ function User._loadAndAutoSaveData(self: Class, dataStoreName: string)
 
 	-- Call the beforeLoading signal to allow for any data to be modified before loading
 	local beforeLoading = self.beforeLoading :: Signal.Class
-	beforeLoading:fire()
+	beforeLoading:Fire()
 	
 	-- Save data and release session when player leaves
 	self.janitor:add(function()
@@ -499,7 +501,7 @@ function User._loadAndAutoSaveData(self: Class, dataStoreName: string)
 	-- Now fire that we have loaded!
 	self.isLoaded = true :: any
 	if self.isActive then
-		User.userLoaded:fire(self)
+		User.userLoaded:Fire(self)
 	end
 
 end

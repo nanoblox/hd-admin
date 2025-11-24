@@ -17,7 +17,6 @@ local Teams = game:GetService("Teams")
 local modules = script:FindFirstAncestor("MainModule").Value.Modules
 local services = modules.Parent.Services
 local Qualifiers = {}
-local User = require(modules.Objects.User)
 local requiresUpdating = true
 local sortedNameAndAliasLengthArray = {}
 local lowerCaseDictionary = {}
@@ -124,6 +123,7 @@ Qualifiers.items = {
 		description	= "Default action, returns players with matching shorthand names.",
 		getTargets = function(callerUserId, stringToParse, useDisplayName)
 			local ParserUtility = require(script.Parent.ParserUtility)
+			local User = require(modules.Objects.User)
 			local callerUser = User.getUser(callerUserId)
 			local targets = ParserUtility.getPlayersFromString(stringToParse :: string, callerUser)
 			return targets
@@ -142,14 +142,15 @@ Qualifiers.items = {
 	}),
 
 	["All"] = register({
-		description = "Every player in a server.",
+		description = "Every player in the server.",
 		getTargets = function()
 			return Players:GetPlayers()
 		end,
 	}),
 
 	["Random"] = register({
-		description = "One randomly selected player from a pool. To define a pool, do ``random(qualifier1,qualifier2,...)``. If not defined, the pool defaults to 'all'.",
+		description = "Selects one random player in a qualifier pool, e.g. ;bring random(others). Defaults to 'all'.",
+		isCustomizable = true,
 		getTargets = function(callerUserId, ...)
 			local subQualifiers = {...}
 			if #subQualifiers == 0 then
@@ -188,7 +189,8 @@ Qualifiers.items = {
 	}),
 
 	["Radius"] = register({
-		description = "Players within x amount of studs from you. To specify studs, do ``radius(studs)``. If not defined, studs defaults to '10'.",
+		description = "Players x studs radius from you (except you), e.g. ;bring radius(50). Defaults to 10.",
+		isCustomizable = true,
 		getTargets = function(callerUserId, radiusString)
 			local targets = {}
 			local radius = tonumber(radiusString) or 10
@@ -207,7 +209,8 @@ Qualifiers.items = {
 	}),
 
 	["Team"] = register({
-		description = "Players within the specified team(s).",
+		description = "Players in the given team(s), e.g. ;bring team(korblox,redcliff)",
+		isCustomizable = true,
 		getTargets = function(_, ...)
 			local targets = {}
 			local teamNames = table.pack(...)
@@ -220,7 +223,8 @@ Qualifiers.items = {
 				team = team :: Team
 				local teamName = string.lower(team.Name)
 				for _, selectedTeamName in (teamNames) do
-					if string.sub(teamName, 1, #selectedTeamName) == selectedTeamName then
+					local selectedLower = string.lower(tostring(selectedTeamName))
+					if string.sub(teamName, 1, #selectedLower) == selectedLower then
 						selectedTeams[tostring(team.TeamColor)] = true
 						validTeams = true
 					end
@@ -239,11 +243,12 @@ Qualifiers.items = {
 	}),
 
 	["Group"] = register({
-		description	= "Players who are in the specified Roblox groupIds(s).",
+		description	= "Players in the given GroupIds, e.g. ;bring group(123456,654321)",
+		isCustomizable = true,
 		getTargets = function(_, ...)
 			local targets = {}
 			local groupIds = {}
-			for _, groupId in (table.pack(...)) do
+			for _, groupId in ({...}) do
 				groupId = tonumber(groupId)
 				if groupId then
 					table.insert(groupIds, groupId)
@@ -262,43 +267,46 @@ Qualifiers.items = {
 	}),
 
 	["Role"] = register({
-		description = "Players who have the specified role(s).",
-		getTargets = function(_, ...)
-			local targets = {}
-			local roleNames = table.pack(...)
-			local selectedRoleKeys = {}
-			if #roleNames == 0 then
+		description = "Players who have the given role(s), e.g. ;bring role(admin,mod)",
+		isCustomizable = true,
+		getTargets = function(callerUserId, ...)
+			local roleNamesToCheck = {...}
+			if #roleNamesToCheck == 0 then
 				return {}
 			end
 			local Roles = require(services.Roles)
 			local roles = Roles.getRoles()
-			for _, role in roles do
-				local roleName = string.lower(role.name)
-				local roleKey = role.key
-				for _, selectedRoleName in (roleNames) do
-					local nameMatch = string.sub(roleName, 1, #selectedRoleName) == selectedRoleName
-					local keysMatch = roleKey == selectedRoleName
-					if nameMatch or keysMatch then
-						table.insert(selectedRoleKeys, roleKey)
-					end
-				end
-			end
-			if #selectedRoleKeys == 0 then
-				return {}
-			end
-			local users = User.getUsers()
-			for i, user in users do
-				local function isValidUser()
-					for _, roleUID in (selectedRoleKeys) do
-						local roles = user.temp:get("Roles")
-						if roles[roleUID] then
-							return true
+			local LIMIT_TO_CHECK = 20 -- limits abuse
+			local foundRolesDict = {}
+			local totalFound = 0
+			for i, roleName in roleNamesToCheck do
+				local toCheckName = tostring(roleName):lower()
+				for _, role in roles do
+					local roleNameLower = tostring(role.name):lower()
+					if string.sub(roleNameLower, 1, #toCheckName) == toCheckName then
+						if not foundRolesDict[roleNameLower] then
+							foundRolesDict[roleNameLower] = true
+							totalFound += 1
 						end
 					end
-					return false
 				end
-				if isValidUser() and user.player then
-					table.insert(targets, user.player)
+				if i >= LIMIT_TO_CHECK then
+					break
+				end
+			end
+			if totalFound <= 0 then
+				return {}
+			end
+			local targets = {}
+			local Players = game:GetService("Players")
+			for i, player in Players:GetPlayers() do
+				local ownedRoles = Roles.getOwnedRoles(player)
+				for _, roleNameToCheck in ownedRoles do
+					local toCheckName = tostring(roleNameToCheck):lower()
+					if foundRolesDict[toCheckName] then
+						table.insert(targets, player)
+						break
+					end
 				end
 			end
 			return targets
@@ -306,62 +314,47 @@ Qualifiers.items = {
 	}),
 
 	["Percent"] = register({
-		description = "Randomly selects x percent of players within a server. To define the percentage, do ``percent(number)``. If not defined, the percent defaults to '50'.",
+		description = "Select x% of players in server, e.g. ;bring percent(10). Defaults to 50%.",
+		isCustomizable = true,
 		getTargets = function(_, percentString)
+			local givenPercent = tonumber(percentString) or 50
+			local percent = math.clamp(givenPercent, 0, 100) / 100
+			local playersInServer = Players:GetPlayers()
+			local totalPlayers = #playersInServer
+			local round = require(modules.MathUtil.round)
+			local numberToAdd = round(totalPlayers * percent)
 			local targets = {}
-			local maxPercent = tonumber(percentString) or 50
-			local players = Players:GetPlayers()
-			local interval = 100 / #players
-			if maxPercent >= (100 - (interval * 0.1)) then
-				return players
-			end
-			local selectedPercent = 0
-			repeat
-				local randomIndex = math.random(1, #players)
-				local selectedPlayer = players[randomIndex]
+			for i = 1, numberToAdd do
+				local randomIndex = math.random(1, #playersInServer)
+				local selectedPlayer = playersInServer[randomIndex]
 				table.insert(targets, selectedPlayer)
-				table.remove(players, randomIndex)
-			until #players == 0 or selectedPercent >= maxPercent
-			return targets
-		end,
-	}),
-
-	["Staff"] = register({
-		description = "Selects all player's who are staff",
-		getTargets = function(_)
-			local targets = {}
-			local users = User.getUsers()
-			local isStaff = require(services.Roles.isStaff)
-			for i, user in users do
-				if isStaff(user) and user.player then
-					table.insert(targets, user.player)
-				end
+				table.remove(playersInServer, randomIndex)
 			end
 			return targets
 		end,
 	}),
 
-	["Admins"] = Qualifiers.createAliasOf("Staff"),
-	
-	["NonStaff"] = register({
-		description = "Selects all player's who are not staff",
-		getTargets = function(_)
+	["Amount"] = register({
+		description = "Select x number of players in server, e.g. ;bring amount(10). Defaults to 5.",
+		isCustomizable = true,
+		getTargets = function(_, amountString)
+			local givenAmount = tonumber(amountString) or 5
+			local playersInServer = Players:GetPlayers()
+			local totalPlayers = #playersInServer
+			local numberToAdd = math.min(givenAmount, totalPlayers)
 			local targets = {}
-			local users = User.getUsers()
-			local isStaff = require(services.Roles.isStaff)
-			for i, user in users do
-				if isStaff(user) == false and user.player then
-					table.insert(targets, user.player)
-				end
+			for i = 1, numberToAdd do
+				local randomIndex = math.random(1, #playersInServer)
+				local selectedPlayer = playersInServer[randomIndex]
+				table.insert(targets, selectedPlayer)
+				table.remove(playersInServer, randomIndex)
 			end
 			return targets
 		end,
 	}),
-
-	["NonAdmins"] = Qualifiers.createAliasOf("NonStaff"),
 
 	["Premium"] = register({
-		description = "Players with Roblox Premium membership",
+		description = "Players with Roblox Premium",
 		getTargets = function(_)
 			local targets = {}
 			for _, player in (Players:GetPlayers()) do
@@ -396,6 +389,7 @@ export type QualifierDetail = {
 	getTargets: any, --(callerUserId: number?, stringToParse: string?, useDisplayName: boolean?) -> {Player},
 	aliases: {[Qualifier]: boolean}?,
 	isHidden: boolean?, -- Does this appear within the Commands Preview menu?
+	isCustomizable: boolean?, -- Can this qualifier have custom arguments (i.e. sub-qualifiers)?,
 	mustCreateAliasOf: any?,
 	aliasOf: any?,
 	name: any?,

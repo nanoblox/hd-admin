@@ -29,7 +29,7 @@ function Queue.new()
 		isActive = true :: any,
 		sortByFunction = nil :: any,
 	}
-	self.sorted:fire()
+	self.sorted:Fire()
 	setmetatable(self, Queue)
 
 	return self
@@ -118,7 +118,7 @@ function Queue.next(self: Class)
 	if not self.hasStarted then
 		local started = self.started :: Signal.Class
 		self.hasStarted = true :: any
-		started:fire()
+		started:Fire()
 	end
 	self.processing = true
 	local callback = group[1]

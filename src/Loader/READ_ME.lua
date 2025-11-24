@@ -15,6 +15,7 @@ Getting Started:
     - Keep HD Admin in 'Workspace' or 'ServerScriptService'
 	- The model's name 'HD Admin' is used by commands - be careful not to change!
 	- All commands are now located under Config -> Roles -> [Role]
+	- Commands inherit all Roles above them
 	- You can delete 'ThumbnailCamera' - this is used to give the model an image
 
 --]]

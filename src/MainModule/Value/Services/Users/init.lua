@@ -3,12 +3,18 @@ local Users = {}
 local Players = game:GetService("Players")
 local modules = script:FindFirstAncestor("MainModule").Value.Modules
 local services = modules.Parent.Services
-
+local Config = require(modules.Parent.Services.Config)
+local User = require(modules.Objects.User)
 
 -- Setup player user objects (and their data saving and replication)
-local User = require(modules.Objects.User)
+local minimumAccountAge = tonumber(Config.getSetting("MinimumAccountAge")) or 0
 local function playerAdded(player: Player)
-
+	-- Check if player's account is old enough to join.
+    if minimumAccountAge > 0 and player.AccountAge < minimumAccountAge then
+        player:Kick("🚫 Your account is too new to join! 🚫")
+        return
+    end
+	
 	-- Create user
 	User.new(player, "PlayerStore")
 
@@ -18,29 +24,36 @@ local function playerAdded(player: Player)
 		return
 	end
 
-	-- Listen for chatted
+	-- Listen for Chatted
 	local Commands = require(services.Commands)
 	player.Chatted:Connect(function(message)
-		local Parser = require(modules.Parser)
-		local batch = Parser.parseMessage(message, user)
-		local approved, notices, tasks = Commands.processBatchAsync(user, batch)
-		print("batch, approved, notices, tasks =", batch, approved, notices, tasks)
+		local approved, notices, tasks = Commands.request(user, message, "Chat")
+		Commands.processNotices(notices)
 	end)
+
+	-- Listen for silent /e chat commands
+	local Players = game:GetService("Players")
+	local TextChatService = game:GetService("TextChatService")
+	for _, instance in TextChatService:GetDescendants() do
+		if not (instance:IsA("TextChatCommand") and instance.SecondaryAlias == "/e") then
+			continue
+		end
+		instance.Triggered:Connect(function(chatSource, message)
+			local speaker = Players:FindFirstChild(chatSource.Name)
+			if not speaker then
+				return
+			end
+			local finalMessage = string.sub(message,4)
+			local approved, notices, tasks = Commands.request(user, finalMessage, "ChatCommand")
+			Commands.processNotices(notices)
+		end)
+	end
 
 end
 Players.PlayerAdded:Connect(playerAdded)
 for _, player in Players:GetPlayers() do
 	playerAdded(player)
 end
-
-
--- Setup commands if the client makes a request before the server needs to update
--- This is essential for example to ensure data fetched via User.everyone is accurate
-local State = require(modules.Objects.State)
-State.firstFetchRequested:connect(function()
-	local Commands = require(services.Commands)
-	Commands.updateCommands()
-end)
 
 
 return Users

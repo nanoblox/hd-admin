@@ -217,7 +217,10 @@ function Remote.invokeServerAsync(self: Class, ...): (boolean, ...any)
 		return false, returnedData
 	end
 	local decompressedData = Serializer.processForNetwork(returnedData)
-	return true, table.unpack(decompressedData)
+	if typeof(decompressedData[1]) ~= "boolean" then
+		return true, table.unpack(decompressedData)
+	end
+	return table.unpack(decompressedData)
 end
 
 function Remote.onClientEvent(self: Class, callback: (...any) -> ...any)

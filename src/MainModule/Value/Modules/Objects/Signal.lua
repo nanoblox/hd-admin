@@ -26,15 +26,15 @@
 --------------------------------------------------------------------------------
 
 type Connection = {
-	disconnect: (self: any) -> ()
+	Disconnect: (self: any) -> ()
 }
 
 export type Class = {
-	fire: (self: any, any, ...any) -> (),
-	connect: (self: any, FN: (any...) -> ()) -> Connection,
-	once: (self: any, FN: (any...) -> ()) -> Connection,
-	wait: (self: any) -> any...,
-	disconnectAll: (self: any) -> ()
+	Fire: (self: any, any, ...any) -> (),
+	Connect: (self: any, FN: (any...) -> ()) -> Connection,
+	Once: (self: any, FN: (any...) -> ()) -> Connection,
+	Wait: (self: any) -> any...,
+	DisconnectAll: (self: any) -> ()
 }
 
 -- The currently idle thread to run the next handler on

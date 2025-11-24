@@ -4,7 +4,7 @@ local dataTemplates = require(script.Parent)
 local modules = script:FindFirstAncestor("MainModule").Value.Modules
 local areValuesEqual = require(modules.DataUtil.areValuesEqual)
 local deepCopyTable = require(modules.TableUtil.deepCopyTable)
-local config = modules.Config
+local config = modules.Parent.Services.Config
 local configSettings = require(config.Settings)
 local User = require(modules.Objects.User)
 local DataStore = {}
@@ -19,7 +19,7 @@ DataStore.compressData = false -- Compress data before saving (then decompress w
 -- FUNCTIONS
 function DataStore.generateTemplate(user: User.Class?)
 	if user then
-		user.beforeLoading:connect(function()
+		user.beforeLoading:Connect(function()
 			-- See if the game dev has changed settings, and if so, update the player's
 			-- settings with these new values
 			local perm = user.perm
@@ -29,7 +29,7 @@ function DataStore.generateTemplate(user: User.Class?)
 			local didChange = false
 			local function recursivelyMerge(table1, table2, tableToUpdate)
 				-- table1 will have its changes applied, while table2 is checked against
-				for key, value in pairs(table1) do
+				for key, value in table1 do
 					local matchingValue = table2[key]
 					local matchingValueToUpdate = tableToUpdate[key]
 					if type(value) == "table" and type(matchingValue) == "table" then
@@ -50,7 +50,7 @@ function DataStore.generateTemplate(user: User.Class?)
 				perm:set("PreviousPlayerSettings", gamePlayerSettings)
 			end
 		end)
-		user.beforeSaving:connect(function()
+		user.beforeSaving:Connect(function()
 			-- Set details on last session, playtime, etc
 			local perm = user.perm
 			local temp = user.temp
@@ -66,12 +66,15 @@ function DataStore.generateTemplate(user: User.Class?)
 	end
 
 	local timeNow = os.time()
+	local clockNow = os.clock()
 	return {
 
 		-- Data that is saved *and* retrievable by the client
 		{"perm", "public", {
 			Cash = 0,
-			PlayerSettings = deepCopyTable(configSettings.PlayerSettings),
+			YouSettings = deepCopyTable(configSettings.PlayerSettings),
+			FavoritedEmotes = {},
+			Roles = {},
 		}},
 		
 		-- Data that is saved *but not* retrievable by the client
@@ -80,6 +83,8 @@ function DataStore.generateTemplate(user: User.Class?)
 			LastSession = 0,
 			TotalPlayTime = 0,
 			PreviousPlayerSettings = deepCopyTable(configSettings.PlayerSettings),
+			CommandsThisMinute = 0,
+			CommandsThisMinuteStartStamp = timeNow,
 		}},
 
 		-- Data that is not saved *but* retrievable by the client
@@ -91,6 +96,10 @@ function DataStore.generateTemplate(user: User.Class?)
 		-- Data that is not saved *and* not retrievable by the client
 		{"temp", "private", {
 			LatestSession = timeNow,
+			RequestsThisSecond = 0,
+			RequestsThisSecondStartClock = clockNow,
+			CommandsThisSecond = 0,
+			CommandsThisSecondStartClock = clockNow,
 		}},
 
 	}

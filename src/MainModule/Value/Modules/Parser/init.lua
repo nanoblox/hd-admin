@@ -6,17 +6,20 @@ local MAX_CHARACTERS_PER_MESSAGE = 1000 -- The maximum number of characters for 
 -- LOCAL
 local Parser = {}
 local modules = script:FindFirstAncestor("MainModule").Value.Modules
-local services = modules.Parent.Services
-local Commands = require(services.Commands)
-local User = require(modules.Objects.User)
-local Config = require(modules.Config)
 local ParserTypes = require(script.ParserTypes)
 
 
 -- FUNCTIONS
-function Parser.parseMessage(message: string, optionalUser: User.Class?): ParserTypes.ParsedBatch
-	
+function Parser.parse(message: string, optionalUser: any?): ParserTypes.ParsedBatch
+	-- This is ONLY useable on the SERVER
+	local services = modules.Parent.Services
+	local Commands = require(services.Commands)
+	local Config = require(modules.Parent.Services.Config)
+	local Modifiers = require(modules.Parser.Modifiers)
+	local User = require(modules.Objects.User)
+
 	local Algorithm = require(script.Algorithm)
+	local forEveryCommand = require(script.Parent.CommandUtil.forEveryCommand)
 	local ParsedData = require(script.ParsedData)
 	local allParsedDatas = {}
 
@@ -181,9 +184,103 @@ function Parser.parseMessage(message: string, optionalUser: User.Class?): Parser
 	return parsedBatch
 end
 
+function Parser.addCapsule(baseString: string, capsuleStringOrStrings: string | {string})
+	-- This is useable on both server and client
+	-- Wraps the capsule string within capsule brackets (), and if more than one item, also
+	-- separates them with commas (or whatever the Collective is set to)
+	local ParserSettings = require(modules.Parser.ParserSettings)
+	local collective = ParserSettings.Collective
+	local capsuleString = capsuleStringOrStrings
+	if typeof(capsuleStringOrStrings) == "table" then
+		capsuleString = table.concat(capsuleStringOrStrings, collective)
+	end
+	if capsuleString == "" or capsuleString == " " then
+		return baseString
+	end
+	return `{baseString}({capsuleString})`
+end
 
-function Parser.stringify(statement)
+function Parser.unparse(commandName: string, modifiers: {string}, ...: any): string
+	-- This is useable on both server and client
+	-- This accepts a commandName, modifierStringArray, and arg results of that command
+	-- which is then converted into a stringified version of the command, e.g:
+	-- ";globalPaint me,role(admin) 255,0,0"
 
+	-- First we make sure the command is an actual command otherwise the args can't be unparsed
+	local getCommand = require(modules.CommandUtil.getCommand)
+	local command = getCommand(commandName)
+	if not command then
+		return ";unknownResult"
+	end
+
+	-- Now we organise each arg and prepare it to be parsed
+	-- It's important we determine how many endlessArgs there are because
+	-- this will require modifying their result if > 2
+	local commandArgs = command.args
+	local Args = require(modules.Parser.Args)
+	local valuesToUnParse = {...}
+	local parsedArray: {string} = {}
+	local function forEveryArg(callback)
+		for i, argNameOrInfo in commandArgs do
+			local argInfo = argNameOrInfo
+			if typeof(argInfo) ~= "table" then
+				argInfo = Args.get(argNameOrInfo)
+			end
+			argInfo = argInfo :: any
+			callback(argInfo, i)
+		end
+	end
+	local totalEndlessArgs = 0
+	forEveryArg(function(argInfo, i)
+		if argInfo.endlessArg then
+			totalEndlessArgs = totalEndlessArgs + 1
+		end
+	end)
+	
+	-- Now we unparse each arg with its given value (to become stringified)
+	local ParserSettings = require(modules.Parser.ParserSettings)
+	local endlessArgPattern = ParserSettings.EndlessArgPattern
+	local totalArgs = #commandArgs
+	forEveryArg(function(argInfo, i)
+		local stringValue = ""
+		local unparse = argInfo and argInfo.unparse	
+		if unparse then
+			local newStringValue = argInfo:unparse(valuesToUnParse[i])
+			if typeof(newStringValue) == "string" then
+				if argInfo.endlessArg and totalEndlessArgs > 1 and i ~= totalArgs then
+					newStringValue = newStringValue..endlessArgPattern
+				end
+				stringValue = newStringValue
+			end
+		end
+		table.insert(parsedArray, stringValue :: string)
+	end)
+
+	-- Next, we want to build the command string, which includes the command name
+	-- and any modifiers (like global, loop, etc). For this, we capitalize each
+	-- item *except* for the first item, which is lowercased, to make it easy
+	-- and presentable to read
+	local commandStartArray: {string} = {}
+	local capitalize = require(modules.DataUtil.capitalize)
+	if modifiers then
+		for _, modifierAndCapsule in modifiers do
+			local capitalizedModifier = capitalize(modifierAndCapsule)
+			table.insert(commandStartArray, capitalizedModifier)
+		end
+	end
+	local capitalizedCommandName = capitalize(commandName)
+	table.insert(commandStartArray, capitalizedCommandName)
+	local firstItemLower = (commandStartArray[1] or ""):lower()
+	commandStartArray[1] = firstItemLower
+
+	-- Finally, we combine it all together and add that prefix at the start
+	local spaceSeparator = ParserSettings.SpaceSeparator
+	local unparsedArgsSpacedOut = table.concat(parsedArray, spaceSeparator)
+	local commandStart = table.concat(commandStartArray, "")
+	local getYouSetting = require(modules.CommandUtil.getYouSetting)
+	local prefix = getYouSetting("Prefix") or ""
+	local unparsedString = `{prefix}{commandStart}{spaceSeparator}{unparsedArgsSpacedOut}`
+	return unparsedString
 end
 
 

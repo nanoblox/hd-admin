@@ -3,7 +3,7 @@ local DATA_STORE_NAME = "HDAdmin"
 local DataStoreService = game:GetService("DataStoreService")
 local DataStores = {}
 local _dataStore: DataStore? = nil
-local config = script:FindFirstAncestor("MainModule").Value.Modules.Config
+local config = script:FindFirstAncestor("MainModule").Value.Services.Config
 local configSettings = require(config.Settings)
 
 

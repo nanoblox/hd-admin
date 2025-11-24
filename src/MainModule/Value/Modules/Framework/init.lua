@@ -19,7 +19,6 @@
 ]]
 
 
-
 local Framework = {}
 local APPLICATION_NAME = "HD Admin"
 local appNameClean = APPLICATION_NAME:gsub(" ", "") -- Removes spaces
@@ -35,14 +34,14 @@ local function convertViewportToFolder(instance: Instance?)
 	-- https://devforum.roblox.com/t/worldmodels-too-costly-due-to-running-in-serial/3952084)
 	-- so we destroy these ViewportFrames and replace them with Folders.
 	if instance and instance:IsA("ViewportFrame") then
-		local folder = Instance.new("Folder")
-		folder.Name = instance.Name
+		local model = Instance.new("Model") -- Must be a model not folder to ensure everything is moved to server
+		model.Name = instance.Name
 		for _, child in instance:GetChildren() do
-			child.Parent = folder
+			child.Parent = model
 		end
-		folder.Parent = instance.Parent
+		model.Parent = instance.Parent
 		instance:Destroy()
-		return folder
+		return model
 	end
 	return nil
 end
@@ -99,9 +98,9 @@ end
 function Framework.getInstance(container: Folder | ModuleScript, instanceName: string): Instance?
 	--[[
 		In most cases instances can be rerieved by just doing ``script[INSTANCE_NAME]``,
-		however, when the *server* wants to access a model under a *shared* module, indexing
-		the instance will return nil or throw an error, because it will be located in the
-		mirrored shared container. This is the same still even when doing...
+		however, when the *server* wants to access a model, indexing
+		the instance can return nil or throw an error, because it's possible for the instance to be located in the
+		both mirrored shared container and server container. This is the same still even when doing...
 		```
 		local sharedValue = script:FindFirstAncestor("MainModule").Value
 		local model = sharedValue.Controllers.ModuleWithAnInstance[INSTANCE_NAME]
@@ -137,17 +136,25 @@ function Framework.getInstance(container: Folder | ModuleScript, instanceName: s
 	for i = 1, 100 do
 		table.insert(parents, part.Name)
 		part = part.Parent
-		if part == nil or part == serverContainer then
+		if part == nil or part == serverContainer or part == sharedContainer then
 			break
 		end
 	end
-	local nextPart = sharedContainer
-	for i = #parents, 1, -1 do
-		nextPart = nextPart:FindFirstChild(parents[i])
-		if not nextPart then
-			return nil
-		end
+	local oppositeTopLevelContainer = sharedContainer
+	if part == sharedContainer then
+		oppositeTopLevelContainer = serverContainer
 	end
+	local function getNextPart(containerToCheck)
+		local nextPart = containerToCheck
+		for i = #parents, 1, -1 do
+			nextPart = nextPart:FindFirstChild(parents[i])
+			if not nextPart then
+				return nil
+			end
+		end
+		return nextPart
+	end
+	local nextPart = getNextPart(oppositeTopLevelContainer)
 	local function checkChildren(instanceToCheck)
 		if not instanceToCheck or not instanceToCheck:IsA("Instance") then
 			return nil
@@ -219,7 +226,7 @@ function Framework.startServer()
 	if Framework.canStart() == false then
 		return
 	end
-
+	
 	-- Convert Viewports to Folders
 	local modules = sharedValue.Modules
 	local loader = Framework.getLoader()
@@ -229,73 +236,6 @@ function Framework.startServer()
 		for _, child in loaderConfig:GetChildren() do
 			convertViewportToFolder(child)
 		end
-	end
-
-	-- First move Loader Commands from under Config Roles to under the Commands service
-	-- We do this to prevent long pathways being created, and to avoid any merging
-	-- confusions which can occur from the modules being located under Configuration instances
-	local configRoles = loaderConfig and loaderConfig:FindFirstChild("Roles")
-	if configRoles then
-		local forEveryCommand = require(modules.CommandUtil.forEveryCommand)
-		for _, roleConfig in configRoles:GetChildren() do
-			if not roleConfig:IsA("Configuration") then
-				continue
-			end
-			local role = roleConfig.Name
-			for _, commandModule in roleConfig:GetChildren() do
-				if commandModule:IsA("ModuleScript") then
-					local reference = require(commandModule)
-					forEveryCommand(reference, function(command)
-						command.role = role
-					end)
-					for _, child in commandModule:GetChildren() do
-						-- We set a 'Child' attribute for all child modules named 'Client'
-						-- in case the creator of the command forgets to tag the module
-						-- with the 'Client' attribute (which exposes the instance to the client)
-						if not child:IsA("ModuleScript") then
-							continue
-						end
-						if child.Name:lower() ~= "client" then
-							continue
-						end
-						child:SetAttribute("Client", true)
-					end
-					commandModule.Parent = sharedValue.Services.Commands
-				end
-			end
-		end
-	end
-
-	-- Merge Loader Config items into the core
-	local framework = modules.Framework
-	local moduleReference = framework.ModuleReference
-	local referenceBack = framework.ReferenceBack
-	local coreConfig = modules.Config
-	if loaderConfig then
-		for _, child in loaderConfig:GetChildren() do
-			local existingInstance = coreConfig:FindFirstChild(child.Name)
-			if child:IsA("ModuleScript") and existingInstance then
-				local originalSettings = require(existingInstance) :: any
-				local newSettings = require(child) :: any
-				local function mergeTablesRecursively(original, new)
-					for key, value in new do
-						if type(value) == "table" and type(original[key]) == "table" then
-							mergeTablesRecursively(original[key], value)
-						else
-							original[key] = value
-						end
-					end
-				end
-				mergeTablesRecursively(originalSettings, newSettings)
-			else
-				
-				if existingInstance then
-					existingInstance:Destroy()
-				end
-				child.Parent = coreConfig
-			end
-		end
-		loaderConfig:Destroy()
 	end
 
 	-- These are the containers in which the Server and Shared sit
@@ -314,6 +254,9 @@ function Framework.startServer()
 		local fakeCore = Instance.new("Folder")
 		fakeCore.Name = "Core"
 		fakeCore.Parent = container
+		local fakeConfig = Instance.new("Folder")
+		fakeConfig.Name = "Config"
+		fakeConfig.Parent = container
 		return container
 	end
 
@@ -323,6 +266,110 @@ function Framework.startServer()
 	serverMainModule.Name = sharedMainModule.Name
 	serverMainModule.Value = sharedValue
 	serverMainModule.Parent = serverContainer.Core
+
+	-- This is the primary client container
+	-- It's important we create this before merging Config items as 'Accessible'
+	-- items depend on it
+	local clientContainer = createContainer(Framework.sharedName, Framework.sharedLocation)
+
+	-- This handles the moving of 'ReferenceBackConfig' modules for items labelled
+	-- as 'Accessible' in Config, so that they can be referenced on both client and
+	-- server, *and* from within and outside of the Loader Config
+	-- It's important to perform this first otherwise some modules like CustomArgs
+	-- won't be findable
+	local framework = modules.Framework
+	local moduleReference = framework.ModuleReference
+	local referenceBack = framework.ReferenceBack
+	local referenceBackConfig = framework.ReferenceBackConfig
+	local emptyFunction = framework.EmptyFunction
+	local coreConfig = modules.Parent.Services.Config
+	local CoreConfig = require(coreConfig) --loaderConfig
+	for moduleName, _ in CoreConfig.getAccessible() do
+		local loaderModule = loaderConfig and loaderConfig:FindFirstChild(moduleName)
+		local serverConfig = serverContainer.Config
+		local sharedConfig = clientContainer.Config
+		local referenceBackServer = referenceBackConfig:Clone()
+		local referenceBackShared = referenceBackConfig:Clone()
+		referenceBackServer.Name = moduleName
+		referenceBackShared.Name = moduleName
+		referenceBackServer.Parent = serverConfig
+		referenceBackShared.Parent = sharedConfig
+		if not loaderModule then
+			loaderModule = emptyFunction:Clone()
+			loaderModule.Name = moduleName
+			loaderModule.Parent = loaderConfig or coreConfig -- Doesn't matter which on, will still end up in same place
+		end
+		loaderModule:SetAttribute("Client", true)
+	end
+
+	-- First move Loader Commands from under Config Roles to under the Commands service
+	-- We do this to prevent long pathways being created, and to avoid any merging
+	-- confusions which can occur from the modules being located under Configuration instances
+	local configRoles = loaderConfig and loaderConfig:FindFirstChild("Roles")
+	if configRoles then
+		local deepCopyTable = require(modules.TableUtil.deepCopyTable)
+		local forEveryCommand = require(modules.CommandUtil.forEveryCommand)
+		local function checkForRolesAndCommands(instanceToCheck, rolesArray)
+			for _, roleConfigOrModule in instanceToCheck:GetChildren() do
+				if roleConfigOrModule:IsA("Configuration") then
+					local newRolesArray = deepCopyTable(rolesArray)
+					local role = roleConfigOrModule.Name
+					table.insert(newRolesArray, role)
+					checkForRolesAndCommands(roleConfigOrModule, newRolesArray)
+					continue
+				end
+				if not roleConfigOrModule:IsA("ModuleScript") then
+					continue
+				end
+				local reference = require(roleConfigOrModule)
+				forEveryCommand(reference, function(command)
+					command.roles = rolesArray
+				end)
+				for _, child in roleConfigOrModule:GetChildren() do
+					-- We set a 'Child' attribute for all child modules named 'Client'
+					-- in case the creator of the command forgets to tag the module
+					-- with the 'Client' attribute (which exposes the instance to the client)
+					if not child:IsA("ModuleScript") then
+						continue
+					end
+					if child.Name:lower() ~= "client" then
+						continue
+					end
+					child:SetAttribute("Client", true)
+				end
+				roleConfigOrModule.Parent = sharedValue.Services.Commands
+			end
+		end
+		checkForRolesAndCommands(configRoles, {})
+	end
+	
+	-- Merge Loader Config items into the core
+	if loaderConfig then
+		for _, child in loaderConfig:GetChildren() do
+			local moduleName = child.Name
+			local existingInstance = coreConfig:FindFirstChild(moduleName)
+			if child:IsA("ModuleScript") and existingInstance then
+				local originalSettings = require(existingInstance) :: any
+				local newSettings = require(child) :: any
+				local function mergeTablesRecursively(original, new)
+					for key, value in new do
+						if type(value) == "table" and type(original[key]) == "table" then
+							mergeTablesRecursively(original[key], value)
+						else
+							original[key] = value
+						end
+					end
+				end
+				mergeTablesRecursively(originalSettings, newSettings)
+				continue
+			end
+			if existingInstance then
+				existingInstance:Destroy()
+			end
+			child.Parent = coreConfig
+		end
+		loaderConfig:Destroy()
+	end
 
 	-- These functions build the directories within server and shared
 	local function getServerParentFromPathway(pathway)
@@ -442,7 +489,6 @@ function Framework.startServer()
 	
 	-- It's important we do this after moving the modules above, so that
 	-- the client only has access to modules that they need to access
-	local clientContainer = createContainer(Framework.sharedName, Framework.sharedLocation)
 	sharedMainModule.Parent = clientContainer.Core
 	
 	-- Start Services

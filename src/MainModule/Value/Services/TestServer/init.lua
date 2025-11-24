@@ -11,8 +11,14 @@ task.defer(function()
 		if success then
 			
 			-- Set prefix
-			--user.perm:set("PlayerSettings", "Prefix", "!")
+			--user.perm:set("YouSettings", "Prefix", "!")
 			
+			-- Set Volume/Pitch
+			user.perm:set("YouSettings", "Sound", "Pitch", "Command", 2)
+			task.delay(10, function()
+				user.perm:set("YouSettings", "Sound", "Pitch", "Command", 1)
+			end)
+
 			-- Cash Giver
 			while user.isActive do
 				user.perm:update("Cash", function(value: number)
@@ -35,7 +41,6 @@ task.defer(function()
 		end)
 	end
 end)
-
 
 -- Test Parser
 --[[
@@ -78,28 +83,8 @@ end
 --testAreValuesEqual()
 
 
-
--- Test config
--- Test something
---[[
-local modules = script:FindFirstAncestor("MainModule").Value.Modules
-local Config = require(modules.Config)
-local playerIdentifier = Config.getSetting("PlayerIdentifier")
-local collective = Config.getSetting("Collective")
-local names = {"ForeverHD", "ImAvafe", "ObliviousHD"}
-local selectionText = table.concat(
-    table.create(#names, ""),
-    ""
-)
-for i, name in ipairs(names) do
-    selectionText ..= playerIdentifier .. name
-    if i < #names then
-        selectionText ..= collective .. " "
-    end
-end
-
-print("selectionText =", selectionText)
---]]
+local Args = require(modules.Parser.Args)
+local testArg = Args.get("TestNumber1")
 
 
 return TestService

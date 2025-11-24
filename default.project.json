@@ -16,8 +16,8 @@
           "Roles": {
             "$path": "src/Commands"
           },
-          "Settings": {
-            "$path": "src/MainModule/Value/Modules/Config/Settings.lua"
+		  "Settings": {
+            "$path": "src/MainModule/Value/Services/Config/Settings.lua"
           }
         },
         "Core": {
@@ -40,6 +40,9 @@
               },
               "Modules": {
                 "$path": "src/MainModule/Value/Modules"
+              },
+			  "Items": {
+                 "$path": "src/MainModule/Value/Items"
               },
               "Packages": {
                 "$path": "roblox_packages"
