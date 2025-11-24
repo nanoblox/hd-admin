@@ -21,11 +21,14 @@ everyone:observe("RoleInfo", function(value)
 	--print("TEST RoleInfo:", value)
 end)
 everyone:observe("Commands", function(value)
-	--print("TEST Commands:", value)
+	print("TEST Commands:", value)
 end)
 everyone:observe("CommandInfo", function(value)
 	--print("TEST CommandInfo:", value)
 end)
+
+
+
 
 -- Test replication perm
 local TEST_EMOTE_ID = "79795305221612"
@@ -87,17 +90,13 @@ local Parser = require(modules.Parser)
 local TestArgs = require(modules.Parent.Controllers.TestClient.TestArgs)
 local testArgs = TestArgs[1]
 local testValues = TestArgs[2] :: {any}
-print("Starting final string...")
 local finalString = Parser.unparse("Test", {"GLOBAL", "LOOP"}, unpack(testValues))
-print("finalString =", finalString)
 
 
 local selectedPlayers = {"random", "role(admin)"}
 local materialEnum = Enum.Material.Sandstone
 local colorValue = Color3.fromRGB(255,0,0)
 local announcementText = "Hello this is a test announcement"
-print("Generating...")
-print(Parser.unparse("Material", {}, selectedPlayers, materialEnum, colorValue, announcementText))
 
 
 local localPlayer = game:GetService("Players").LocalPlayer
