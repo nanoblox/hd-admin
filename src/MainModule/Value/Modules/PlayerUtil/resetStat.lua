@@ -1,5 +1,6 @@
 --!strict
 return function(player: Player, statName: string)
+	--[[
 	local getStat = require(script.Parent.getStat)
 	local stat = getStat(player, statName)
 	if stat then
@@ -9,5 +10,5 @@ return function(player: Player, statName: string)
 			stat.Value = 0
 		end
 	end
-	return
+	return--]]
 end

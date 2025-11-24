@@ -120,7 +120,7 @@ function Task.construct(properties: Properties)
 		originalArgReturnValues = {} :: {[string]: any},
 		originalArgReturnValuesFromIndex = {} :: {[number]: any},
 		activeHolds = 0,
-		resumed = nil :: Signal.Class?,
+		resumed = nil :: Signal.Signal<any>?,
 		clientArgs = properties.clientArgs,
 		activeClientTasks = {} :: {[string]: true},
 		cooldownEndTime = nil :: number?,

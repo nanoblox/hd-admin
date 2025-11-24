@@ -22,9 +22,9 @@ function Queue.new()
 		processing = false :: any,
 		isSorting = false :: any,
 		isRequestingSort = false :: any,
-		sorted = janitor:add(Signal.new()) :: Signal.Class,
-		started = janitor:add(Signal.new()) :: Signal.Class,
-		ended = janitor:add(Signal.new()) :: Signal.Class,
+		sorted = janitor:add(Signal.new()) :: Signal.Signal<any>,
+		started = janitor:add(Signal.new()) :: Signal.Signal<any>,
+		ended = janitor:add(Signal.new()) :: Signal.Signal<any>,
 		hasStarted = false :: any,
 		isActive = true :: any,
 		sortByFunction = nil :: any,
@@ -116,7 +116,7 @@ function Queue.next(self: Class)
 		return
 	end
 	if not self.hasStarted then
-		local started = self.started :: Signal.Class
+		local started = self.started :: Signal.Signal<any>
 		self.hasStarted = true :: any
 		started:Fire()
 	end

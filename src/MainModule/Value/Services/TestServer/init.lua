@@ -75,7 +75,7 @@ local function testAreValuesEqual()
 	}
 
 	for _, testCase in pairs(testCases) do
-		local v1, v2, expected = unpack(testCase)
+		local v1, v2, expected = unpack(testCase :: any)
 		local result = areValuesEqual(v1, v2)
 		assert(result == expected, `Expected {v1} and {v2} to be {expected}, but got {result}`)
 	end

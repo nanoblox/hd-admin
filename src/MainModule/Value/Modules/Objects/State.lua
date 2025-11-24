@@ -267,7 +267,7 @@ function State.update(self: Class, ...: string | {string} | any)
 		error("Final argument must be a function")
 	end
 	local currentValue = self:get(table.unpack(pathwayAndCallback))
-	local newValue = callback(currentValue)
+	local newValue = (callback :: any)(currentValue)
 	self:set(pathwayAndCallback, newValue)
 end
 
@@ -579,7 +579,7 @@ function State.fetch(self: Class, ...: string | {string} | (...any) -> (...any))
 	task.spawn(function()
 		local success, value = self:fetchAsync(table.unpack(pathway :: {string}))
 		if success and callback then
-			callback(value)
+			(callback :: any)(value)
 		end
 	end)
 end

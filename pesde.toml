@@ -8,7 +8,7 @@ lib = "src"
 build_files = ["src"]
 
 [engines]
-lune = "^0.8.9"
+lune = "^0.10.2"
 
 [indices]
 default = "https://github.com/pesde-pkg/index"

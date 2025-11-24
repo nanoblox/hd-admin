@@ -81,6 +81,7 @@ local function setupReplicateListener()
 				replicateClientCommand:fireClient(replicationTarget, commandName, ...)
 			end
 		end
+		replicator = replicator :: any
 		replicator(replicateTo, ...)
 		return true, "Success"
 	end)
