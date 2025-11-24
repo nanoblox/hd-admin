@@ -5,6 +5,7 @@ local OnyxUI = require(Packages.OnyxUI)
 local Fusion = require(Packages.Fusion)
 local States = require(UI.States)
 local PanelsStateMod = require(UI.StateMods.PanelsStateMod)
+local Panel = nil :: any
 
 local Children = Fusion.Children
 

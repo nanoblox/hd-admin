@@ -8,6 +8,7 @@ local Config = require(UI.Config)
 local States = require(UI.States)
 local Sift = require(Packages.Sift)
 local PanelsStateMod = require(UI.StateMods.PanelsStateMod)
+local Panel = nil :: any
 
 local CONFIG = Config:Get()
 
