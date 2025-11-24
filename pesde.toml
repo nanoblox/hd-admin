@@ -4,8 +4,11 @@ private = true
 
 [target]
 environment = "roblox"
-lib = "src/init.luau"
+lib = "src"
 build_files = ["src"]
+
+[engines]
+lune = "^0.8.9"
 
 [indices]
 default = "https://github.com/pesde-pkg/index"
