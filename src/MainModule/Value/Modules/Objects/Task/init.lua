@@ -769,6 +769,7 @@ export type Properties = {
 export type Command = {
 	name: string,
 	role: string?,
+	order: number?, -- lower numbers appear first in the command list
 	aliases: {string}?,
 	undoAliases: {string}?, -- aliases to undone the command, e.g. "ice" might have "thaw"
 	description: string?,

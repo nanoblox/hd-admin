@@ -100,5 +100,10 @@ print("Generating...")
 print(Parser.unparse("Material", {}, selectedPlayers, materialEnum, colorValue, announcementText))
 
 
+local localPlayer = game:GetService("Players").LocalPlayer
+local playerGui = localPlayer:WaitForChild("PlayerGui")
+local gui = playerGui:WaitForChild("HDAdmin")
+local guideGui = gui:WaitForChild("GuideGui") :: TextButton
+guideGui.Visible = false
 
 return TestController
