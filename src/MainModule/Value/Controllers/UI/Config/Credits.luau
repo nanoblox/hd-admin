@@ -51,7 +51,7 @@ local CREDITS = {
 			Name = "Inspiration",
 			UserIds = {
 				44391621, -- @Scripth
-				596673602, -- @Scelartis
+				698712377, -- @Davey_Bones
 				214258, -- @Person299
 				1670764, -- @elttob
 				16492520, -- @pobammer
@@ -65,7 +65,6 @@ local CREDITS = {
 				671440392, -- @BitwiseAndrea
 				121643, -- @PeZsmistic
 				13953438, -- @NewFissy
-				576473, -- @LPGhatguy
 				25691148, -- @TheNexusAvenger
 				33655127, -- @boatbomber
 				87924253, -- @7kayoh

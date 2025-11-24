@@ -433,7 +433,7 @@ function User._loadAndAutoSaveData(self: Class, dataStoreName: string)
 		if isActive == false or serverIsShuttingDown then
 			isReleasingProfile = true
 		end
-		local beforeSaving = self.beforeSaving :: Signal.Class
+		local beforeSaving = self.beforeSaving :: Signal.Signal<any>
 		beforeSaving:Fire(isReleasingProfile) -- This is fired before saving, so that any data can be modified before saving
 		local dataToSave = perm:getAll(true)
 		User.incrementSavesThisMinute(dataToSave)
@@ -465,7 +465,7 @@ function User._loadAndAutoSaveData(self: Class, dataStoreName: string)
 	end
 
 	-- Call the beforeLoading signal to allow for any data to be modified before loading
-	local beforeLoading = self.beforeLoading :: Signal.Class
+	local beforeLoading = self.beforeLoading :: Signal.Signal<any>
 	beforeLoading:Fire()
 	
 	-- Save data and release session when player leaves

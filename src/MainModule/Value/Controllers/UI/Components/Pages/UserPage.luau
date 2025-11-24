@@ -1,12 +1,15 @@
+local Players = game:GetService("Players")
+
 local Main = script:FindFirstAncestor("MainModule")
 local Packages = Main.Value.Packages
 local UI = Main.Value.Controllers.UI
+
 local Fusion = require(Packages.Fusion)
 local OnyxUI = require(Packages.OnyxUI)
-local States = require(UI.States)
 local Config = require(UI.Config)
-local UserInformant = require(UI.Utils.UserInformant)
-local Sift = require(Packages.Sift)
+local PanelsStateMod = require(UI.StateMods.PanelsStateMod)
+local UserStateMod = require(UI.StateMods.UserStateMod)
+local States = require(UI.States)
 
 local CONFIG = Config:Get()
 
@@ -15,43 +18,6 @@ local Children = Fusion.Children
 local InfoCard = require(script.Parent.Parent.InfoCard)
 local CustomButton = require(script.Parent.Parent.CustomButton)
 local RolesReel = require(script.Parent.Parent.RolesReel)
-
-local INFO_CARDS = {
-	{
-		Title = { "Rank", CONFIG.Icons.ShieldPersonFill },
-		Body = "User",
-	},
-	{
-		Title = { "Warns", CONFIG.Icons.WarningFill },
-		Body = "0",
-	},
-	{
-		Title = { "Banned", CONFIG.Icons.ProhibitedFill },
-		Body = "Sep 20, 2024\n30d remaining",
-	},
-	{
-		Title = { "Ban note", CONFIG.Icons.NotepadFill },
-		Body = "Lorem ipsum dolor sit amet, consectetur.",
-	},
-}
-local MODERATION_ACTIONS = {
-	{
-		Name = "Warn",
-		Content = { CONFIG.Icons.WarningFill },
-	},
-	{
-		Name = "Kick",
-		Content = { CONFIG.Icons.Close },
-	},
-	{
-		Name = "Ban",
-		Content = { CONFIG.Icons.ProhibitedFill },
-	},
-	{
-		Name = "Rank",
-		Content = { CONFIG.Icons.ShieldPersonFill },
-	},
-}
 
 export type Props = OnyxUI.FrameProps & {}
 
@@ -62,30 +28,45 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 		RolesReel = RolesReel,
 	})
 	local Theme = OnyxUI.Themer.Theme:now()
+	local Panel = PanelsStateMod.Panel:now()
 
-	local UserId = States.Menu.Pages.User.UserId
-	local UserInfo = Scope:Value({})
+	local UserId = Panel.PagesData.User.UserId
+	local UserInfo = UserStateMod.GetSafe(Scope, UserStateMod.Get(Scope, UserId))
 
-	local function UpdateUserInfo()
-		local UserIdValue = Fusion.peek(UserId)
+	local ModerationActions = {
+		{
+			Name = "Kick",
+			Content = { CONFIG.Icons.Close, "Kick" },
+			Command = "kick",
+			Disabled = Scope:Computed(function(Use)
+				local PlayersValue = Use(States.Session.Players)
+				local UserIdValue = Use(UserId)
 
-		UserInfo:set({
-			UserId = UserIdValue,
-		})
+				for _, Player in PlayersValue do
+					if Player.UserId == UserIdValue then
+						return false
+					end
+				end
 
-		UserInfo:set(Sift.Dictionary.merge({
-			UserId = 1,
-			Username = "Username",
-			DisplayName = "Name",
-		}, UserInformant.User(UserIdValue)))
-	end
-
-	Scope:Observer(UserId):onChange(function()
-		UpdateUserInfo()
-	end)
-	task.spawn(function()
-		UpdateUserInfo()
-	end)
+				return true
+			end),
+			Done = true,
+		},
+		{
+			Name = "Ban",
+			Content = { CONFIG.Icons.ProhibitedFill, "Ban" },
+			Command = "ban",
+			Primary = true,
+			Done = Scope:Computed(function(Use, Scope)
+				return not Use(UserStateMod.IsBanned(Scope, UserInfo))
+			end),
+			Undo = {
+				Name = "Unban",
+				Content = { CONFIG.Icons.DeviceRecover, "Unban" },
+				Command = "unban",
+			},
+		},
+	}
 
 	return Scope:Frame(OnyxUI.Util.CombineProps(Props, {
 		Name = script.Name,
@@ -96,7 +77,6 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 
 		[Children] = {
 			Scope:Scroller {
-				Name = "Page",
 				ClipsDescendants = true,
 				ScrollBarThickness = 0,
 				ScrollBarImageTransparency = 1,
@@ -113,14 +93,12 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 
 				[Children] = {
 					Scope:Frame {
-						Name = "Details",
 						List = {
 							HorizontalFlex = Enum.UIFlexAlignment.Fill,
 						},
 
 						[Children] = {
 							Scope:Frame {
-								Name = "NameAndPicture",
 								List = {
 									FillDirection = Enum.FillDirection.Horizontal,
 									Padding = Scope:UDim(0, Theme.Spacing["0.5"]),
@@ -140,14 +118,12 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 										},
 									},
 									Scope:Frame {
-										Name = "Names",
 										List = {
 											Padding = Scope:UDim(0, Theme.Spacing["0"]),
 										},
 
 										[Children] = {
 											Scope:Heading {
-												Name = "DisplayName",
 												Text = Scope:Computed(function(Use)
 													return `{Use(UserInfo).DisplayName}`
 												end),
@@ -155,7 +131,6 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 												HeadingSize = 1.5,
 											},
 											Scope:Text {
-												Name = "Username",
 												Text = Scope:Computed(function(Use)
 													return `@{Use(UserInfo).Username}`
 												end),
@@ -166,14 +141,17 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 								},
 							},
 							Scope:RolesReel {
-								Roles = { "Admin", "Mod" },
+								Roles = Scope:Computed(function(Use)
+									local UserInfoValue = Use(UserInfo)
+
+									return UserInfoValue.Roles
+								end),
 								UserId = UserId,
 								Truncated = false,
 							},
 						},
 					},
 					Scope:Frame {
-						Name = "InfoCards",
 						List = {
 							FillDirection = Enum.FillDirection.Horizontal,
 							Padding = Scope:UDim(0, Theme.Spacing["0.5"]),
@@ -181,25 +159,67 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 						},
 
 						[Children] = {
-							Scope:ForValues(INFO_CARDS, function(Use, Scope, InfoCardItem)
-								return OnyxUI.Themer.Theme:is(Use(Theme)):during(function()
-									return Scope:InfoCard {
-										Title = InfoCardItem.Title,
-										Body = InfoCardItem.Body,
-										Size = Scope:Computed(function(Use)
-											return UDim2.fromScale(0.5, 0)
-												+ UDim2.fromOffset(-Use(Theme.Spacing["0.5"]), 16 * 6)
-										end),
-										AutomaticSize = Enum.AutomaticSize.None,
+							Scope:ForValues(
+								Scope:Computed(function(Use)
+									local UserInfoValue = Use(UserInfo)
+
+									local LatestBan = UserInfoValue.Bans[#UserInfoValue.Bans] or {}
+									local BanTimeRemaining = os.time()
+										- ((LatestBan.Timestamp or 0) + (LatestBan.Duration or -1))
+
+									if (LatestBan.Duration or -1) == -1 then
+										BanTimeRemaining = -1
+									end
+
+									return {
+										{
+											Title = { "Account", CONFIG.Icons.Info },
+											Body = `Joined: {DateTime.fromUnixTimestamp(UserInfoValue.AccountAge)
+												:FormatLocalTime("LL", "en-us")}\n\nAge Verified: {UserInfoValue.AgeVerified}`,
+										},
+										{
+											Title = { "Banned", CONFIG.Icons.ProhibitedFill },
+											Body = `{DateTime.fromUnixTimestamp(LatestBan.Timestamp or 0)
+												:FormatLocalTime("LL", "en-us")}\n\n{BanTimeRemaining > 0 and `{BanTimeRemaining} remaining` or "Indefinite"}`,
+											Highlighted = LatestBan ~= nil,
+										},
 									}
-								end)
-							end),
+								end),
+								function(Use, Scope, InfoCardItem)
+									return OnyxUI.Themer.Theme:is(Use(Theme)):during(function()
+										return PanelsStateMod.Panel:is(Panel):during(function()
+											return Scope:InfoCard {
+												Title = InfoCardItem.Title,
+												Body = InfoCardItem.Body,
+												Size = Scope:Computed(function(Use)
+													return UDim2.fromScale(0.5, 0)
+														+ UDim2.fromOffset(
+															-Use(Theme.Spacing["0.5"]),
+															Use(Theme.Spacing["8"]) * 1.25
+														)
+												end),
+												AutomaticSize = Enum.AutomaticSize.None,
+												Stroke = {
+													Color = Scope:Computed(function(Use)
+														local HighlightedValue = Use(InfoCardItem.Highlighted)
+
+														if HighlightedValue then
+															return Use(Theme.Colors.Primary.Main)
+														else
+															return Use(Theme.Colors.Neutral.Main)
+														end
+													end),
+												},
+											}
+										end)
+									end)
+								end
+							),
 						},
 					},
 				},
 			},
 			Scope:Frame {
-				Name = "ActionButtons",
 				List = {
 					FillDirection = Enum.FillDirection.Horizontal,
 					HorizontalFlex = Enum.UIFlexAlignment.Fill,
@@ -207,11 +227,32 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 				},
 
 				[Children] = {
-					Scope:ForValues(MODERATION_ACTIONS, function(Use, Scope, Action)
+					Scope:ForValues(ModerationActions, function(Use, Scope, Action)
 						return Scope:Button {
-							Name = `{Action.Name}Button`,
-							Content = Action.Content,
+							Content = Scope:Computed(function(Use)
+								local DoneValue = Use(Action.Done)
+
+								if DoneValue then
+									return Action.Content
+								else
+									return Action.Undo.Content
+								end
+							end),
+							ContentSize = Theme.TextSize["1"],
 							SizeVariant = "ExtraLarge",
+							Disabled = Action.Disabled,
+							Color = Scope:Computed(function()
+								if Action.Primary == true then
+									return Use(Theme.Colors.Primary.Main)
+								else
+									return Use(Theme.Colors.Neutral.Main)
+								end
+							end),
+
+							OnActivate = function()
+								Panel.PagesData.Execute.CommandId:set(Action.Command)
+								PanelsStateMod.ToPage(Panel, "Execute")
+							end,
 						}
 					end),
 				},

@@ -20,7 +20,7 @@ local PAGES = {
 		Icon = CONFIG.Icons.Pages.Commands,
 	},
 	Execute = {
-		Id = "Execute",
+		Id = "Run",
 	},
 	Moderation = {
 		Id = "Moderation",
@@ -35,7 +35,7 @@ local PAGES = {
 	},
 	About = {
 		Id = "About",
-		Icon = CONFIG.Icons.LogoGlyph,
+		Icon = CONFIG.Icons.Pages.About,
 	},
 	Analytics = {
 		Id = "Analytics",
@@ -43,11 +43,11 @@ local PAGES = {
 	},
 	Roles = {
 		Id = "Roles",
-		Icon = CONFIG.Icons.ShieldPerson,
+		Icon = CONFIG.Icons.Pages.Roles,
 	},
 	Tasks = {
 		Id = "Tasks",
-		Icon = CONFIG.Icons.Info,
+		Icon = CONFIG.Icons.Pages.Tasks,
 	},
 	User = {
 		Id = "User",
@@ -59,7 +59,11 @@ local PAGES = {
 		Id = "Cosmetics",
 	},
 	Booster = {
-		Id = "Booster",
+		Id = "Unlock",
+	},
+	Logs = {
+		Id = "Logs",
+		Icon = CONFIG.Icons.Pages.Logs,
 	},
 }
 

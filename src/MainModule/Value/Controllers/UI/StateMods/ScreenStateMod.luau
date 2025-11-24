@@ -12,8 +12,20 @@ local Scope = Fusion.scoped(Fusion)
 
 local Screen = {}
 
-Scope:Hydrate(Workspace.CurrentCamera) {
-	[Out "ViewportSize"] = States.Screen.Resolution,
-}
+local function UpdateCamera()
+	local Camera = Workspace.CurrentCamera
+
+	States.Screen.Resolution:set(Camera.ViewportSize)
+
+	Camera:GetPropertyChangedSignal("ViewportSize"):Connect(function()
+		States.Screen.Resolution:set(Camera.ViewportSize)
+	end)
+end
+
+UpdateCamera()
+
+Workspace:GetPropertyChangedSignal("CurrentCamera"):Connect(function()
+	UpdateCamera()
+end)
 
 return Screen

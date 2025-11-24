@@ -6,6 +6,7 @@ local OnyxUI = require(Packages.OnyxUI)
 local States = require(UI.States)
 local StateMods = require(UI.StateMods)
 local DarkTheme = require(UI.Themes.DarkTheme)
+local PanelsStateMod = require(UI.StateMods.PanelsStateMod)
 
 local Viewport = require(script.Parent.ViewportGui)
 local CustomButton = require(script.Parent.Parent.CustomButton)
@@ -20,22 +21,8 @@ return function(Target: Instance)
 	StateMods:Initialize()
 	StateMods:Start()
 
-	States.Users.Profiles:set({
-		[1] = {
-			UserId = 1,
-			Banned = true,
-			Role = "Admin",
-			Warnings = {},
-		},
-		[2] = {
-			UserId = 1,
-			Role = "Guest",
-			Warnings = { {} },
-		},
-	})
-
-	States.Menu.Open:set(true)
-	-- States.Menu.Page:set("Moderation")
+	local Panel = PanelsStateMod.New(Scope)
+	Panel.Open:set(true)
 
 	States.Theme:set(DarkTheme)
 
@@ -52,7 +39,7 @@ return function(Target: Instance)
 		end),
 
 		OnActivate = function()
-			States.Menu.Open:set(not Fusion.peek(States.Menu.Open))
+			Panel.Open:set(not Fusion.peek(Panel.Open))
 		end,
 	}
 

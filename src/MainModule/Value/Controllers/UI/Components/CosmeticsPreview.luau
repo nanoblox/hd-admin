@@ -4,7 +4,7 @@ local UI = Main.Value.Controllers.UI
 local Fusion = require(Packages.Fusion)
 local OnyxUI = require(Packages.OnyxUI)
 local Config = require(UI.Config)
-local NavigationStateMod = require(UI.StateMods.NavigationStateMod)
+local PanelsStateMod = require(UI.StateMods.PanelsStateMod)
 
 local CONFIG = Config:Get()
 
@@ -19,6 +19,7 @@ return function(Scope: Fusion.Scope<>, Props: Props)
 		CosmeticButton = CosmeticButton,
 	})
 	local Theme = OnyxUI.Themer.Theme:now()
+	local Panel = PanelsStateMod.Panel:now()
 
 	return Scope:Frame(OnyxUI.Util.CombineProps(Props, {
 		Name = "Cosmetics",
@@ -44,21 +45,25 @@ return function(Scope: Fusion.Scope<>, Props: Props)
 				[Children] = {
 					Scope:ForValues(CONFIG.FeaturedCosmetics, function(Use, Scope, Id: string)
 						return OnyxUI.Themer.Theme:is(Theme):during(function()
-							return Scope:CosmeticButton {
-								Id = Id,
-								InfoType = Enum.InfoType.GamePass,
-								Size = Scope:Computed(function(Use)
-									return UDim2.fromScale(1 / 2, 0)
-										+ UDim2.fromOffset(
-											-(
-													((Use(Theme.Spacing["0.5"])) + (Use(Theme.StrokeThickness["2"])))
-													* (1 / 2)
-												),
-											0
-										)
-								end),
-								AutomaticSize = Enum.AutomaticSize.Y,
-							}
+							return PanelsStateMod.Panel:is(Panel):during(function()
+								return Scope:CosmeticButton {
+									Id = Id,
+									InfoType = Enum.InfoType.GamePass,
+									Size = Scope:Computed(function(Use)
+										return UDim2.fromScale(1 / 2, 0)
+											+ UDim2.fromOffset(
+												-(
+														(
+															(Use(Theme.Spacing["0.5"]))
+															+ (Use(Theme.StrokeThickness["2"]))
+														) * (1 / 2)
+													),
+												0
+											)
+									end),
+									AutomaticSize = Enum.AutomaticSize.Y,
+								}
+							end)
 						end)
 					end),
 				},
@@ -69,7 +74,7 @@ return function(Scope: Fusion.Scope<>, Props: Props)
 				SizeVariant = "ExtraLarge",
 
 				OnActivate = function()
-					NavigationStateMod:To("Cosmetics")
+					PanelsStateMod.ToPage(Panel, "Cosmetics")
 				end,
 			},
 		},

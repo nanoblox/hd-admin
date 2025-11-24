@@ -1,5 +1,6 @@
 local Main = script:FindFirstAncestor("MainModule")
 local Packages = Main.Value.Packages
+
 local Fusion = require(Packages.Fusion)
 local OnyxUI = require(Packages.OnyxUI)
 
@@ -47,7 +48,7 @@ return function(Scope: Fusion.Scope<>, Props: Props)
 
 		for _, TimeProperty in TimeProperties do
 			local NumberValue = Fusion.peek(TimeProperty.Value)
-			local ValueInSeconds = math.floor(NumberValue or 1 * TimeProperty.Unit)
+			local ValueInSeconds = math.floor((NumberValue or 1) * TimeProperty.Unit)
 
 			TotalTime += ValueInSeconds
 		end
@@ -59,7 +60,7 @@ return function(Scope: Fusion.Scope<>, Props: Props)
 		local TimeLeft = TimeValue
 
 		for _, TimeProperty in TimeProperties do
-			local ValueInUnits = math.floor(TimeLeft or 1 / TimeProperty.Unit)
+			local ValueInUnits = math.floor((TimeLeft or 1) / TimeProperty.Unit)
 
 			TimeProperty.Value:set(ValueInUnits)
 
@@ -67,7 +68,7 @@ return function(Scope: Fusion.Scope<>, Props: Props)
 		end
 	end
 
-	Scope:Observer(Time):onChange(function(NewTime)
+	Scope:Observer(Time):onChange(function()
 		UpdateTimeProperties()
 	end)
 

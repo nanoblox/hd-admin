@@ -6,7 +6,8 @@ local OnyxUI = require(Packages.OnyxUI)
 local Navigation = require(UI.Static.Navigation)
 local States = require(UI.States)
 local Config = require(UI.Config)
-local Signals = require(UI.Signals)
+local Callbacks = require(UI.Callbacks)
+local PanelsStateMod = require(UI.StateMods.PanelsStateMod)
 
 local Children = Fusion.Children
 
@@ -21,6 +22,7 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 		CustomButton = CustomButton,
 	})
 	local Theme = OnyxUI.Themer.Theme:now()
+	local Panel = PanelsStateMod.Panel:now()
 
 	return Scope:Scroller(OnyxUI.Util.CombineProps(Props, {
 		Name = script.Name,
@@ -47,13 +49,15 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 				[Children] = {
 					Scope:ForValues(Navigation.Children, function(Use, Scope, NavPage)
 						return OnyxUI.Themer.Theme:is(Fusion.peek(States.Theme)):during(function()
-							return Scope:PageButton {
-								Id = NavPage.Page.Id,
-								Size = Scope:Computed(function(Use)
-									return UDim2.fromScale(0.5, 0) + UDim2.fromOffset(-Use(Theme.Spacing["0.5"]), 0)
-								end),
-								AutomaticSize = Enum.AutomaticSize.Y,
-							}
+							return PanelsStateMod.Panel:is(Panel):during(function()
+								return Scope:PageButton {
+									Id = NavPage.Page.Id,
+									Size = Scope:Computed(function(Use)
+										return UDim2.fromScale(0.5, 0) + UDim2.fromOffset(-Use(Theme.Spacing["0.5"]), 0)
+									end),
+									AutomaticSize = Enum.AutomaticSize.Y,
+								}
+							end)
 						end)
 					end),
 				},

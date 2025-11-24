@@ -1,13 +1,14 @@
 local Main = script:FindFirstAncestor("MainModule")
 local Packages = Main.Value.Packages
 local UI = Main.Value.Controllers.UI
+
 local Fusion = require(Packages.Fusion)
 local OnyxUI = require(Packages.OnyxUI)
 local States = require(UI.States)
 local Pages = require(UI.Static.Pages)
 local Config = require(UI.Config)
-local NavigationStateMod = require(UI.StateMods.NavigationStateMod)
 local Sift = require(Packages.Sift)
+local PanelsStateMod = require(UI.StateMods.PanelsStateMod)
 
 local CONFIG = Config:Get()
 
@@ -16,7 +17,7 @@ local Children = Fusion.Children
 local PageButton = require(script.Parent.Parent.PageButton)
 local TitleBar2 = require(script.Parent.Parent.TitleBar2)
 
-local MENUS = {
+local PAGES = {
 	Dashboard = require(script.Parent.Parent.Pages.DashboardPage),
 	Commands = require(script.Parent.Parent.Pages.CommandsPage),
 	About = require(script.Parent.Parent.Pages.AboutPage),
@@ -39,16 +40,25 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 		TitleBar2 = TitleBar2,
 	})
 	local Theme = OnyxUI.Themer.Theme:now()
+	local Panel = PanelsStateMod.Panel:now()
 
 	local Page = Scope:Computed(function(Use)
-		return Pages[Use(States.Menu.Page)]
+		return Pages[Use(Panel.Page)]
 	end)
 	local PageHistory = Scope:Computed(function(Use)
-		local PageValue = Use(Page)
-		local UndoHistoryValue = Use(NavigationStateMod.UndoHistory)
-		local HistoryValue = Use(NavigationStateMod.History)
+		local UndoHistoryValue = Use(Panel.PageUndoHistory)
+		local HistoryValue = Use(Panel.PageHistory)
 
 		return Sift.Array.merge(UndoHistoryValue, HistoryValue)
+	end)
+	local RenderedPages = Scope:Computed(function(Use)
+		local PageHistoryValue = Use(Panel.PageHistory)
+		local PagesToRender =
+			Sift.Array.prepend(Sift.Array.slice(Sift.Array.reverse(PageHistoryValue), 1, 5), "Placeholder")
+
+		return Sift.Dictionary.keys(Sift.Dictionary.filter(PAGES, function(_, Name)
+			return table.find(PagesToRender, Name) ~= nil
+		end))
 	end)
 
 	local LastPageHistory = Scope:Value({})
@@ -70,20 +80,21 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 			task.cancel(OpenCloseThread)
 		end
 
-		local OpenValue = Fusion.peek(States.Menu.Open)
+		local OpenValue = Fusion.peek(Panel.Open)
 
 		Enabled:set(OpenValue)
 	end
 
-	Scope:Observer(States.Menu.Open):onChange(function()
+	Scope:Observer(Panel.Open):onChange(function()
 		TransitionOpenClose()
 	end)
 	TransitionOpenClose()
 
 	return Scope:AutoScaler(OnyxUI.Util.CombineProps(Props, {
 		Name = script.Name,
-		BaseResolution = Vector2.new(700, 500),
+		BaseResolution = Vector2.new(300, 500),
 		MaxScale = 1,
+		MinScale = 0.7,
 		Visible = Enabled,
 
 		[Children] = {
@@ -96,7 +107,7 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 				AutomaticSize = Enum.AutomaticSize.Y,
 				GroupTransparency = Scope:Spring(
 					Scope:Computed(function(Use)
-						return Use(States.Menu.Open) and 0 or 1
+						return Use(Panel.Open) and 0 or 1
 					end),
 					Theme.SpringSpeed["1"],
 					Theme.SpringDampening["1.5"]
@@ -119,9 +130,12 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 					Scope:TitleBar2 {
 						Content = Scope:Computed(function(Use)
 							local PageValue = Use(Page)
-							local PageIdValue = Use(States.Menu.Page)
+							local PageIdValue = Use(Panel.Page)
+							local TitleValue = Use(Panel.Title)
 
-							if PageIdValue == "Dashboard" then
+							if TitleValue ~= nil then
+								return { TitleValue }
+							elseif PageIdValue == "Dashboard" then
 								return { CONFIG.Icons.LogoGlyph, PageValue.Name or PageValue.Id or PageIdValue }
 							else
 								return { PageValue.Name or PageValue.Id or PageIdValue }
@@ -129,18 +143,18 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 						end),
 
 						OnDrag = function(DeltaPosition: Vector2)
-							local MenuPositionValue = Fusion.peek(States.Menu.Position)
+							local MenuPositionValue = Fusion.peek(Panel.Position)
 							local ScreenResolutionValue = Fusion.peek(States.Screen.Resolution)
 
 							MenuPositionValue += (DeltaPosition / ScreenResolutionValue)
 
-							States.Menu.Position:set(MenuPositionValue)
+							Panel.Position:set(MenuPositionValue)
 						end,
 					},
 					Scope:Frame {
 						Size = Scope:Spring(
 							Scope:Computed(function(Use)
-								if Use(States.Menu.Open) then
+								if Use(Panel.Open) then
 									return UDim2.fromOffset(0, Use(Theme.Sizing["24"]))
 								else
 									return UDim2.fromOffset(0, 0)
@@ -160,60 +174,84 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 						},
 
 						[Children] = {
-							Scope:ForPairs(MENUS, function(Use, Scope, Name, Component)
+							Scope:ForPairs(PAGES, function(Use, Scope, Name, Component)
 								return Name,
 									OnyxUI.Themer.Theme:is(Use(States.Theme)):during(function()
-										local Index = Scope:Computed(function(Use)
-											local LastPageHistoryValue = Use(LastPageHistory)
+										return PanelsStateMod.Panel:is(Panel):during(function()
+											local HistoryIndex = Scope:Computed(function(Use)
+												local PageHistoryValue = Use(PageHistory)
 
-											return table.find(LastPageHistoryValue, Name) or 0
+												if Name == "Placeholder" then
+													return 1000
+												end
+
+												return table.find(PageHistoryValue, Name) or 0
+											end)
+											local Open = Scope:Computed(function(Use)
+												local PageValue = Use(Panel.Page)
+
+												if PageValue == Name then
+													return true
+												elseif (PAGES[PageValue] == nil) and (Name == "Placeholder") then
+													return true
+												else
+													return false
+												end
+											end)
+											local Rendered = Scope:Computed(function(Use)
+												local RenderedPagesValue = Use(RenderedPages)
+
+												return table.find(RenderedPagesValue, Name) ~= nil
+											end)
+
+											return Scope:Frame {
+												Name = Name,
+												Size = Scope:Spring(
+													Scope:Computed(function(Use)
+														local OpenValue = Use(Open)
+
+														if OpenValue then
+															return UDim2.fromScale(1, 1)
+														else
+															return UDim2.fromScale(0, 1)
+														end
+													end),
+													Theme.SpringSpeed["2"],
+													Theme.SpringDampening["1.5"]
+												),
+												AutomaticSize = Enum.AutomaticSize.Y,
+												LayoutOrder = HistoryIndex,
+												ClipsDescendants = true,
+												List = {
+													VerticalFlex = Enum.UIFlexAlignment.Fill,
+												},
+
+												[Children] = {
+													Scope:Computed(function(Use, Scope)
+														local RenderedValue = Use(Rendered)
+
+														if RenderedValue then
+															return OnyxUI.Themer.Theme:is(Theme):during(function()
+																return PanelsStateMod.Panel:is(Panel):during(function()
+																	return Component(Scope, {
+																		Name = Name,
+																		Open = Open,
+																		Size = Scope:UDim2Offset(288, 0),
+																		AutomaticSize = Enum.AutomaticSize.None,
+																		Padding = {
+																			All = Scope:UDim(
+																				0,
+																				Theme.StrokeThickness["1"]
+																			),
+																		},
+																	})
+																end)
+															end)
+														end
+													end),
+												},
+											}
 										end)
-										local Open = Scope:Computed(function(Use)
-											local PageValue = Use(States.Menu.Page)
-
-											if PageValue == Name then
-												return true
-											elseif (MENUS[PageValue] == nil) and (Name == "Placeholder") then
-												return true
-											else
-												return false
-											end
-										end)
-
-										return Scope:Frame {
-											Name = Name,
-											Size = Scope:Spring(
-												Scope:Computed(function(Use)
-													local OpenValue = Use(Open)
-
-													if OpenValue then
-														return UDim2.fromScale(1, 1)
-													else
-														return UDim2.fromScale(0, 1)
-													end
-												end),
-												Theme.SpringSpeed["2"],
-												Theme.SpringDampening["1.5"]
-											),
-											AutomaticSize = Enum.AutomaticSize.Y,
-											LayoutOrder = Index,
-											ClipsDescendants = true,
-											List = {
-												VerticalFlex = Enum.UIFlexAlignment.Fill,
-											},
-
-											[Children] = {
-												Component(Scope, {
-													Name = Name,
-													Open = Open,
-													Size = Scope:UDim2Offset(288, 0),
-													AutomaticSize = Enum.AutomaticSize.None,
-													Padding = {
-														All = Scope:UDim(0, Theme.StrokeThickness["1"]),
-													},
-												}),
-											},
-										}
 									end)
 							end),
 						},

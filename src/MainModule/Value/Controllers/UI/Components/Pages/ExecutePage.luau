@@ -6,7 +6,8 @@ local OnyxUI = require(Packages.OnyxUI)
 local States = require(UI.States)
 local Config = require(UI.Config)
 local Sift = require(Packages.Sift)
-local Signals = require(UI.Signals)
+local Callbacks = require(UI.Callbacks)
+local PanelsStateMod = require(UI.StateMods.PanelsStateMod)
 
 local CONFIG = Config:Get()
 
@@ -14,6 +15,7 @@ local Children = Fusion.Children
 
 local SettingGroup = require(script.Parent.Parent.SettingGroup)
 local CustomButton = require(script.Parent.Parent.CustomButton)
+local CommandButton = require(script.Parent.Parent.CommandButton)
 
 export type Props = OnyxUI.FrameProps & {}
 
@@ -21,27 +23,28 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 	local Scope = Fusion.innerScope(Scope, Fusion, OnyxUI.Components, OnyxUI.Util, {
 		SettingGroup = SettingGroup,
 		CustomButton = CustomButton,
+		CommandButton = CommandButton,
 	})
+
 	local Theme = OnyxUI.Themer.Theme:now()
+	local Panel = PanelsStateMod.Panel:now()
+
+	local CommandId = Panel.PagesData.Execute.CommandId
+	local TextPromptToShow = Scope:Value("")
 
 	local Command = Scope:Computed(function(Use)
-		local IdValue = Use(States.Menu.Pages.Execute.CommandId)
-
-		return CONFIG.Commands[IdValue]
-	end)
-	local SafeCommand = Scope:Computed(function(Use)
-		local CommandValue = Use(Command)
+		local CommandIdValue = Use(CommandId)
 
 		return Sift.Dictionary.merge({
-			Prompt = "command",
+			Name = "Command",
+			Aliases = {},
 			Arguments = {},
-			Callback = function() end,
-		}, CommandValue or {})
+			Role = "Guest",
+		}, CONFIG.Commands[CommandIdValue])
 	end)
 	local SafeArguments = Scope:Computed(function(Use)
-		return Use(SafeCommand).Arguments
+		return Use(Command).Arguments
 	end)
-
 	local ArgumentSettings = Scope:ForValues(SafeArguments, function(Use, Scope, Argument)
 		return {
 			Name = Argument.Name,
@@ -53,14 +56,12 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 	local ArgumentSettingValues = Scope:ForValues(ArgumentSettings, function(Use, Scope, ArgumentSetting)
 		return Fusion.peek(ArgumentSetting.Value)
 	end)
-
-	local TextPrompt = Scope:Value("")
-
-	local TextPromptComputed = Scope:Computed(function(Use)
-		return `{Use(States.Settings.Prefix)}{Use(SafeCommand).Prompt} <arg1> <arg2>`
+	local TextPrompt = Scope:Computed(function(Use)
+		return `{Use(States.Settings.Prefix)}{Use(Command).Name} <arg1> <arg2>`
 	end)
-	Scope:Observer(TextPromptComputed):onChange(function()
-		TextPrompt:set(Fusion.peek(TextPromptComputed))
+
+	Scope:Observer(function()
+		TextPromptToShow:set(Fusion.peek(TextPrompt))
 	end)
 
 	return Scope:Frame(OnyxUI.Util.CombineProps(Props, {
@@ -89,17 +90,16 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 				[Children] = {
 					Scope:SettingGroup {
 						Title = Scope:Computed(function(Use)
-							local SafeCommandValue = Use(SafeCommand)
+							local SafeCommandValue = Use(Command)
 							local PrefixValue = Use(States.Settings.Prefix)
 
-							return `{PrefixValue}{SafeCommandValue.Prompt}`
+							return `{PrefixValue}{SafeCommandValue.Name}`
 						end),
 						Settings = ArgumentSettings,
 					},
 				},
 			},
 			Scope:Frame {
-				Name = "Execute",
 				List = {
 					HorizontalFlex = Enum.UIFlexAlignment.Fill,
 					Padding = Scope:UDim(0, Theme.Spacing["0.5"]),
@@ -107,25 +107,17 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 
 				[Children] = {
 					Scope:TextInput {
-						Name = "PromptBox",
 						Text = TextPrompt,
 						TextEditable = false,
 						BackgroundTransparency = 0,
 						BackgroundColor3 = Theme.Colors.Neutral.Main,
 					},
-					Scope:Button {
-						Name = "ExecuteButton",
-						Content = { "Execute" },
+					Scope:CommandButton {
+						Id = CommandId,
+						QuickRun = true,
 						Color = Theme.Colors.Primary.Main,
-						SizeVariant = "ExtraLarge",
-						ContentSize = Theme.TextSize["1"],
-
-						OnActivate = function()
-							Signals.CommandRan:Fire(
-								Fusion.peek(States.Menu.Pages.Execute.CommandId),
-								Fusion.peek(ArgumentSettingValues)
-							)
-						end,
+						Arguments = ArgumentSettingValues,
+						Text = "Run",
 					},
 				},
 			},

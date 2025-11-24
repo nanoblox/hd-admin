@@ -1,11 +1,14 @@
-name = "nanoblox/hd-admin"
+name = "nanoblox/hd_admin"
 version = "0.1.0"
 private = true
 
 [target]
 environment = "roblox"
-lib = "src/init.luau"
+lib = "src"
 build_files = ["src"]
+
+[engines]
+lune = "^0.10.2"
 
 [indices]
 default = "https://github.com/pesde-pkg/index"
@@ -35,5 +38,5 @@ Bootloader = { wally = "imavafe/bootloader", version = "^0.1.0" }
 Fusion = { wally = "elttob/fusion", version = "^0.3.0" }
 OnyxUI = { wally = "imavafe/onyx-ui", version = "^1.0.1" }
 
-Janitor = { wally = "1foreverhd/janitor", version = "^1.18.12" }
-TopbarPlus = { wally = "1foreverhd/topbarplus", version = "^3.3.1" }
+Janitor = { wally = "1foreverhd/janitor", version = "^1.18.15" }
+TopbarPlus = { wally = "1foreverhd/topbarplus", version = "^3.4.0" }

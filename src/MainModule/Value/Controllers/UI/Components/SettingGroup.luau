@@ -5,6 +5,7 @@ local Fusion = require(Packages.Fusion)
 local OnyxUI = require(Packages.OnyxUI)
 local SettingsRef = require(UI.Static.Settings)
 local States = require(UI.States)
+local PanelsStateMod = require(UI.StateMods.PanelsStateMod)
 
 local Children = Fusion.Children
 
@@ -20,6 +21,7 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 		Setting = Setting,
 	})
 	local Theme = OnyxUI.Themer.Theme:now()
+	local Panel = PanelsStateMod.Panel:now()
 
 	local Title = OnyxUI.Util.Fallback(Props.Title, "Settings")
 	local Settings = OnyxUI.Util.Fallback(Props.Settings, {})
@@ -45,13 +47,15 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 				[Children] = {
 					Scope:ForValues(Settings, function(Use, Scope, SettingItem: SettingsRef.Setting)
 						return OnyxUI.Themer.Theme:is(Use(States.Theme)):during(function()
-							return Scope:Setting {
-								Label = SettingItem.Name,
-								Type = SettingItem.Type,
-								Options = SettingItem.Options,
-								Default = SettingItem.Default,
-								Value = SettingItem.Value,
-							}
+							return PanelsStateMod.Panel:is(Panel):during(function()
+								return Scope:Setting {
+									Label = SettingItem.Name,
+									Type = SettingItem.Type,
+									Options = SettingItem.Options,
+									Default = SettingItem.Default,
+									Value = SettingItem.Value,
+								}
+							end)
 						end)
 					end),
 				},

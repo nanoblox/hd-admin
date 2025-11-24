@@ -4,6 +4,7 @@ local UI = Main.Value.Controllers.UI
 local Fusion = require(Packages.Fusion)
 local OnyxUI = require(Packages.OnyxUI)
 local States = require(UI.States)
+local PanelsStateMod = require(UI.StateMods.PanelsStateMod)
 
 local Children = Fusion.Children
 
@@ -16,6 +17,7 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 		Prompt = Prompt,
 	})
 	local Theme = OnyxUI.Themer.Theme:now()
+	local Panel = PanelsStateMod.Panel:now()
 
 	return Scope:AutoScaler(OnyxUI.Util.CombineProps(Props, {
 		Name = script.Name,
@@ -38,13 +40,18 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 				[Children] = {
 					Scope:ForValues(States.Prompts.Prompts, function(Use, Scope, PromptItem)
 						return OnyxUI.Themer.Theme:is(Theme):during(function()
-							return Scope:Prompt {
-								Title = PromptItem.Title,
-								Body = PromptItem.Body,
-								Actions = PromptItem.Actions,
-								Callback = PromptItem.Callback,
-								Lifetime = PromptItem.Lifetime,
-							}
+							return PanelsStateMod.Panel:is(Panel):during(function()
+								return Scope:Prompt {
+									Title = PromptItem.Title,
+									Body = PromptItem.Body,
+									Actions = PromptItem.Actions,
+									Arguments = PromptItem.Arguments,
+									Callback = PromptItem.Callback,
+									Pull = PromptItem.Pull,
+									Lifetime = PromptItem.Lifetime,
+									Sticky = PromptItem.Sticky,
+								}
+							end)
 						end)
 					end),
 				},

@@ -3,9 +3,7 @@ local Packages = Main.Value.Packages
 local UI = Main.Value.Controllers.UI
 local OnyxUI = require(Packages.OnyxUI)
 local Fusion = require(Packages.Fusion)
-local UserInformant = require(UI.Utils.UserInformant)
-local States = require(UI.States)
-local NavigationStateMod = require(UI.StateMods.NavigationStateMod)
+local PanelsStateMod = require(UI.StateMods.PanelsStateMod)
 
 local Children = Fusion.Children
 
@@ -24,6 +22,7 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 		UserDetails = UserDetails,
 	})
 	local Theme = OnyxUI.Themer.Theme:now()
+	local Panel = PanelsStateMod.Panel:now()
 
 	local UserId = OnyxUI.Util.Fallback(Props.UserId, 1)
 	local PrefixLabel = OnyxUI.Util.Fallback(Props.PrefixLabel, {})
@@ -46,8 +45,8 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 		OnActivate = function()
 			local UserIdValue = Fusion.peek(UserId)
 
-			States.Menu.Pages.User.UserId:set(UserIdValue)
-			NavigationStateMod:To("User")
+			Panel.PagesData.User.UserId:set(UserIdValue)
+			PanelsStateMod.ToPage(Panel, "User")
 		end,
 
 		[Children] = {

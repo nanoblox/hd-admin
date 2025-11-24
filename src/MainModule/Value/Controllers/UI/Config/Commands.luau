@@ -1,27 +1,17 @@
-local Ranks = require(script.Parent.Ranks)
+local Main = script:FindFirstAncestor("MainModule")
+local UI = Main.Value.Controllers.UI
+local Types = require(UI.Utils.Types)
 
-export type Argument = {
-	Name: string,
-	Type: string,
-	Options: { string }?,
-	Fallback: any?,
-	Optional: boolean?,
-}
-export type Command = {
-	Prompt: string,
-	Arguments: { Argument },
-	Rank: Ranks.Rank,
-}
-
-local COMMANDS = {
+local COMMANDS: { [string]: Types.Command } = {
 	Command = {
-		Prompt = "command",
-		Rank = "Moderator",
+		Name = "command",
+		Roles = { "Mod" },
+		Category = "Moderation",
 		Arguments = {},
 	},
 	Command2 = {
-		Prompt = "command2",
-		Rank = "Admin",
+		Name = "command2",
+		Roles = { "Admin" },
 		Arguments = {
 			{
 				Name = "Players",
@@ -36,8 +26,9 @@ local COMMANDS = {
 		},
 	},
 	Command3 = {
-		Prompt = "command3",
-		Rank = "VIP",
+		Name = "command3",
+		Roles = { "VIP" },
+		Category = "Fun",
 		Arguments = {
 			{
 				Name = "Players",
@@ -50,8 +41,9 @@ local COMMANDS = {
 		},
 	},
 	Command4 = {
-		Prompt = "command4",
-		Rank = "Guest",
+		Name = "command4",
+		Roles = { "Guest" },
+		Category = "Utility",
 		Arguments = {
 			{
 				Name = "Players",
@@ -64,8 +56,9 @@ local COMMANDS = {
 		},
 	},
 	Command5 = {
-		Prompt = "command5",
-		Rank = "Guest",
+		Name = "command5",
+		Roles = { "Guest" },
+		Category = "Moderation",
 		Arguments = {
 			{
 				Name = "Players",
@@ -78,8 +71,9 @@ local COMMANDS = {
 		},
 	},
 	Ban = {
-		Prompt = "ban",
-		Rank = "Moderator",
+		Name = "ban",
+		Roles = { "Mod" },
+		Category = "Moderation",
 		Arguments = {
 			{
 				Name = "Players",
@@ -93,8 +87,9 @@ local COMMANDS = {
 		},
 	},
 	Warn = {
-		Prompt = "warn",
-		Rank = "Moderator",
+		Name = "warn",
+		Roles = { "Mod" },
+		Category = "Moderation",
 		Arguments = {
 			{
 				Name = "Players",
@@ -107,23 +102,25 @@ local COMMANDS = {
 		},
 	},
 	Admin = {
-		Prompt = "admin",
-		Rank = "Admin",
+		Name = "admin",
+		Roles = { "Admin" },
+		Category = "Administration",
 		Arguments = {
 			{
 				Name = "Players",
 				Type = "UserIds",
 			},
 			{
-				Name = "Rank",
+				Name = "Role",
 				Type = "Enum",
 				Options = { "Moderator", "Admin" },
 			},
 		},
 	},
 	EveryArgument = {
-		Prompt = "everyargument",
-		Rank = "Moderator",
+		Name = "everyargument",
+		Roles = { "Mod" },
+		Category = "Utility",
 		Arguments = {
 			{
 				Name = "UserIds",
@@ -163,6 +160,10 @@ local COMMANDS = {
 			{
 				Name = "Duration",
 				Type = "Duration",
+			},
+			{
+				Name = "MultiText",
+				Type = "MultiText",
 			},
 		},
 	},

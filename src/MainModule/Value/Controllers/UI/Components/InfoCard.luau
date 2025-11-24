@@ -11,6 +11,7 @@ local CustomButton = require(script.Parent.CustomButton)
 export type Props = CustomButton.Props & {
 	Title: Fusion.UsedAs<{ string }>?,
 	Body: Fusion.UsedAs<string>?,
+	LocalizeBody: Fusion.UsedAs<boolean>?,
 }
 
 return function(Scope: Fusion.Scope<any>, Props: Props)
@@ -22,6 +23,7 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 	local Title = OnyxUI.Util.Fallback(Props.Title, { "Title" })
 	local Body = OnyxUI.Util.Fallback(Props.Body, "Lorem ipsum doloreum")
 	local Color = OnyxUI.Util.Fallback(Props.Color, Theme.Colors.Neutral.Main)
+	local LocalizeBody = OnyxUI.Util.Fallback(Props.LocalizeBody, false)
 
 	local Padding = Scope:UDim(0, Theme.Padding["1"])
 
@@ -57,17 +59,20 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 				[Children] = {
 					Scope:IconText {
 						Content = Title,
+						ContentWrapped = false,
 						FontFace = Scope:Computed(function(Use)
 							return Font.new(Use(Theme.Font.Body), Use(Theme.FontWeight.Bold))
 						end),
 						List = {
 							Padding = Scope:UDim(0, Theme.Spacing["0.25"]),
+							Wraps = false,
 						},
 					},
 					Scope:Text {
 						Text = Body,
 						TextColor3 = Theme.Colors.NeutralContent.Main,
 						ClipsDescendants = true,
+						AutoLocalize = LocalizeBody,
 						List = {
 							Padding = Scope:UDim(0, Theme.Spacing["0.25"]),
 						},

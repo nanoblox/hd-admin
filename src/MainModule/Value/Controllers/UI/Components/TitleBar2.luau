@@ -6,8 +6,8 @@ local OnyxUI = require(Packages.OnyxUI)
 local Config = require(UI.Config)
 local States = require(UI.States)
 local ColorUtils = require(Packages.ColorUtils)
-local NavigationStateMod = require(UI.StateMods.NavigationStateMod)
 local Pages = require(UI.Static.Pages)
+local PanelsStateMod = require(UI.StateMods.PanelsStateMod)
 
 local CONFIG = Config:Get()
 
@@ -26,6 +26,7 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 		Dragger = Dragger,
 	})
 	local Theme = OnyxUI.Themer.Theme:now()
+	local Panel = PanelsStateMod.Panel:now()
 
 	local Content = OnyxUI.Util.Fallback(Props.Content, {})
 	local Color = OnyxUI.Util.Fallback(Props.Color, Theme.Colors.Primary.Main)
@@ -37,7 +38,7 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 		return ColorUtils.Emphasize(ColorValue, 1)
 	end)
 	local Page = Scope:Computed(function(Use)
-		return Pages[Use(States.Menu.Page)]
+		return Pages[Use(Panel.Page)]
 	end)
 
 	return Scope:Frame(OnyxUI.Util.CombineProps(Props, {
@@ -74,20 +75,22 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 				ContentSize = Theme.TextSize["1.25"],
 				Color = ContentColor,
 				Disabled = Scope:Computed(function(Use)
-					local PageIdValue = Use(States.Menu.Page)
+					local PageIdValue = Use(Panel.Page)
 					local PageValue = Use(Page)
+					local NavigationValue = Use(Panel.Navigation)
+					local PageHistory = Use(Panel.PageHistory)
 
-					if PageIdValue == "Dashboard" then
+					if #PageHistory <= 1 then
 						return true
 					elseif PageValue ~= nil then
-						return PageValue.NavigationLocked
+						return not NavigationValue
 					else
 						return false
 					end
 				end),
 
 				OnActivate = function()
-					NavigationStateMod:Undo()
+					PanelsStateMod.Undo(Panel)
 				end,
 			},
 			Scope:IconText {
@@ -109,14 +112,10 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 				Image = CONFIG.Icons.Close,
 				ContentSize = Theme.TextSize["1.25"],
 				Color = ContentColor,
-				Disabled = Scope:Computed(function(Use)
-					local PageValue = Use(Page)
-
-					return PageValue.NavigationLocked == true
-				end),
 
 				OnActivate = function()
-					States.Menu.Open:set(false)
+					Panel.Open:set(false)
+					PanelsStateMod.Destroy(Panel)
 				end,
 			},
 		},

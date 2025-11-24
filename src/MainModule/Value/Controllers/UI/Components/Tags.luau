@@ -11,6 +11,7 @@ export type Props = OnyxUI.FrameProps & {
 	Disabled: Fusion.UsedAs<boolean>?,
 	Color: Fusion.UsedAs<Color3>?,
 	ButtonProps: OnyxUI.ButtonProps?,
+	OnSelect: Fusion.UsedAs<(Content: { { string } }, Enabled: boolean) -> ()>?,
 }
 
 return function(Scope: Fusion.Scope<any>, Props: Props)
@@ -24,6 +25,7 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 		Radius = Scope:UDim(0, Theme.CornerRadius["1"]),
 	})
 	local ButtonProps = OnyxUI.Util.Fallback(Props.ButtonProps, {})
+	local OnSelect = OnyxUI.Util.Fallback(Props.OnSelect, function() end)
 
 	local Selection = Scope:EnsureValue(OnyxUI.Util.Fallback(Props.Selection, {}))
 
@@ -57,6 +59,7 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 							OnActivate = function()
 								local SelectionValue = Fusion.peek(Selection)
 								local TagIndex = table.find(SelectionValue, Content)
+								local OnSelectValue = Fusion.peek(OnSelect)
 
 								if TagIndex ~= nil then
 									table.remove(SelectionValue, TagIndex)
@@ -65,6 +68,8 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 								end
 
 								Selection:set(SelectionValue)
+
+								OnSelect(Content, TagIndex == nil)
 							end,
 						}))
 					end)

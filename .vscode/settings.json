@@ -5,7 +5,6 @@
 	"luau-lsp.fflags.enableByDefault": true,
 	"stylua.targetReleaseVersion": "latest",
 	"luau-lsp.sourcemap.rojoProjectFile": "default.project.json",
-    
-	"luau-lsp.diagnostics.workspace": false,
-	"luau-lsp.diagnostics.pullOnChange": true
+	// "luau-lsp.diagnostics.workspace": false,
+	// "luau-lsp.diagnostics.pullOnChange": true
 }

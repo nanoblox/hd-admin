@@ -4,23 +4,36 @@ local UI = Main.Value.Controllers.UI
 local Fusion = require(Packages.Fusion)
 local OnyxUI = require(Packages.OnyxUI)
 local Config = require(UI.Config)
-local Signals = require(UI.Signals)
+local Callbacks = require(UI.Callbacks)
+local Sift = require(Packages.Sift)
+local PanelsStateMod = require(UI.StateMods.PanelsStateMod)
 
 local CONFIG = Config:Get()
 
 local Children = Fusion.Children
 
 export type Props = OnyxUI.ButtonProps & {
-	Role: Fusion.UsedAs<string>?,
+	Id: Fusion.UsedAs<string>?,
 	UserId: Fusion.UsedAs<number>?,
 }
 
 return function(Scope: Fusion.Scope<>, Props: Props)
 	local Scope = Fusion.innerScope(Scope, Fusion, OnyxUI.Components, OnyxUI.Util, {})
 	local Theme = OnyxUI.Themer.Theme:now()
+	local Panel = PanelsStateMod.Panel:now()
 
-	local Role = OnyxUI.Util.Fallback(Props.Role, "Admin")
+	local Id = OnyxUI.Util.Fallback(Props.Id, "Guest")
 	local UserId = OnyxUI.Util.Fallback(Props.UserId, nil)
+
+	local Role = Scope:Computed(function(Use)
+		local IdValue = Use(Id)
+
+		return Sift.Dictionary.merge({
+			Name = "Guest",
+			Color = Color3.fromHex("FFFFFF"),
+			Level = 0,
+		}, CONFIG.Roles[IdValue] or {})
+	end)
 
 	return Scope:Badge(OnyxUI.Util.CombineProps(Props, {
 		Name = script.Name,
@@ -37,10 +50,13 @@ return function(Scope: Fusion.Scope<>, Props: Props)
 
 		[Children] = {
 			Scope:Frame {
-				Name = "Marker",
-				BackgroundColor3 = Theme.Colors.Error.Main,
+				BackgroundColor3 = Scope:Computed(function(Use)
+					return Use(Role).Color
+				end),
 				BackgroundTransparency = 0,
-				Size = Scope:UDim2Offset(Theme.TextSize["0.75"], Theme.TextSize["0.75"]),
+				Size = Scope:Computed(function(Use)
+					return UDim2.fromOffset(Use(Theme.TextSize["1"]) / 2, Use(Theme.TextSize["1"]) / 2)
+				end),
 				AutomaticSize = Enum.AutomaticSize.None,
 				Corner = {
 					Radius = Scope:UDim(0, Theme.CornerRadius.Full),
@@ -52,19 +68,20 @@ return function(Scope: Fusion.Scope<>, Props: Props)
 						Size = UDim2.fromScale(0.9, 0.9),
 						AnchorPoint = Vector2.new(0.5, 0.5),
 						Position = UDim2.fromScale(0.5, 0.5),
+						Visible = false,
 					},
 				},
 			},
 			Scope:IconText {
 				Content = Scope:Computed(function(Use)
-					return { Use(Role) }
+					return { Use(Id) }
 				end),
 			},
 			Scope:Computed(function(Use)
 				local UserIdValue = Use(UserId)
-				local RoleValue = Use(Role)
+				local IdValue = Use(Id)
 
-				if UserIdValue ~= nil then
+				if (UserIdValue ~= nil) and (IdValue ~= nil) then
 					return Scope:IconButton {
 						Image = CONFIG.Icons.Close,
 						ContentSize = Theme.TextSize["0.75"],
@@ -78,7 +95,10 @@ return function(Scope: Fusion.Scope<>, Props: Props)
 						},
 
 						OnActivate = function()
-							Signals.UserRoleRevoked:Fire(UserIdValue, RoleValue)
+							Callbacks.RunCommand("removerole", {
+								UserIdValue,
+								IdValue,
+							})
 						end,
 					}
 				end

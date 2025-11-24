@@ -35,7 +35,7 @@
             },
             "Value": {
               "$className": "ViewportFrame",
-			  "Controllers": {
+              "Controllers": {
                 "$path": "src/MainModule/Value/Controllers"
               },
               "Modules": {
@@ -45,7 +45,7 @@
                  "$path": "src/MainModule/Value/Items"
               },
               "Packages": {
-                "$path": "Packages"
+                "$path": "roblox_packages"
               },
               "Services": {
                 "$path": "src/MainModule/Value/Services"

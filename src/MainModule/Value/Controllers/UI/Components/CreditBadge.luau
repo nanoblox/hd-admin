@@ -4,6 +4,7 @@ local UI = Main.Value.Controllers.UI
 local OnyxUI = require(Packages.OnyxUI)
 local Fusion = require(Packages.Fusion)
 local States = require(UI.States)
+local PanelsStateMod = require(UI.StateMods.PanelsStateMod)
 
 local Children = Fusion.Children
 
@@ -21,6 +22,7 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 		CustomButton = CustomButton,
 	})
 	local Theme = OnyxUI.Themer.Theme:now()
+	local Panel = PanelsStateMod.Panel:now()
 
 	local Label = OnyxUI.Util.Fallback(Props.Label, "Label")
 	local Image = OnyxUI.Util.Fallback(Props.Image, nil)
@@ -44,11 +46,20 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 		},
 
 		OnActivate = function()
-			States.Menu.Pages.About.SelectedCredit:set({
-				Name = Fusion.peek(Label),
-				Image = Fusion.peek(Image),
-				Link = Fusion.peek(Link),
-			})
+			local SelectedCreditValue = Fusion.peek(Panel.PagesData.About.SelectedCredit)
+			local LinkValue = Fusion.peek(Link)
+
+			if (SelectedCreditValue ~= nil) and (SelectedCreditValue.Link == Link) then
+				Panel.PagesData.About.SelectedCredit:set({
+					Link = "",
+				})
+			else
+				Panel.PagesData.About.SelectedCredit:set({
+					Name = Fusion.peek(Label),
+					Image = Fusion.peek(Image),
+					Link = Link,
+				})
+			end
 		end,
 
 		[Children] = {

@@ -10,8 +10,8 @@ local Config = require(UI.Config)
 local States = require(UI.States)
 local Sift = require(Packages.Sift)
 local UserInformant = require(UI.Utils.UserInformant)
-local NavigationStateMod = require(UI.StateMods.NavigationStateMod)
 local CosmeticsStateMod = require(UI.StateMods.CosmeticsStateMod)
+local PanelsStateMod = require(UI.StateMods.PanelsStateMod)
 
 local CONFIG = Config:Get()
 
@@ -42,10 +42,11 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 		DonationButtons = DonationButtons,
 	})
 	local Theme = OnyxUI.Themer.Theme:now()
+	local Panel = PanelsStateMod.Panel:now()
 
 	local Open = OnyxUI.Util.Fallback(Props.Open, false)
 
-	local SelectedCredit = States.Menu.Pages.About.SelectedCredit
+	local SelectedCredit = Panel.PagesData.About.SelectedCredit
 	local SelectedCreditSafe = Scope:Computed(function(Use)
 		return Sift.Dictionary.merge({
 			Name = "SelectedLibrary",
@@ -71,7 +72,7 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 	Scope:Observer(Open):onChange(function()
 		UnequipCosmetics()
 	end)
-	Scope:Observer(States.Menu.Open):onChange(function()
+	Scope:Observer(Panel.Open):onChange(function()
 		UnequipCosmetics()
 	end)
 
@@ -195,6 +196,27 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 						AutomaticSize = Enum.AutomaticSize.Y,
 					},
 					Scope:Divider {},
+					Scope:Button {
+						Content = { "Booster" },
+						ContentSize = Theme.TextSize["1"],
+						SizeVariant = "ExtraLarge",
+
+						OnActivate = function()
+							local BoosterPanel = PanelsStateMod.New(Scope, {
+								ParentPanel = Panel,
+								RecordInitialPage = false,
+							})
+
+							-- BoosterPanel.Navigation:set(false)
+							BoosterPanel.Title:set("Booster")
+
+							BoosterPanel.PagesData.Commands.TagsLocked:set(true)
+							BoosterPanel.PagesData.Commands.ActiveTags:set({ { "Booster" } })
+
+							PanelsStateMod.ToPage(BoosterPanel, "Booster")
+						end,
+					},
+					Scope:Divider {},
 					Scope:Frame {
 						List = {
 							HorizontalAlignment = Enum.HorizontalAlignment.Center,
@@ -234,7 +256,7 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 						end),
 
 						OnActivate = function()
-							States.Menu.Pages.About.SelectedCredit:set(nil)
+							Panel.PagesData.About.SelectedCredit:set(nil)
 						end,
 					},
 					Scope:Frame {

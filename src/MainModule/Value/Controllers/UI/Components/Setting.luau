@@ -11,10 +11,21 @@ local NumberInput = require(script.Parent.NumberInput)
 local FilteredTextInput = require(script.Parent.FilteredTextInput)
 local Checklist = require(script.Parent.Checklist)
 local DurationInput = require(script.Parent.DurationInput)
+local MultiTextInput = require(script.Parent.MultiTextInput)
 
 local CONTROLS = {
 	Number = {
 		Component = NumberInput,
+		OutputProp = "Value",
+		Inline = false,
+		Props = {
+			Flex = {
+				Mode = Enum.UIFlexMode.Fill,
+			},
+		},
+	},
+	Slider = {
+		Component = OnyxUI.Components.Slider,
 		OutputProp = "Value",
 		Inline = false,
 		Props = {
@@ -38,6 +49,7 @@ local CONTROLS = {
 	UserIds = {
 		Component = UserInput,
 		OutputProp = "UserIds",
+		Default = {},
 		Inline = false,
 	},
 	Boolean = {
@@ -99,6 +111,16 @@ local CONTROLS = {
 		Props = {
 			List = {
 				HorizontalFlex = Enum.UIFlexAlignment.Fill,
+			},
+		},
+	},
+	MultiText = {
+		Component = MultiTextInput,
+		OutputProp = "Items",
+		Default = { "" },
+		Props = {
+			Flex = {
+				Mode = Enum.UIFlexMode.Fill,
 			},
 		},
 	},
@@ -164,19 +186,25 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 		end,
 
 		[Children] = {
-			Scope:Text {
-				Text = Label,
-				TextSize = Scope:Computed(function(Use)
-					if Use(Inline) then
-						return Use(Theme.TextSize["1"])
-					else
-						return Use(Theme.TextSize["1.25"])
-					end
-				end),
-				AutomaticSize = Scope:Computed(function(Use)
-					return (Use(Inline) and Enum.AutomaticSize.XY) or Enum.AutomaticSize.Y
-				end),
-			},
+			Scope:Computed(function(Use)
+				local LabelValue = Use(Label)
+
+				if string.len(LabelValue) >= 1 then
+					return Scope:Text {
+						Text = Label,
+						TextSize = Scope:Computed(function(Use)
+							if Use(Inline) then
+								return Use(Theme.TextSize["1"])
+							else
+								return Use(Theme.TextSize["1.25"])
+							end
+						end),
+						AutomaticSize = Scope:Computed(function(Use)
+							return (Use(Inline) and Enum.AutomaticSize.XY) or Enum.AutomaticSize.Y
+						end),
+					}
+				end
+			end),
 			Scope:Computed(function(Use)
 				local ControlValue = Use(Control)
 

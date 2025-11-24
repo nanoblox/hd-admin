@@ -1,13 +1,14 @@
 local RunService = game:GetService("RunService")
+
 local Main = script:FindFirstAncestor("MainModule")
 local Packages = Main.Value.Packages
 local UI = Main.Value.Controllers.UI
 local Fusion = require(Packages.Fusion)
 local OnyxUI = require(Packages.OnyxUI)
 local States = require(UI.States)
-local NavigationStateMod = require(UI.StateMods.NavigationStateMod)
 local UserInformant = require(UI.Utils.UserInformant)
 local Sift = require(Packages.Sift)
+local PanelsStateMod = require(UI.StateMods.PanelsStateMod)
 
 local Children = Fusion.Children
 
@@ -24,8 +25,9 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 		Users = Users,
 	})
 	local Theme = OnyxUI.Themer.Theme:now()
+	local Panel = PanelsStateMod.Panel:now()
 
-	local UserSelection = States.Menu.Pages.Users.Selected
+	local UserSelection = Panel.PagesData.Users.Selected
 	local SearchQuery = Scope:Value("")
 	local UsernameIdResult = Scope:Value(nil)
 
@@ -53,9 +55,9 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 		UsernameIdResult:set(nil)
 	end)
 
-	Scope:Observer(States.Menu.Page):onChange(function()
+	Scope:Observer(Panel.Page):onChange(function()
 		local UserSelectionValue = Fusion.peek(UserSelection)
-		local SelectedCallbackValue = Fusion.peek(States.Menu.Pages.Users.SelectedCallback)
+		local SelectedCallbackValue = Fusion.peek(Panel.PagesData.Users.SelectedCallback)
 
 		if SelectedCallbackValue then
 			SelectedCallbackValue(UserSelectionValue)
@@ -175,7 +177,7 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 				Corner = {},
 
 				OnActivate = function()
-					NavigationStateMod:Undo()
+					PanelsStateMod.Undo(Panel)
 				end,
 			},
 		},

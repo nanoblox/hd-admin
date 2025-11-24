@@ -5,6 +5,7 @@ local OnyxUI = require(Packages.OnyxUI)
 local Fusion = require(Packages.Fusion)
 local States = require(UI.States)
 local Sift = require(Packages.Sift)
+local PanelsStateMod = require(UI.StateMods.PanelsStateMod)
 
 local Children = Fusion.Children
 local CommandButton = require(script.Parent.CommandButton)
@@ -19,6 +20,7 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 		CommandButton = CommandButton,
 	})
 	local Theme = OnyxUI.Themer.Theme:now()
+	local Panel = PanelsStateMod.Panel:now()
 
 	local Commands = OnyxUI.Util.Fallback(Props.Commands, {})
 	local Label = OnyxUI.Util.Fallback(Props.Label, {})
@@ -71,10 +73,12 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 						end),
 						function(Use, Scope, CommandId: string)
 							return OnyxUI.Themer.Theme:is(Use(States.Theme)):during(function()
-								return Scope:CommandButton {
-									Id = CommandId,
-									QuickRun = States.Menu.Pages.Commands.QuickRun,
-								}
+								return PanelsStateMod.Panel:is(Panel):during(function()
+									return Scope:CommandButton {
+										Id = CommandId,
+										QuickRun = Panel.PagesData.Commands.QuickRun,
+									}
+								end)
 							end)
 						end
 					),

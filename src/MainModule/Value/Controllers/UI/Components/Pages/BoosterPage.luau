@@ -5,8 +5,8 @@ local Fusion = require(Packages.Fusion)
 local OnyxUI = require(Packages.OnyxUI)
 local States = require(UI.States)
 local Config = require(UI.Config)
-local Signals = require(UI.Signals)
-local NavigationStateMod = require(UI.StateMods.NavigationStateMod)
+local Callbacks = require(UI.Callbacks)
+local PanelsStateMod = require(UI.StateMods.PanelsStateMod)
 
 local CONFIG = Config:Get()
 
@@ -21,6 +21,7 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 		PageButton = PageButton,
 	})
 	local Theme = OnyxUI.Themer.Theme:now()
+	local Panel = PanelsStateMod.Panel:now()
 
 	return Scope:Frame(OnyxUI.Util.CombineProps(Props, {
 		Name = script.Name,
@@ -31,7 +32,7 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 
 		[Children] = {
 			Scope:IconText {
-				Content = { CONFIG.Icons.LogoGlyph, "Booster" },
+				Content = { CONFIG.Icons.LogoGlyph, "Commands" },
 				ContentSize = Theme.TextSize["1.5"],
 				ContentFontFace = Scope:Font(Theme.Font.Heading, Theme.FontWeight.Heading),
 				List = {
@@ -102,7 +103,7 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 						Color = Theme.Colors.Primary.Main,
 
 						OnActivate = function()
-							Signals.BoosterPurchaseInitiated:Fire()
+							Callbacks.PurchaseBooster()
 						end,
 					},
 					Scope:Button {
@@ -112,8 +113,7 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 						SizeVariant = "ExtraLarge",
 
 						OnActivate = function()
-							States.Menu.Pages.Commands.ActiveTag:set("Booster")
-							NavigationStateMod:To("Commands")
+							PanelsStateMod.ToPage(Panel, "Commands")
 						end,
 					},
 				},

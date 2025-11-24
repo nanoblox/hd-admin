@@ -4,6 +4,7 @@ local UI = Main.Value.Controllers.UI
 local Fusion = require(Packages.Fusion)
 local OnyxUI = require(Packages.OnyxUI)
 local States = require(UI.States)
+local PanelsStateMod = require(UI.StateMods.PanelsStateMod)
 
 local Children = Fusion.Children
 
@@ -20,23 +21,6 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 		Prompts = Prompts,
 	})
 
-	local GUIS = {
-		Prompts = {
-			Component = Prompts,
-			Props = {
-				AnchorPoint = Vector2.new(1, 1),
-				Position = UDim2.fromScale(1, 1),
-			},
-		},
-		Menu = {
-			Component = Menu,
-			Props = {
-				AnchorPoint = Vector2.new(0.5, 0.5),
-				Position = UDim2.fromScale(0.5, 0.5),
-			},
-		},
-	}
-
 	return Scope:Frame(OnyxUI.Util.CombineProps(Props, {
 		Parent = Props.Parent,
 		Active = false,
@@ -45,9 +29,33 @@ return function(Scope: Fusion.Scope<any>, Props: Props)
 		BackgroundTransparency = 1,
 
 		[Children] = {
-			Scope:ForValues(GUIS, function(Use, Scope, Gui)
+			Scope:Prompts {
+				AnchorPoint = Vector2.new(1, 1),
+				Position = UDim2.fromScale(1, 1),
+			},
+			Scope:ForValues(States.Panels, function(Use, Scope, Panel: PanelsStateMod.Panel)
 				return OnyxUI.Themer.Theme:is(Use(States.Theme)):during(function()
-					return Gui.Component(Scope, Gui.Props)
+					return PanelsStateMod.Panel:is(Panel):during(function()
+						return Scope:Menu {
+							AnchorPoint = Vector2.new(1, 0.5),
+							Position = Scope:Computed(function(Use)
+								local PositionValue = Use(Panel.Position)
+
+								return UDim2.fromScale(PositionValue.X, PositionValue.Y)
+							end),
+							ZIndex = Scope:Computed(function(Use)
+								local PanelsValue = Use(States.Panels)
+
+								for Index, OtherPanel in PanelsValue do
+									if OtherPanel.Id == Panel.Id then
+										return Index
+									end
+								end
+
+								return 1
+							end),
+						}
+					end)
 				end)
 			end),
 		},

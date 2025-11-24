@@ -1,1 +1,1 @@
-Interface revamp coming in HD Admin 2.
+HD Admin v2 Coming Soon

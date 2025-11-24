@@ -6,20 +6,11 @@ local UI = Main.Value.Controllers.UI
 local States = require(UI.States)
 local Fusion = require(Packages.Fusion)
 local Sift = require(Packages.Sift)
-
-export type Properties = {
-	Title: { string }?,
-	Body: { string }?,
-	Callback: () -> ()?,
-	Lifetime: number?,
-}
-export type Prompt = Properties & {
-	Id: string,
-}
+local Types = require(UI.Utils.Types)
 
 local PromptsStateMod = {}
 
-function PromptsStateMod:Push(Properties: Properties)
+function PromptsStateMod:Push(Properties: Types.Prompt)
 	assert(Properties ~= nil, "Properties is nil")
 
 	local Prompt = Sift.Dictionary.merge({
@@ -28,15 +19,13 @@ function PromptsStateMod:Push(Properties: Properties)
 		Lifetime = 5,
 	}, Properties)
 
-	Prompt.Callback = function()
+	Prompt.Pull = function()
 		PromptsStateMod:Pull(Prompt.Id)
-
-		if Properties.Callback ~= nil then
-			Properties.Callback()
-		end
 	end
 
-	local PromptsStateModValue: { Prompt } = Fusion.peek(States.Prompts.Prompts)
+	Prompt.Callback = Properties.Callback
+
+	local PromptsStateModValue: { Types.Prompt } = Fusion.peek(States.Prompts.Prompts)
 
 	table.insert(PromptsStateModValue, Prompt)
 
@@ -50,7 +39,7 @@ function PromptsStateMod:Push(Properties: Properties)
 end
 
 function PromptsStateMod:Pull(Id: string)
-	local PromptsStateModValue: { Prompt } = Fusion.peek(States.Prompts.Prompts)
+	local PromptsStateModValue: { Types.Prompt } = Fusion.peek(States.Prompts.Prompts)
 	local Index, _ = self:Get(Id)
 
 	if Index then
@@ -60,8 +49,8 @@ function PromptsStateMod:Pull(Id: string)
 	end
 end
 
-function PromptsStateMod:Get(Id: string): (number?, Prompt? | nil)
-	local PromptsStateModValue: { Prompt } = Fusion.peek(States.Prompts.Prompts)
+function PromptsStateMod:Get(Id: string): (number?, Types.Prompt? | nil)
+	local PromptsStateModValue: { Types.Prompt } = Fusion.peek(States.Prompts.Prompts)
 
 	for Index, Prompt in ipairs(PromptsStateModValue) do
 		if Prompt.Id == Id then
@@ -72,19 +61,31 @@ function PromptsStateMod:Get(Id: string): (number?, Prompt? | nil)
 	return nil
 end
 
--- task.spawn(function()
--- 	for Count = 1, 5 do
--- 		task.wait(0.5)
+task.spawn(function()
+	PromptsStateMod:Push {
+		Title = { "Welcome to HD Admin UI!" },
+		Body = { "This is a sample prompt to demonstrate the system." },
+		Lifetime = -1,
 
--- 		PromptsStateMod:Push {
--- 			Title = { "Welcome to HD Admin UI!" },
--- 			Body = { "This is a sample prompt to demonstrate the system." },
--- 			Lifetime = -1,
--- 			Callback = function()
--- 				print("Prompt closed!")
--- 			end,
--- 		}
--- 	end
--- end)
+		Callback = function()
+			print("Prompt closed!")
+		end,
+	}
+
+	PromptsStateMod:Push {
+		Title = { "Fly" },
+		Arguments = {
+			{
+				Type = "Slider",
+			},
+		},
+		Lifetime = -1,
+		Sticky = true,
+
+		Callback = function()
+			print("Fly toggled!")
+		end,
+	}
+end)
 
 return PromptsStateMod
