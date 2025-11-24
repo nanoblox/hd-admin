@@ -60,17 +60,6 @@ local commands: Task.Commands = {
 	},
 
     --------------------
-	{
-		name = "AAAAAAA",
-		args = {"Player"},
-		roles = {ROLE},
-		order = ORDER,
-		run = function(task: Task.Class, args: {any})
-			
-		end
-	},
-
-    --------------------
 	
 }
 return commands
