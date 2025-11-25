@@ -58,19 +58,19 @@ function Qualifiers.getLowercaseDictionary()
 	return lowerCaseDictionary
 end
 
-function Qualifiers.get(qualifierName: Qualifier): QualifierDetail?
-	local qualifierNameLower = tostring(qualifierName):lower()
+function Qualifiers.get(qualifierKey: Qualifier): QualifierDetail?
+	local qualifierKeyLower = tostring(qualifierKey):lower()
 	local ourDictionary = Qualifiers.getLowercaseDictionary()
-	local item = ourDictionary[qualifierNameLower] :: QualifierDetail?
+	local item = ourDictionary[qualifierKeyLower] :: QualifierDetail?
 	if not item then
 		return nil
 	end
-	local qualifierNameCorrected = item.name
+	local qualifierKeyCorrected = item.key
 	if item.mustCreateAliasOf then
 		local toCreateName = item.mustCreateAliasOf
 		local qualifierToCreate = Qualifiers.items[toCreateName]
 		if not qualifierToCreate then
-			error(`Qualifiers: {qualifierNameCorrected} can not create alias because {toCreateName} is not a valid qualifier`)
+			error(`Qualifiers: {qualifierKeyCorrected} can not create alias because {toCreateName} is not a valid qualifier`)
 		end
 		qualifierToCreate = qualifierToCreate :: any
 		for k,v in qualifierToCreate do
@@ -88,29 +88,29 @@ end
 function Qualifiers.getAll()
 	-- We call .get to ensure all aliases are registered and setup correctly
 	local items = Qualifiers.items :: {[string]: QualifierDetail}
-	for qualifierName, item in items do
-		if not item.name then
-			item.name = qualifierName
+	for qualifierKey, item in items do
+		if not item.key then
+			item.key = qualifierKey
 		end
-		Qualifiers.get(qualifierName :: Qualifier)
+		Qualifiers.get(qualifierKey :: Qualifier)
 	end
 	return items
 end
 
-function Qualifiers.createAliasOf(qualifierName: Qualifier, initialTable: any?)
+function Qualifiers.createAliasOf(qualifierKey: Qualifier, initialTable: any?)
 	-- We don't actually create a mirror table here as the data of items will have
 	-- not yet gone into memory. Instead, we record the table as an alias, then
 	-- set it's data once .get is called or 
 	task.defer(function()
 		-- This servers as a warning as opposed to an actual error
-		if not Qualifiers.items[qualifierName] then
-			error(`Qualifiers: {qualifierName} is not a valid qualifier`)
+		if not Qualifiers.items[qualifierKey] then
+			error(`Qualifiers: {qualifierKey} is not a valid qualifier`)
 		end
 	end)
 	if typeof(initialTable) ~= "table" then
 		initialTable = {}
 	end
-	initialTable.mustCreateAliasOf = qualifierName
+	initialTable.mustCreateAliasOf = qualifierKey
 	return initialTable
 end
 
@@ -392,7 +392,7 @@ export type QualifierDetail = {
 	isCustomizable: boolean?, -- Can this qualifier have custom arguments (i.e. sub-qualifiers)?,
 	mustCreateAliasOf: any?,
 	aliasOf: any?,
-	name: any?,
+	key: any?,
 }
 
 

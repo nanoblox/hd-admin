@@ -64,19 +64,19 @@ function Modifiers.getLowercaseDictionary()
 	return lowerCaseDictionary
 end
 
-function Modifiers.get(modifierName: Modifier): ModifierDetail?
-	local modifierNameLower = tostring(modifierName):lower()
+function Modifiers.get(modifierKey: Modifier): ModifierDetail?
+	local modifierKeyLower = tostring(modifierKey):lower()
 	local ourDictionary = Modifiers.getLowercaseDictionary()
-	local item = ourDictionary[modifierNameLower] :: ModifierDetail?
+	local item = ourDictionary[modifierKeyLower] :: ModifierDetail?
 	if not item then
 		return nil
 	end
-	local modifierNameCorrected = item.name
+	local modifierKeyCorrected = item.key
 	if item.mustCreateAliasOf then
 		local toCreateName = item.mustCreateAliasOf
 		local qualifierToCreate = Modifiers.items[toCreateName]
 		if not qualifierToCreate then
-			error(`Modifiers: {modifierNameCorrected} can not create alias because {toCreateName} is not a valid qualifier`)
+			error(`Modifiers: {modifierKeyCorrected} can not create alias because {toCreateName} is not a valid qualifier`)
 		end
 		qualifierToCreate = qualifierToCreate :: any
 		for k,v in qualifierToCreate do
@@ -94,29 +94,29 @@ end
 function Modifiers.getAll()
 	-- We call .get to ensure all aliases are registered and setup correctly
 	local items = Modifiers.items :: any
-	for modifierName, item in items do
-		if not item.name then
-			item.name = modifierName
+	for modifierKey, item in items do
+		if not item.key then
+			item.key = modifierKey
 		end
-		Modifiers.get(modifierName :: Modifier)
+		Modifiers.get(modifierKey :: Modifier)
 	end
 	return items :: {[string]: ModifierDetail} --:: {[Modifier]: ModifierDetail}
 end
 
-function Modifiers.createAliasOf(modifierName: Modifier, initialTable: any?)
+function Modifiers.createAliasOf(modifierKey: Modifier, initialTable: any?)
 	-- We don't actually create a mirror table here as the data of items will have
 	-- not yet gone into memory. Instead, we record the table as an alias, then
 	-- set it's data once .get is called or 
 	task.defer(function()
 		-- This servers as a warning as opposed to an actual error
-		if not Modifiers.items[modifierName] then
-			error(`Modifiers: {modifierName} is not a valid qualifier`)
+		if not Modifiers.items[modifierKey] then
+			error(`Modifiers: {modifierKey} is not a valid qualifier`)
 		end
 	end)
 	if typeof(initialTable) ~= "table" then
 		initialTable = {}
 	end
-	initialTable.mustCreateAliasOf = modifierName
+	initialTable.mustCreateAliasOf = modifierKey
 	return initialTable
 end
 
@@ -335,7 +335,7 @@ export type Modifier = keyof<typeof(Modifiers.items)>
 export type ModifierDetail = {
 	description: string,
 	aliases: {[Modifier]: boolean}?,
-	name: string?,
+	key: string?,
 	mustCreateAliasOf: any?,
 	aliasOf: string?,
 }

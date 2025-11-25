@@ -19,7 +19,7 @@ type ClientCommands = Task.ClientCommands
 -- NETOWORKING
 Remote.get("RunClientCommand"):onClientEvent(function(properties: Task.Properties, ...)
 	print("RECEIVED:", properties, ...)
-	local clientCommand = ClientCommands.getCommand(properties.commandName)
+	local clientCommand = ClientCommands.getCommand(properties.commandKey)
 	local activeTask = Task.getTask(properties.UID)
 	if not clientCommand or activeTask then
 		return
@@ -35,8 +35,8 @@ Remote.get("EndClientTask"):onClientEvent(function(taskUID: string)
 	end
 end)
 
-Remote.get("ReplicateClientCommand"):onClientEvent(function(commandName:string, ...)
-	local clientCommand = ClientCommands.getCommand(commandName)
+Remote.get("ReplicateClientCommand"):onClientEvent(function(commandKey:string, ...)
+	local clientCommand = ClientCommands.getCommand(commandKey)
 	local replicate = clientCommand and clientCommand.replicate
 	if typeof(replicate) == "function" then
 		replicate(...)

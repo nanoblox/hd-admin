@@ -90,6 +90,7 @@ local commands: Task.Commands = {
 		aliases = {"Re"},
 		args = {"Player"},
 		roles = {ROLE},
+		order = ORDER,
 		run = function(task: Task.Class, args: {any})
 			local player: Player = unpack(args)
 			local loadCharacter = require(modules.PlayerUtil.loadCharacter)
@@ -102,6 +103,7 @@ local commands: Task.Commands = {
 		name = "Jump",
 		args = {"Player"},
 		roles = {ROLE},
+		order = ORDER,
 		run = function(task: Task.Class, args: {any})
 			
 		end
@@ -155,17 +157,6 @@ local commands: Task.Commands = {
 	{
 		name = "HideName",
 		undoAliases = {"ShowName"},
-		args = {"Player"},
-		roles = {ROLE},
-		order = ORDER,
-		run = function(task: Task.Class, args: {any})
-			
-		end
-	},
-
-    --------------------
-	{
-		name = "AAAA",
 		args = {"Player"},
 		roles = {ROLE},
 		order = ORDER,

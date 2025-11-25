@@ -40,10 +40,10 @@ local function setupReplicateListener()
 		if typeof(clientDetails) ~= "table" then
 			return false, "Invalid permission to replicate"
 		end
-		local commandName = matchingTask.commandName
+		local commandKey = matchingTask.commandKey
 		local replicator = matchingTask.client.replicator
 		if typeof(replicator) ~= "function" then
-			return false, `Command '{commandName}' has no defined replicator`
+			return false, `Command '{commandKey}' has no defined replicator`
 		end
 		local function checkCooldown(cooldownKey: string, limit: number, cooldown: number)
 			local initialRequests = activeClientTasks[cooldownKey]
@@ -78,7 +78,7 @@ local function setupReplicateListener()
 				replicateClientCommand = Remote.new("ReplicateClientCommand", "Event")
 			end
 			if replicateClientCommand then
-				replicateClientCommand:fireClient(replicationTarget, commandName, ...)
+				replicateClientCommand:fireClient(replicationTarget, commandKey, ...)
 			end
 		end
 		replicator = replicator :: any
@@ -128,7 +128,7 @@ function TaskClient.run(self: Class, player: Player?, ...)
 	local properties = {
 		callerUserId = task.callerUserId,
 		targetUserId = task.targetUserId,
-		commandName = task.commandName,
+		commandKey = task.commandKey,
 		UID = task.UID,
 		clientArgs = clientArgs,
 	}

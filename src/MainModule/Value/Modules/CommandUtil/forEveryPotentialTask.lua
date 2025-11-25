@@ -32,7 +32,7 @@ return function(callerUserId: number, statement: Statement, callback: (command: 
 		if not command or typeof(command.args) ~= "table" then
 			continue
 		end
-
+		
 		-- Its important to split commands into specific users for most cases so that the command can
 		-- be easily reapplied if the player rejoins (for ones where the perm modifier is present)
 		-- The one exception for this is when a global modifier is present. In this scenerio, don't save

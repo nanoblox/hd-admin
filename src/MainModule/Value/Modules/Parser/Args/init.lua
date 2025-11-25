@@ -85,9 +85,9 @@ local function moveMultiKeysIntoInputObject(argumentDetail: ArgumentDetail)
 end
 local function becomeArg(item: ArgumentDetail, toBecomeName: string)
 	local argToBecome = Args.items[toBecomeName]
-	local argNameCorrected = item.name
+	local argKeyCorrected = item.key
 	if not argToBecome then
-		error(`Args: {argNameCorrected} can not become alias because {toBecomeName} is not a valid argument`)
+		error(`Args: {argKeyCorrected} can not become alias because {toBecomeName} is not a valid argument`)
 	end
 	argToBecome = argToBecome :: any
 	item = item :: any
@@ -105,11 +105,11 @@ local function becomeArg(item: ArgumentDetail, toBecomeName: string)
 	moveMultiKeysIntoInputObject(item)
 	processDeveloperArg(item)
 end
-local function recordArg(argName: string, argDetail)
-	if Args.items[argName] and isServer then
-		warn(`HD Admin: Arg '{argName}' already exists. Strongly consider renaming your Custom Arg to avoid conflicts.`)
+local function recordArg(argKey: string, argDetail)
+	if Args.items[argKey] and isServer then
+		warn(`HD Admin: Arg '{argKey}' already exists. Strongly consider renaming your Custom Arg to avoid conflicts.`)
 	end
-	Args.items[argName] = argDetail
+	Args.items[argKey] = argDetail
 end
 local function unparsePlayer(tableOfPlayersOrQualifiers: any): string
 	-- It's recommended to pass in an array of Players and Qualifiers. E.g:
@@ -190,13 +190,13 @@ function Args.processStringToParse(stringToParse: string?, maxCharacters: number
 	return stringToParse
 end
 
-function Args.get(argName: Argument | ArgumentDetail): ArgumentDetail?
-	if typeof(argName) == "table" then
-		return argName :: ArgumentDetail
+function Args.get(argKey: Argument | ArgumentDetail): ArgumentDetail?
+	if typeof(argKey) == "table" then
+		return argKey :: ArgumentDetail
 	end
-	local argNameLower = tostring(argName):lower()
+	local argKeyLower = tostring(argKey):lower()
 	local ourDictionary = Args.getLowercaseDictionary()
-	local item = ourDictionary[argNameLower] :: ArgumentDetail?
+	local item = ourDictionary[argKeyLower] :: ArgumentDetail?
 	if not item then
 		return nil
 	end
@@ -209,11 +209,11 @@ end
 
 function Args.getAll()
 	-- We call .get to ensure all aliases are registered and setup correctly
-	for argName, item in Args.items do
-		if not item.name then
-			item.name = argName :: any
+	for argKey, item in Args.items do
+		if not item.key then
+			item.key = argKey :: any
 		end
-		Args.get(argName :: any)
+		Args.get(argKey :: any)
 	end
 	local items = Args.items :: { [Argument]: ArgumentDetail }
 	return items
@@ -222,34 +222,34 @@ end
 function Args.create(argumentDetail: ArgumentDetail)
 	moveMultiKeysIntoInputObject(argumentDetail)
 	processDeveloperArg(argumentDetail)
-	local name = argumentDetail.name
+	local name = argumentDetail.key
 	if name then
 		recordArg(name, argumentDetail)
 	end
 	return argumentDetail :: ArgumentDetail
 end
 
-function Args.createAliasOf(argName: Argument, argumentDetail: ArgumentDetail?): ArgumentDetail
+function Args.createAliasOf(argKey: Argument, argumentDetail: ArgumentDetail?): ArgumentDetail
 	if typeof(argumentDetail) ~= "table" then
 		argumentDetail = {}
 	end
 	argumentDetail = argumentDetail :: ArgumentDetail
 	task.defer(function()
 		-- This servers as a warning as opposed to an actual error
-		-- to let the developer know they inputted an invalid argName
-		if not Args.items[argName] then
-			error(`Args: {argName} is not a valid argument`)
+		-- to let the developer know they inputted an invalid argKey
+		if not Args.items[argKey] then
+			error(`Args: {argKey} is not a valid argument`)
 		end
 	end)
 	if Args.items :: any then
-		becomeArg(argumentDetail, argName)
+		becomeArg(argumentDetail, argKey)
 	else
 		-- We don't actually create a mirror table here as the data of items will have
 		-- not yet gone into memory. Instead, we record the table as an alias, then
 		-- set it's data once .get is called or 
-		argumentDetail.mustCreateAliasOf = argName
+		argumentDetail.mustCreateAliasOf = argKey
 	end
-	local name = argumentDetail.name
+	local name = argumentDetail.key
 	if name then
 		recordArg(name, argumentDetail)
 	end
@@ -1033,8 +1033,8 @@ Args.items = items
 -- SETUP
 -- Add the loader args to our items
 local loaderItems = LoaderArgs(Args :: any)
-for argName, argDetail in loaderItems :: any do
-	recordArg(argName, argDetail)
+for argKey, argDetail in loaderItems :: any do
+	recordArg(argKey, argDetail)
 end
 
 

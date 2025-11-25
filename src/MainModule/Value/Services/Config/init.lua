@@ -40,7 +40,6 @@ function Config.getSetting(settingName: Setting, optionalUser: User.Class?): any
 	local youSettings = if typeof(optionalUser) == "table" and optionalUser.isLoaded then optionalUser.perm:get("YouSettings") else nil
 	local settingsToUse = youSettings or gameSettings
 	local value = settingsToUse[settingName]
-	print("gameSettings, youSettings, value =", gameSettings, youSettings, value)
 	if youSettings and value == nil then
 		value = gameSettings[settingName]
 	end
@@ -64,7 +63,6 @@ function Config.updateSettings()
 			gameSettings[settingName] = value
 		end
 	end
-	print("gameSettings =", gameSettings)
 	User.everyone:set("GameSettings", gameSettings)
 end
 

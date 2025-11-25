@@ -290,7 +290,7 @@ function ParserUtility.convertStatementToRealNames(statement: Statement)
 			local originalTable = {}
 			for name, value in table do
 				local returnValue = getMethod(name)
-				local realName = returnValue and (returnValue.aliasOf or returnValue.name)
+				local realName = returnValue and (returnValue.aliasOf or returnValue.key)
 				local realNameLower = realName and string.lower(realName)
 				if realNameLower then
 					newTable[realNameLower] = value

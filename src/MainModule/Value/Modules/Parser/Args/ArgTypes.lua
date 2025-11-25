@@ -10,7 +10,7 @@ export type ArgumentDetail = {
 	playerArg: boolean?,
 	runForEachPlayer: boolean?,
 	parse: any?, --((...any) -> (...any))?,
-	name: string?, -- Used for Arg.get(name)
+	key: string?, -- Used for Arg.get(name)
 	displayName: string?, -- The actual name shown within the UI, defaults to name
 	defaultValue: any?,
 	minValue: number?,

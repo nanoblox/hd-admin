@@ -2,13 +2,14 @@
 -- CONFIG
 local DEFAULT_ROLE = {
 	name = "UnnamedRole",
-	displayName = "UnnamedRole",
+	key = "unnamedrole",
 	members = {""},
 	rank = 1,
 	modifiers = "",
 	bypassLimits = false, -- This enables command cooldowns, batch size limits, etc to be bypassed when true, in addition to command-specific limits that are determined with task.bypassLimits
 	modifiers = "",
 	qualifiers = "",
+	hide = false,
 }
 
 local CLIENT_PROPERTIES_TO_EXCLUDE = {
@@ -16,7 +17,9 @@ local CLIENT_PROPERTIES_TO_EXCLUDE = {
 }
 
 local CLIENT_PROPERTIES_TO_PREVIEW = {
+	"key",
 	"name",
+	"hide",
 }
 
 
@@ -26,7 +29,7 @@ local modules = script:FindFirstAncestor("MainModule").Value.Modules
 local User = require(modules.Objects.User)
 local State = require(modules.Objects.State)
 local Framework = require(modules.Framework)
-local lowerCaseNameToRoles: State.Class = State.new(true)
+local keyToRole: State.Class = State.new(true)
 local rolesOrdered: {Role} = {}
 local rolesRequireUpdating = true
 
@@ -40,7 +43,7 @@ function Roles.updateRoles(forceUpdate: boolean?): boolean
 	if not rolesRequireUpdating and not forceUpdate then
 		return false
 	end
-	local newLowerCaseNameToRoles = {}
+	local newKeyToRole = {}
 	rolesRequireUpdating = false
 	rolesOrdered = {}
 
@@ -58,8 +61,8 @@ function Roles.updateRoles(forceUpdate: boolean?): boolean
 				local name = configRole.Name
 				local nameLower = name:lower()
 				local role = deepCopyTable(DEFAULT_ROLE) :: any
-				role.displayName = name
-				role.name = nameLower
+				role.name = name
+				role.key = nameLower
 				for attName, attValue in configRole:GetAttributes() do
 					local attNameCorrected = toCamelCase(attName)
 					if not DEFAULT_ROLE[attNameCorrected] then
@@ -68,7 +71,7 @@ function Roles.updateRoles(forceUpdate: boolean?): boolean
 					role[attNameCorrected] = attValue
 				end
 				table.insert(rolesOrdered :: any, role)
-				newLowerCaseNameToRoles[nameLower] = role
+				newKeyToRole[nameLower] = role
 				scanForRoles(configRole)
 			end
 		end
@@ -78,11 +81,11 @@ function Roles.updateRoles(forceUpdate: boolean?): boolean
 	table.sort(rolesOrdered, function(a: Role, b: Role): boolean
 		return a.rank > b.rank
 	end)
-	--!!! to-do: when lowerCaseNameToRoles is changed, also update everyone("Roles") and everyone("RoleInfo")
+	--!!! to-do: when keyToRole is changed, also update everyone("Roles") and everyone("RoleInfo")
 	--!!! but make sure to disconnect previous listeners first
-	lowerCaseNameToRoles:setAll(newLowerCaseNameToRoles)
+	keyToRole:setAll(newKeyToRole)
 	User.everyone:set("Roles", rolesOrdered)
-	User.everyone:set("RoleInfo", newLowerCaseNameToRoles)
+	User.everyone:set("RoleInfo", newKeyToRole)
 	
 	return true
 end
@@ -90,7 +93,7 @@ end
 function Roles.getRole(name: string): Role?
 	Roles.updateRoles()
 	local lowerName = name:lower()
-	local role = lowerCaseNameToRoles:get(lowerName) :: Role?
+	local role = keyToRole:get(lowerName) :: Role?
 	return role
 end
 

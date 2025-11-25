@@ -14,6 +14,7 @@ local commands: Task.Commands = {
 		groups = {"WalkSpeed"},
 		args = {"Player", "Number"},
 		roles = {ROLE},
+		order = ORDER,
 		run = function(task: Task.Class, args: {any})
 			local target = args[1]
 			local number = task:getOriginalArg("Number") or 50

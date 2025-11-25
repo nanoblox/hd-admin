@@ -45,14 +45,14 @@ function Task.getTask(UID: string?): Class?
 	return tasks[tostring(UID)]
 end
 
-function Task.getTasks(commandName: string?, targetUserId: number?): {Class}
+function Task.getTasks(commandKey: string?, targetUserId: number?): {Class}
 	local tasksToReturn = {} :: {any}
-	local commandNameLower = if commandName then commandName:lower() else nil
+	local commandKeyLower = if commandKey then commandKey:lower() else nil
 	local stringTargetUserId = tostring(targetUserId)
 	for _, task in tasks do
-		local ourNameLower = task.commandNameLower
+		local ourNameLower = task.commandKey
 		local ourUserId = tostring(task.targetUserId)
-		if (not commandNameLower or ourNameLower == commandNameLower) and (not targetUserId or ourUserId == stringTargetUserId) then
+		if (not commandKeyLower or ourNameLower == commandKeyLower) and (not targetUserId or ourUserId == stringTargetUserId) then
 			table.insert(tasksToReturn, task)
 		end
 	end
@@ -70,7 +70,7 @@ function Task.construct(properties: Properties)
 
 	-- Define properties
 	local janitor = Janitor.new()
-	local commandName = properties.commandName
+	local commandKey = properties.commandKey
 	local callerUserId = properties.callerUserId
 	local targetUserId = properties.targetUserId
 	local UID = properties.UID or generateUID()
@@ -79,7 +79,7 @@ function Task.construct(properties: Properties)
 	local cooldown = 0
 	if isServer then
 		local Commands = require(services.Commands) :: any
-		local command = Commands.getCommand(commandName) :: Command?
+		local command = Commands.getCommand(commandKey) :: Command?
 		local groups = command and command.groups
 		if typeof(groups) == "table" then
 			for _, groupName in groups do
@@ -110,8 +110,7 @@ function Task.construct(properties: Properties)
 		holdsToResume = {} :: {any},
 		callerUserId = callerUserId,
 		targetUserId = targetUserId,
-		commandName = commandName,
-		commandNameLower = tostring(commandName):lower(),
+		commandKey = commandKey:lower(),
 		args = properties.args,
 		modifiers = properties.modifiers,
 		qualifiers = properties.qualifiers,
@@ -200,17 +199,17 @@ function Task.run(self: Task)
 	-- Only run if command is present
 	local run: any? = nil
 	local command: Command? = nil
-	local commandName = self.commandName
+	local commandKey = self.commandKey
 	local args = self.args
 	if isServer then
 		local services = modules.Parent.Services
 		local Commands = require(services.Commands) :: any
-		command = Commands.getCommand(commandName) :: Command?
+		command = Commands.getCommand(commandKey) :: Command?
 		run = if command then command.run else nil
 	elseif isClient then
 		local controllers = modules.Parent.Controllers
 		local ClientCommands = require(controllers.ClientCommands) :: any
-		command = ClientCommands.getCommand(commandName) :: Command?
+		command = ClientCommands.getCommand(commandKey) :: Command?
 		run = if command then command.run else nil
 	end
 	if not run then
@@ -321,7 +320,7 @@ function Task.run(self: Task)
 			local subProperties: Properties = {
 				targetUserId = plr.UserId,
 				callerUserId = self.callerUserId,
-				commandName = self.commandName,
+				commandKey = self.commandKey,
 				args = self.args,
 				modifiers = self.modifiers,
 				qualifiers = self.qualifiers,
@@ -686,7 +685,7 @@ function Task.destroy(self: Task)
 	if self.isActive == false then
 		return
 	end
-	print("TASK DIED:", self.commandName)
+	print("TASK DIED:", self.commandKey)
 	if isServer then
 		if not endClientTask then
 			endClientTask = Remote.new("EndClientTask", "Event")
@@ -757,8 +756,7 @@ export type Properties = {
 	UID: string?,
 	callerUserId: number,
 	targetUserId: number?,
-	commandName: string,
-	commandNameLower: string?,
+	commandKey: string,
 	args: {[string]: {string}}?,
 	modifiers: {[string]: {string}}?,
 	qualifiers: {[string]: {string}}?,
@@ -767,8 +765,9 @@ export type Properties = {
 }
 
 export type Command = {
-	name: string,
-	role: string?,
+	name: string, -- the display name of the command
+	key: string?, -- this is the key used to identify the command (typically name:lower()). THIS should be used to retrieve commands, not the name, because the key can sometimes be completely different to the name for overrrides
+	roles: {string}?,
 	order: number?, -- lower numbers appear first in the command list
 	aliases: {string}?,
 	undoAliases: {string}?, -- aliases to undone the command, e.g. "ice" might have "thaw"
@@ -779,8 +778,9 @@ export type Command = {
 	contributors: {string}?,
 	args: {Args.Argument | Args.ArgumentDetail},
 	run: ((Class, {any}) -> () | any)?,
-	displayName: string?, -- custom display name
-	displayPrefix: string?, -- custom display prefix, useful for overrides
+	prefix: string?, -- custom display prefix, useful for overrides
+	index: number?, -- this is the actual layoutOrder value (lower value should appear higher)
+	hide: boolean?, -- if true, the command is hidden from the Commands page
 }
 
 export type Commands = {Command}

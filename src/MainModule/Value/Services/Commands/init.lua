@@ -3,10 +3,15 @@
 local MAXIMUM_REQUEST_PER_SECOND = 20 -- Maximum size of a single command request (in characters) which overrides ``settings.Limits.RequestsPerSecond`` if greater than
 local CLIENT_PROPERTIES_TO_EXCLUDE = {
 	"run",
+	"creationOrder",
+	"order",
 }
 
 local CLIENT_PROPERTIES_TO_PREVIEW = {
 	"name",
+	"key",
+	"prefix",
+	"hide",
 }
 
 
@@ -19,12 +24,12 @@ local ParserTypes = require(parser.ParserTypes)
 local Config = require(modules.Parent.Services.Config)
 local Task = require(modules.Objects.Task)
 local commandsArray: Task.Commands = {}
+local keyToCommand: {[string]: Command} = {}
 local lowerCaseNameAndAliasCommandsDictionary: {[string]: Command} = {}
 local sortedNameAndAliasWithOverrideLengthArray: {string} = {}
 local commandsRequireUpdating = true
 local commandPrefixes: {[string]: boolean} = {}
-local clientDataCommands: {any} = {}
-local clientDataCommandInfo: {[string]: any} = {}
+
 
 
 -- TYPES
@@ -47,12 +52,12 @@ function Commands.updateCommands()
 	end
 	commandsRequireUpdating = false
 	commandsArray = {}
+	keyToCommand = {}
 	lowerCaseNameAndAliasCommandsDictionary = {}
 	sortedNameAndAliasWithOverrideLengthArray = {}
 	commandPrefixes = {}
-	clientDataCommands = {}
-	clientDataCommandInfo = {}
 	local forEveryCommand = require(modules.CommandUtil.forEveryCommand)
+	local creationOrder = 0
 	for _, commandModule in pairs(script:GetChildren()) do
 		if not commandModule:IsA("ModuleScript") then
 			continue
@@ -66,6 +71,7 @@ function Commands.updateCommands()
 			end
 
 			-- If command contains a custom prefix
+			local commandNameLower = commandName:lower()
 			if typeof(prefixes) == "table" then
 				for _, prefix in prefixes do
 					if typeof(prefix) == "string" then
@@ -73,7 +79,12 @@ function Commands.updateCommands()
 					end
 				end
 			end
+			creationOrder += 1
+			command.creationOrder = creationOrder
+			command.name = commandName
+			command.key = commandNameLower
 			table.insert(commandsArray, command :: Command)
+			keyToCommand[commandNameLower] = command
 			local function registerNameOrAlias(nameOrAlias: string?, isOverride: boolean?)
 				if typeof(nameOrAlias) ~= "string" then
 					return false
@@ -90,10 +101,14 @@ function Commands.updateCommands()
 				return true
 			end
 			registerNameOrAlias(commandName)
-			local function registerAliases(array)
+			local function registerAliases(array, isOverride)
 				if typeof(array) == "table" then
 					for _, alias in array do
-						registerNameOrAlias(alias)
+						if isOverride then
+							local overrideAlias = string.sub(alias, 2)
+							alias = overrideAlias
+						end
+						registerNameOrAlias(alias, isOverride)
 					end
 				end
 			end
@@ -105,42 +120,40 @@ function Commands.updateCommands()
 			if isValidPrefix(firstChar) then
 				local overrideName = string.sub(commandName, 2)
 				commandPrefixes[firstChar] = true
-				command.displayPrefix = firstChar
+				command.prefix = firstChar
+				command.name = overrideName
 				registerNameOrAlias(overrideName, true) -- Also register override so that it can be detected in parser
+				registerAliases(command.aliases, true) -- Same as line above, register for parser
 			end
-			-- Register info so can be retrieved by client
-			local commandPreview = {}
-			local commandInfo = {}
-			for _, propertyName in CLIENT_PROPERTIES_TO_PREVIEW do
-				local propertyValue = command[propertyName]
-				if typeof(propertyValue) ~= nil then
-					commandPreview[propertyName] = propertyValue
-				end
-			end
-			for k,v in command do
-				if CLIENT_PROPERTIES_TO_EXCLUDE[k] then
-					continue
-				end
-				if typeof(v) == "function" then
-					continue
-				end
-				commandInfo[k] = v
-			end
-			table.insert(clientDataCommands, commandPreview)
-			clientDataCommandInfo[commandName] = commandInfo
 		end)
 	end
 	table.sort(sortedNameAndAliasWithOverrideLengthArray, function(a: string, b: string): boolean
+		if #a == #b then
+			return a < b
+		end
 		return #a > #b
 	end)
-	User.everyone:set("Commands", clientDataCommands)
-	User.everyone:set("CommandInfo", clientDataCommandInfo)
+	table.sort(commandsArray, function(commandA: any, commandB: any)
+		local orderA = commandA.order or 0
+		local orderB = commandB.order or 0
+		if orderA == orderB then
+			local internalOrderA = commandA.creationOrder or 0
+			local internalOrderB = commandB.creationOrder or 0
+			return internalOrderA < internalOrderB
+		end
+		return orderA < orderB
+	end)
+	for i, command in commandsArray do
+		command.index = i
+	end
+	User.everyone:set("Commands", commandsArray)
+	User.everyone:set("CommandInfo", keyToCommand)
 	return true
 end
 
-function Commands.getCommand(nameOrAlias: string, overridePrefix: string?): (Command?, boolean?)
+function Commands.getCommand(keyOrNameOrAlias: string, overridePrefix: string?): (Command?, boolean?)
 	Commands.updateCommands()
-	local lowerNameOrAlias = nameOrAlias:lower()
+	local lowerNameOrAlias = keyOrNameOrAlias:lower()
 	local command = lowerCaseNameAndAliasCommandsDictionary[lowerNameOrAlias] :: Command?
 	if not command and typeof(overridePrefix) == "string" and #overridePrefix == 1 then
 		local newAlias = overridePrefix..lowerNameOrAlias
@@ -199,7 +212,6 @@ function Commands.request(user: User.Class, message: string, messageSource: Mess
 	--
 	local Parser = require(modules.Parser) :: any -- 'Any' to remove cyclic warning
 	local batch = Parser.parse(message, user)
-	print("BATCH =", batch)
 	local approved, notices, tasks = Commands.processBatchAsync(user, batch)
 	if not tasks then
 		tasks = {}
@@ -289,8 +301,9 @@ function Commands.verifyStatementAsync(user: User, statement: Statement)--: (app
 	local warningNotice
 	local forEveryPotentialTask = require(modules.CommandUtil.forEveryPotentialTask)
 	forEveryPotentialTask(callerUserId, statement, function(command: Command, arguments, optionalTargetUserId: number?)
+		local commandKey = command.key
 		local commandName = command.name
-		local runningTasks = Task.getTasks(commandName, optionalTargetUserId)
+		local runningTasks = Task.getTasks(commandKey, optionalTargetUserId)
 		local hasACooldown = typeof(command.cooldown) == "number" and command.cooldown > 0
 		if hasACooldown and #runningTasks > 0 and not statementModifiers.undo then
 			local activeTask = runningTasks[1]
@@ -551,23 +564,21 @@ function Commands.executeStatement(callerUserId: number, statement: Statement): 
 	forEveryPotentialTask(callerUserId, statement, function(command: Command, arguments, optionalTargetUserId: number?)
 		
 		-- Setup task properties
-		local commandName = command.name
-		local commandNameLower = string.lower(commandName)
+		local commandKey = command.key :: string
 		local args = (arguments or {}) :: ArgGroup
 		local properties: Properties = {
 			callerUserId = callerUserId,
 			targetUserId = optionalTargetUserId,
-			commandName = commandName,
-			commandNameLower = commandNameLower,
+			commandKey = commandKey,
 			args = args,
 			modifiers = modifiers,
 			qualifiers = qualifiers,
 			isRestricted = statement.isRestricted,
 			UID = taskUID,
 		}
-
+		
 		-- Undo tasks if already applied to player (or server level)
-		local runningTasks = Task.getTasks(commandName, optionalTargetUserId)
+		local runningTasks = Task.getTasks(commandKey, optionalTargetUserId)
 		local hasACooldown = typeof(command.cooldown) == "number" and command.cooldown > 0
 		if not hasACooldown then
 			for _, task in pairs(runningTasks) do
@@ -605,6 +616,20 @@ end
 
 
 -- SETUP
+-- These set restrictions on what the client can see, and which clients
+local getStateVerifier = require(modules.VerifyUtil.getStateVerifier)
+User.everyone:verify(getStateVerifier(
+	"Commands",
+	"OnlyInclude",
+	CLIENT_PROPERTIES_TO_PREVIEW
+))
+User.everyone:verify(getStateVerifier(
+	"CommandInfo",
+	"Exclude",
+	CLIENT_PROPERTIES_TO_EXCLUDE
+))
+
+
 -- This is essential to ensure data fetched via User.everyone is accurate
 local State = require(modules.Objects.State)
 State.verifyFirstFetch("Commands", Commands.updateCommands)
