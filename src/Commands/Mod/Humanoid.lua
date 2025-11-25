@@ -3,6 +3,7 @@ local ORDER = 220
 local ROLE = "Ability"
 local modules = script:FindFirstAncestor("HD Admin").Core.MainModule.Value.Modules
 local Task = require(modules.Objects.Task)
+local Lighting = game:GetService("Lighting")
 local getHumanoid = require(modules.PlayerUtil.getHumanoid)
 local commands: Task.Commands = {
 
@@ -155,19 +156,18 @@ local commands: Task.Commands = {
 	--------------------
 	{
 		name = "Heal",
-		args = {"Player"},
+		args = {"Player","Number"},
 		roles = {ROLE},
 		order = ORDER,
 		run = function(task: Task.Class, args: {any})
 			local target = args[1]
 			local number = task:getOriginalArg("Number") or 50
-			task:buff(target, "Health", function(hasEnded, isTop)
-				local humanoid = getHumanoid(target)
-				if humanoid then
-					humanoid.Health = humanoid.Health+number
-					task.destroy()
-				end
-			end)
+			local humanoid = getHumanoid(target)
+			if humanoid then
+				local processed = humanoid.Health+number
+				humanoid.Health = processed
+				task:destroy()
+			end
 		end
 	},
 
@@ -179,6 +179,7 @@ local commands: Task.Commands = {
 		order = ORDER,
 		run = function(task: Task.Class, args: {any})
 			local target = args[1]
+			local humanoid = getHumanoid(target)
 			local oldHealth = humanoid.Health
 			local oldMax = humanoid.MaxHealth
 			task:keep("Indefinitely")
@@ -199,19 +200,18 @@ local commands: Task.Commands = {
 	--------------------
 	{
 		name = "Damage",
-		args = {"Player"},
+		args = {"Player","Number"},
 		roles = {ROLE},
 		order = ORDER,
 		run = function(task: Task.Class, args: {any})
 			local target = args[1]
 			local number = task:getOriginalArg("Number") or 10
-			task:buff(target, "WalkSpeed", function(hasEnded, isTop)
-				local humanoid = getHumanoid(target)
-				if humanoid then
-					humanoid.Health = humanoid.Health-number
-					task.destroy()
-				end
-			end)
+			local humanoid = getHumanoid(target)
+			if humanoid then
+				local processed = humanoid.Health-number
+				humanoid.Health = processed
+				task:destroy()
+			end
 		end
 	},
 
