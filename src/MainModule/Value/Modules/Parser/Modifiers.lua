@@ -224,6 +224,7 @@ Modifiers.items = {
 		executeRightAway = false,
 		executeAfterThread = true,
 		yieldUntilThreadComplete = true,
+		requiresCapsule = true,
 		action = function(task, values)
 			--!! Complete this later
 			--[[
@@ -243,6 +244,7 @@ Modifiers.items = {
 		executeRightAway = false,
 		executeAfterThread = true,
 		yieldUntilThreadComplete = true,
+		requiresCapsule = true,
 		action = function(task, values)
 			--!! Complete this later
 			--[[
@@ -260,6 +262,7 @@ Modifiers.items = {
 		executeRightAway = true,
 		executeAfterThread = false,
 		yieldUntilThreadComplete = false,
+		requiresCapsule = true,
 		action = function(task, values)
 			local iterations, interval = unpack(values)
 			local ITERATION_LIMIT = 10000
@@ -313,6 +316,7 @@ Modifiers.items = {
 		executeRightAway = true,
 		executeAfterThread = false,
 		yieldUntilThreadComplete = false,
+		requiresCapsule = true,
 		action = function(task, values)
 			--!! Complete this later
 			--[[
@@ -338,6 +342,7 @@ export type ModifierDetail = {
 	key: string?,
 	mustCreateAliasOf: any?,
 	aliasOf: string?,
+	requiresCapsule: boolean?,
 }
 
 

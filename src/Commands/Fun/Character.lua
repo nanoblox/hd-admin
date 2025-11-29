@@ -316,11 +316,21 @@ local commands: Task.Commands = {
     --------------------
 	{
 		name = "Char",
-		args = {"Player"},
+		args = {"Player","AnyPlayer"},
 		roles = {ROLE},
 		order = ORDER,
 		run = function(task: Task.Class, args: {any})
-			
+			local target = args[1]
+			local player = args[2]
+            task:keep("UntilTargetRespawns")
+            task:buff(target,"HumanoidDescription", function(hasEnded, isTop)
+                local humanoid = getHumanoid(target)
+				local desc = getDescription(player)
+				local appearance = if hasEnded then getDescription(target.userId) else desc
+				if humanoid then
+                    humanoid:ApplyDescription(appearance)
+                end
+            end)
 		end
 	},
 
