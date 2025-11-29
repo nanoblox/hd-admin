@@ -4,6 +4,7 @@ local ROLE = "Ability"
 local modules = script:FindFirstAncestor("HD Admin").Core.MainModule.Value.Modules
 local Task = require(modules.Objects.Task)
 local Lighting = game:GetService("Lighting")
+local StarterPlayer = game:GetService("StarterPlayer")
 local getHumanoid = require(modules.PlayerUtil.getHumanoid)
 local commands: Task.Commands = {
 
@@ -17,11 +18,9 @@ local commands: Task.Commands = {
 		roles = {ROLE},
 		order = ORDER,
 		run = function(task: Task.Class, args: {any})
-			local target = args[1]
-			local number = task:getOriginalArg("Number") or 50
+			local target: Player, number: number = unpack(args)
 			task:keep("UntilTargetRespawns")
 			task:buff(target, "WalkSpeed", function(hasEnded, isTop)
-				local StarterPlayer = game:GetService("StarterPlayer")
 				local humanoid = getHumanoid(target)
 				local speed = if hasEnded then StarterPlayer.CharacterWalkSpeed else number
 				if humanoid then
@@ -41,7 +40,6 @@ local commands: Task.Commands = {
 			local target = args[1]
 			task:keep("UntilTargetRespawns")
 			task:buff(target, "WalkSpeed", function(hasEnded, isTop)
-				local StarterPlayer = game:GetService("StarterPlayer")
 				local humanoid = getHumanoid(target)
 				local speed = if hasEnded then StarterPlayer.CharacterWalkSpeed else 100
 				if humanoid then
@@ -61,7 +59,6 @@ local commands: Task.Commands = {
 			local target = args[1]
 			task:keep("UntilTargetRespawns")
 			task:buff(target, "WalkSpeed", function(hasEnded, isTop)
-				local StarterPlayer = game:GetService("StarterPlayer")
 				local humanoid = getHumanoid(target)
 				local speed = if hasEnded then StarterPlayer.CharacterWalkSpeed else 10
 				if humanoid then
@@ -78,11 +75,9 @@ local commands: Task.Commands = {
 		roles = {ROLE},
 		order = ORDER,
 		run = function(task: Task.Class, args: {any})
-			local target = args[1]
-			local number = task:getOriginalArg("Number") or StarterPlayer.CharacterJumpHeight
+			local target, number = unpack(args)
 			task:keep("UntilTargetRespawns")
 			task:buff(target, "JumpHeight", function(hasEnded, isTop)
-				local StarterPlayer = game:GetService("StarterPlayer")
 				local humanoid = getHumanoid(target)
 				local jump = if hasEnded then StarterPlayer.CharacterJumpHeight else number
 				if humanoid then
@@ -102,7 +97,6 @@ local commands: Task.Commands = {
 			local target = args[1]
 			task:keep("UntilTargetRespawns")
 			task:buff(target, "JumpHeight", function(hasEnded, isTop)
-				local StarterPlayer = game:GetService("StarterPlayer")
 				local humanoid = getHumanoid(target)
 				local jump = if hasEnded then StarterPlayer.CharacterJumpHeight else 50
 				if humanoid then
@@ -122,7 +116,6 @@ local commands: Task.Commands = {
 			local target = args[1]
 			task:keep("UntilTargetRespawns")
 			task:buff(target, "JumpHeight", function(hasEnded, isTop)
-				local StarterPlayer = game:GetService("StarterPlayer")
 				local humanoid = getHumanoid(target)
 				local jump = if hasEnded then StarterPlayer.CharacterJumpHeight else 3
 				if humanoid then
@@ -139,12 +132,11 @@ local commands: Task.Commands = {
 		roles = {ROLE},
 		order = ORDER,
 		run = function(task: Task.Class, args: {any})
-			local target = args[1]
-			local number = task:getOriginalArg("Number") or 100
+			local target, number = unpack(args)
 			task:buff(target, "Health", function(hasEnded, isTop)
-				local StarterPlayer = game:GetService("StarterPlayer")
 				local humanoid = getHumanoid(target)
 				if humanoid then
+					local amount = if hasEnded then humanoid.MaxHealth else number
 					humanoid.Health = number
 					if number > humanoid.MaxHealth then
 						humanoid.MaxHealth = number
@@ -161,13 +153,11 @@ local commands: Task.Commands = {
 		roles = {ROLE},
 		order = ORDER,
 		run = function(task: Task.Class, args: {any})
-			local target = args[1]
+			local target = unpack(args)
 			local number = task:getOriginalArg("Number") or 50
 			local humanoid = getHumanoid(target)
 			if humanoid then
-				local processed = humanoid.Health+number
-				humanoid.Health = processed
-				task:destroy()
+				humanoid.Health = humanoid.Health + number
 			end
 		end
 	},
@@ -180,20 +170,13 @@ local commands: Task.Commands = {
 		order = ORDER,
 		run = function(task: Task.Class, args: {any})
 			local target = args[1]
-			local humanoid = getHumanoid(target)
-			local oldHealth = humanoid.Health
-			local oldMax = humanoid.MaxHealth
 			task:keep("Indefinitely")
 			task:buff(target, "Health", function(hasEnded, isTop)
 				local humanoid = getHumanoid(target)
 				if humanoid then
-					humanoid.Health = math.huge
 					humanoid.MaxHealth = math.huge
+					humanoid.Health = math.huge
 				end
-			end)
-			task:onEnded(function()
-				humanoid.Health = oldHealth
-				humanoid.MaxHealth = oldMax
 			end)
 		end
 	},
@@ -209,9 +192,7 @@ local commands: Task.Commands = {
 			local number = task:getOriginalArg("Number") or 10
 			local humanoid = getHumanoid(target)
 			if humanoid then
-				local processed = humanoid.Health-number
-				humanoid.Health = processed
-				task:destroy()
+				humanoid.Health = humanoid.Health - number
 			end
 		end
 	},
