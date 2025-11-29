@@ -62,13 +62,12 @@ local commands: Task.Commands = {
 			task:buff(target,"HumanoidDescription", function(hasEnded, isTop)
 				oldLocation = target.Character.HumanoidRootPart.CFrame
 				local humanoid = getHumanoid(target)
-				local location = if hasEnded then oldLocation else CFrame.new(47483648,47483648,47483648)
+				local location = if hasEnded then oldLocation else CFrame.new(583648,683648,583648)
 				if humanoid then
 					TeleportAsync(target, location)
 				end
 			end)
 			task:onEnded(function()
-				task.wait(0.2)
 				TeleportAsync(target, oldLocation)
 			end)
 		end
