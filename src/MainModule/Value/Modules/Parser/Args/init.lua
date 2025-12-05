@@ -392,7 +392,7 @@ local items = {
 		inputObject = {
 			inputType = "ItemSelector",
 			pickerName = "Server & Offline Players",
-			getPickerItemsFromAnyPlayer = true,
+			getPickerItemsFromAnyUser = true,
 		},
 		description = "Hides the players argument for general use and only displays it within the preview menu.",
 		defaultValue = {},
@@ -409,11 +409,11 @@ local items = {
 		end,
 	}),
 
-	["AnyPlayer"] = Args.create({
+	["AnyUser"] = Args.create({
 		inputObject = {
 			inputType = "ItemSelector",
-			pickerName = "Server & Offline Players",
-			getPickerItemsFromAnyPlayer = true,
+			pickerName = "Players",
+			getPickerItemsFromServerPlayers = true,
 		},
 		inputOptions = {},
 		displayName = "userNameOrId",

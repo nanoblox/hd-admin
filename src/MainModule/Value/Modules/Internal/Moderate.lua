@@ -34,7 +34,7 @@ local commands: Task.Commands = {
     --------------------
 	{
 		name = "Follow",
-		args = {"AnyPlayer"},
+		args = {"AnyUser"},
 		run = function(task: Task.Class, args: {any})
 			
 		end

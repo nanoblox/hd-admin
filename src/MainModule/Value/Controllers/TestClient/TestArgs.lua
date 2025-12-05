@@ -9,7 +9,7 @@ local testTool = ReplicatedStorage:FindFirstChild("TestToolHi")
 
 local args = {
 	{["Player"] = {foreverhd, "others", "role(admin)"}},
-	{["AnyPlayer"] = 82347291},
+	{["AnyUser"] = 82347291},
 	{["Roles"] = {"admin", "mod"}},
 	{["Text"] = "Hello world || German"},
 	{["SingleText"] = "HelloworldSpanish"},

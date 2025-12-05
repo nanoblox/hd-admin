@@ -13,9 +13,9 @@ InputObjects.items = {
 		-- have custom icons for many item types, for example, the player's profile image,
 		-- for Player instances.
 		-- This object also needs textbox (that is by default hidden, but enabled through
-		-- settings such as 'getPickerItemsFromAnyPlayer') that enables the user to enter
+		-- settings such as 'getPickerItemsFromAnyUser') that enables the user to enter
 		-- a UserId or UserName, and if valid, adds that user to the item selector.
-		local getPickerItemsFromAnyPlayer = inputConfig.getPickerItemsFromAnyPlayer
+		local getPickerItemsFromAnyUser = inputConfig.getPickerItemsFromAnyUser
 		local getPickerItemsFromServerPlayers = inputConfig.getPickerItemsFromServerPlayers
 		local pickerName = inputConfig.pickerName
 		local pickerGetter = inputConfig.pickerGetter
@@ -109,7 +109,7 @@ export type InputConfig = {
 	pickerText: string?,
 	pickerGetter: ((...any) -> ({any}))?,
 	getPickerItemsFromServerPlayers: boolean?,
-	getPickerItemsFromAnyPlayer: boolean?,
+	getPickerItemsFromAnyUser: boolean?,
 	preventWhitespaces: boolean?,
 	optionsArray: {string}?, -- Array of strings to be used as options for the Options input type
 }

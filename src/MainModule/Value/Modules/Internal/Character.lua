@@ -259,7 +259,7 @@ local commands: Task.Commands = {
     --------------------
 	{
 		name = "Char",
-		args = {"Player","AnyPlayer"},
+		args = {"Player","AnyUser"},
 		run = function(task: Task.Class, args: {any})
 			local target = args[1]
 			local player = args[2]
