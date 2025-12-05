@@ -1,7 +1,7 @@
 --!strict
 local getHumanoid = require(script.Parent.getHumanoid)
 local Players = game:GetService("Players")
-return function(player: Player?): HumanoidDescription?
+return function(player: Player? | number?): HumanoidDescription?
 	if type(player) == "number" then -- Checks if it's a userId, which if it isn't; it proceeds as normal.
 		local hd = Players:GetHumanoidDescriptionFromUserId(player)
 		return hd

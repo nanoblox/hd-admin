@@ -8,7 +8,6 @@ return function(commandName: string): any?
 		local clientUser = require(modules.References.clientUser)
 		local everyone = clientUser.everyone
 		local success, value = everyone:fetchAsync("CommandInfo", commandName)
-		print("success, value =", commandName, success, value)
 		if success and typeof(value) == "table" then
 			return value
 		end

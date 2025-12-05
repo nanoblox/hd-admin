@@ -20,14 +20,14 @@ end)
 everyone:observe("RoleInfo", function(value)
 	print("TEST RoleInfo:", value)
 end)
-everyone:observe("Commands", function(value)
-	print("TEST Commands:", value)
+task.delay(3, function()
+	everyone:observe("Commands", function(value)
+		print("TEST Commands:", value)
+	end)
+	everyone:observe("CommandInfo", function(value)
+		print("TEST CommandInfo:", value)
+	end)
 end)
-everyone:observe("CommandInfo", function(value)
-	print("TEST CommandInfo:", value)
-end)
-
-
 
 
 -- Test replication perm
@@ -90,7 +90,7 @@ local Parser = require(modules.Parser)
 local TestArgs = require(modules.Parent.Controllers.TestClient.TestArgs)
 local testArgs = TestArgs[1]
 local testValues = TestArgs[2] :: {any}
-local finalString = Parser.unparse("Test", {"GLOBAL", "LOOP"}, unpack(testValues))
+--local finalString = Parser.unparse("Test", {"GLOBAL", "LOOP"}, unpack(testValues))
 
 
 local selectedPlayers = {"random", "role(admin)"}

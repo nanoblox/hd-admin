@@ -5,7 +5,7 @@ local clientCommands: Task.ClientCommands = {
 
 	--------------------
 	{
-		name = script.Parent.Name,
+		name = "Fly",
 		run = function(task: Task.Class, hello)
 			task.iterate(1000, function()
 				task.server:replicate("TEST (3)")

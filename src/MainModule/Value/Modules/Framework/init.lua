@@ -321,21 +321,10 @@ function Framework.startServer()
 				if not roleConfigOrModule:IsA("ModuleScript") then
 					continue
 				end
-				local reference = require(roleConfigOrModule)
-				forEveryCommand(reference, function(command)
-					local newRoles = {}
-					for _, item in rolesArray do
-						-- Add the primary (config) roles first
-						table.insert(newRoles, item)
-					end
-					if typeof(command.roles) == "table" then
-						for _, item in command.roles do
-							-- Add the already existing roles second
-							table.insert(newRoles, item)
-						end
-					end
-					command.roles = newRoles
-				end)
+				--
+				local rolesString = table.concat(rolesArray, " ||| ")
+				roleConfigOrModule:SetAttribute("RolesToAdd", rolesString)
+				--
 				roleConfigOrModule:SetAttribute("PrimaryRole", true)
 				for _, child in roleConfigOrModule:GetChildren() do
 					-- We set a 'Child' attribute for all child modules named 'Client'

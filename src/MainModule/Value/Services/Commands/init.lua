@@ -63,6 +63,11 @@ function Commands.updateCommands()
 			continue
 		end
 		local commandsInside = require(commandModule) :: any
+		local rolesToAdd = commandModule:GetAttribute("RolesToAdd")
+		local rolesArray = if typeof(rolesToAdd) == "string" then string.split(rolesToAdd, " ||| ") else {}
+		if rolesToAdd then
+			commandModule:SetAttribute("RolesToAdd", nil)
+		end
 		forEveryCommand(commandsInside, function(command: any)
 			local prefixes = command.prefixes
 			local commandName = command.name
@@ -70,6 +75,22 @@ function Commands.updateCommands()
 				return
 			end
 
+			-- Add roles from the Config roles the command was originally under
+			if rolesToAdd then
+				local newRoles = {}
+				for _, item in rolesArray do
+					-- Add the primary (config) roles first
+					table.insert(newRoles, item)
+				end
+				if typeof(command.roles) == "table" then
+					for _, item in command.roles do
+						-- Add the already existing roles second
+						table.insert(newRoles, item)
+					end
+				end
+				command.roles = newRoles
+			end
+			
 			-- If command contains a custom prefix
 			local commandNameLower = commandName:lower()
 			if typeof(prefixes) == "table" then
