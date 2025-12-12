@@ -1,10 +1,10 @@
 --!strict
 local ORDER = 200
-local ROLE = script.Name
+local ROLES = {script.Parent.Name, "Message"}
 local modules = script:FindFirstAncestor("HD Admin").Core.MainModule.Value.Modules
 local Internal = require(modules.Internal)
-local commands = Internal.setupCommands(script.Name, function(command)
+local commands = Internal.loadCommandGroup("Message", function(command)
 	command.order = ORDER
-	command.roles = {ROLE}
+	command.roles = ROLES
 end)
 return commands

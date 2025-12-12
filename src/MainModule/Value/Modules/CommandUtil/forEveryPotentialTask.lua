@@ -20,7 +20,7 @@ type ArgGroup = {[string]: {string}}
 type Task = Task.Class
 type Properties = Task.Properties
 
-return function(callerUserId: number, statement: Statement, callback: (command: Command, arguments: ArgGroup, optionalTargetUserId: number?) -> (boolean?))
+return function(callerUserId: number | string, statement: Statement, callback: (command: Command, arguments: ArgGroup, optionalTargetUserId: number?) -> (boolean?))
 	local Commands = require(services.Commands :: any)
 	local Args = require(parser.Args)
 	local tasks: {any} = {}

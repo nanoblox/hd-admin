@@ -29,6 +29,22 @@ Remote.new("PromptBulkPurchase", "Function"):onServerInvoke(function(player: Pla
 	return success, warning
 end)
 
+-- Same for prompting products
+local promptAssetAsync = require(modules.AssetUtil.promptAssetAsync)
+Remote.new("PromptProduct", "Function"):onServerInvoke(function(player: Player, assetId: unknown)
+	if typeof(assetId) ~= "number" then
+		return false, "Invalid assetId number"
+	end
+	local success, warning = promptAssetAsync(assetId, player)
+	return success, warning
+end)
+
+-- Permit HD Gamepasses and Accessories
+local products = require(modules.References.products)
+for _, productInfo in products do
+	Assets.permitAsset(productInfo.Id)
+end
+
 -- Initialize the Sound Handler
 require(modules.AssetUtil.registerSound)
 

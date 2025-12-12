@@ -23,8 +23,8 @@ function DataStore.generateTemplate(user: User.Class?)
 			-- See if the game dev has changed settings, and if so, update the player's
 			-- settings with these new values
 			local perm = user.perm
-			local playerSettings = perm:get("PlayerSettings")
-			local previousPlayerSettings = perm:get("PreviousPlayerSettings")
+			local playerSettings = perm:get("YouSettings")
+			local previousPlayerSettings = perm:get("PreviousYouSettings")
 			local gamePlayerSettings = configSettings.PlayerSettings
 			local didChange = false
 			local function recursivelyMerge(table1, table2, tableToUpdate)
@@ -46,8 +46,8 @@ function DataStore.generateTemplate(user: User.Class?)
 			end
 			recursivelyMerge(gamePlayerSettings, previousPlayerSettings, playerSettings)
 			if didChange then
-				perm:set("PlayerSettings", playerSettings)
-				perm:set("PreviousPlayerSettings", gamePlayerSettings)
+				perm:set("YouSettings", playerSettings)
+				perm:set("PreviousYouSettings", gamePlayerSettings)
 			end
 		end)
 		user.beforeSaving:Connect(function()
@@ -82,7 +82,7 @@ function DataStore.generateTemplate(user: User.Class?)
 			FirstSession = timeNow,
 			LastSession = 0,
 			TotalPlayTime = 0,
-			PreviousPlayerSettings = deepCopyTable(configSettings.PlayerSettings),
+			PreviousYouSettings = deepCopyTable(configSettings.PlayerSettings),
 			CommandsThisMinute = 0,
 			CommandsThisMinuteStartStamp = timeNow,
 		}},

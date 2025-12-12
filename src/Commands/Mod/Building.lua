@@ -1,24 +1,25 @@
 --!strict
-local ORDER = 270
-local ROLE = "Build"
+local ORDER = 280
+local ROLES = {script.Parent.Name, "Build"}
 local modules = script:FindFirstAncestor("HD Admin").Core.MainModule.Value.Modules
+local Internal = require(modules.Internal)
 local Task = require(modules.Objects.Task)
-local getHumanoid = require(modules.PlayerUtil.getHumanoid)
-local commands: Task.Commands = {
+local loadCommand = Internal.loadCommand
+type Command = Task.Command
+
+return {
 
     --------------------
-	{
-		name = "BuildingTools",
-		aliases = {"Btools"},
-		args = {"Player"},
-		roles = {ROLE},
-		order = ORDER,
-		run = function(task: Task.Class, args: {any})
-			
-		end
-	},
+	loadCommand("BuildingTools", function(command: Command)
+		command.order = ORDER
+		command.roles = ROLES
+	end),
 
     --------------------
-	
+	loadCommand("Clone", function(command: Command)
+		command.order = ORDER
+		command.roles = ROLES
+	end),
+
+    --------------------
 }
-return commands

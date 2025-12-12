@@ -28,7 +28,7 @@ local function playerAdded(player: Player)
 	local Commands = require(services.Commands)
 	player.Chatted:Connect(function(message)
 		local approved, notices, tasks = Commands.request(user, message, "Chat")
-		Commands.processNotices(notices)
+		Commands.processNotices(player, notices)
 	end)
 
 	-- Listen for silent /e chat commands
@@ -39,13 +39,13 @@ local function playerAdded(player: Player)
 			continue
 		end
 		instance.Triggered:Connect(function(chatSource, message)
-			local speaker = Players:FindFirstChild(chatSource.Name)
-			if not speaker then
+			local speaker = Players:FindFirstChild(chatSource.Name) :: Player?
+			if not speaker or speaker ~= player then
 				return
 			end
 			local finalMessage = string.sub(message,4)
 			local approved, notices, tasks = Commands.request(user, finalMessage, "ChatCommand")
-			Commands.processNotices(notices)
+			Commands.processNotices(speaker, notices)
 		end)
 	end
 

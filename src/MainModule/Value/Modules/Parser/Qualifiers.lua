@@ -216,7 +216,7 @@ Qualifiers.items = {
 		requiresCapsule = true,
 		getTargets = function(_, ...)
 			local targets = {}
-			local teamNames = table.pack(...)
+			local teamNames = {...}
 			local selectedTeams = {}
 			local validTeams = false
 			if #teamNames == 0 then
@@ -260,7 +260,7 @@ Qualifiers.items = {
 			end
 			for _, plr in (Players:GetPlayers()) do
 				for _, groupId in (groupIds) do
-					if plr:IsInGroup(groupId) then
+					if (plr :: any):IsInGroup(groupId) then
 						table.insert(targets, plr)
 						break
 					end
@@ -378,7 +378,7 @@ Qualifiers.items = {
 		getTargets = function(callerUserId)
 			local targets = {}
 			for _, player in (Players:GetPlayers()) do
-				if player:IsFriendsWith(callerUserId) then
+				if (player :: any):IsFriendsWith(callerUserId) then
 					table.insert(targets, player)
 				end
 			end

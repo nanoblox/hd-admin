@@ -128,7 +128,7 @@ dataTypes = {
 		end,
 	},
 	["Instance"] = {
-		serializeOverNetwork = true,
+		--serializeOverNetwork = true,
 		isValid = function(instance)
 			local className = instance.ClassName
 			if not validClasses[className] then

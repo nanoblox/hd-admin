@@ -18,10 +18,14 @@ type ClientCommands = Task.ClientCommands
 
 -- NETOWORKING
 Remote.get("RunClientCommand"):onClientEvent(function(properties: Task.Properties, ...)
-	print("RECEIVED:", properties, ...)
 	local clientCommand = ClientCommands.getCommand(properties.commandKey)
 	local activeTask = Task.getTask(properties.UID)
-	if not clientCommand or activeTask then
+	if not clientCommand then
+		return
+	end
+	if activeTask then
+		activeTask.clientArgs = properties.clientArgs
+		activeTask:run()
 		return
 	end
 	local task = Task.new(properties)
@@ -37,9 +41,8 @@ end)
 
 Remote.get("ReplicateClientCommand"):onClientEvent(function(commandKey:string, ...)
 	local clientCommand = ClientCommands.getCommand(commandKey)
-	local replicate = clientCommand and clientCommand.replicate
-	if typeof(replicate) == "function" then
-		replicate(...)
+	if clientCommand and typeof(clientCommand.replication) == "function" then
+		(clientCommand.replication :: any)(...)
 	end
 end)
 
@@ -53,24 +56,34 @@ function ClientCommands.updateCommands()
 	clientCommandsArray = {}
 	lowerCaseNameDictionary = {}
 	local forEveryCommand = require(modules.CommandUtil.forEveryCommand)
-	for _, commandModule in services.Commands:GetChildren() do
-		if not commandModule:IsA("ModuleScript") then
-			continue
-		end
-		for _, clientCommandModule in commandModule:GetChildren() do
-			if not clientCommandModule:IsA("ModuleScript") then
+	local function scanContainerForClientCommands(container: Instance, requiresActiveModule: boolean?)
+		for _, commandModule in container:GetChildren() do
+			if not commandModule:IsA("ModuleScript") then
+				if commandModule:IsA("Folder") then
+					scanContainerForClientCommands(commandModule, requiresActiveModule)
+				end
 				continue
 			end
-			if clientCommandModule.Name:lower() ~= "client" then
+			if requiresActiveModule == true and not commandModule:GetAttribute("IsActive") then
 				continue
 			end
-			local commandsInside = require(clientCommandModule) :: any
-			forEveryCommand(commandsInside, function(command: any)
-				table.insert(clientCommandsArray, command :: ClientCommand)
-				lowerCaseNameDictionary[command.name:lower()] = command :: ClientCommand
-			end)
+			for _, clientCommandModule in commandModule:GetChildren() do
+				if not clientCommandModule:IsA("ModuleScript") then
+					continue
+				end
+				if clientCommandModule.Name:lower() ~= "client" then
+					continue
+				end
+				local commandsInside = require(clientCommandModule) :: any
+				forEveryCommand(commandsInside, function(command: any)
+					table.insert(clientCommandsArray, command :: ClientCommand)
+					lowerCaseNameDictionary[command.name:lower()] = command :: ClientCommand
+				end)
+			end
 		end
 	end
+	scanContainerForClientCommands(modules.Internal, true)
+	scanContainerForClientCommands(services.Commands)
 	return true
 end
 

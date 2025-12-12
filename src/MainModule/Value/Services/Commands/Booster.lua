@@ -1,6 +1,6 @@
 --!strict
 local ORDER = 1000000
-local ROLE = "_Booster"
+local ROLES = {"_Booster"}
 local PREFIX = "/"
 local HIDE = true
 local modules = script:FindFirstAncestor("HD Admin").Core.MainModule.Value.Modules
@@ -14,9 +14,9 @@ local function createEmoteCommand(emoteName: string, emoteId: number | false, pr
 	local command: Task.Command = {
 		name = PREFIX..emoteName,
 		aliases = aliases,
-		args = {"Player"},
-		roles = {ROLE},
+		roles = ROLES,
 		order = ORDER,
+		args = {"Player"},
 		hide = HIDE,
 		run = function(task: Task.Class, args: {any})
 			print("RAN the booster emote:", emoteName)
@@ -27,9 +27,9 @@ end
 local function createBundleCommand(bundleName: string, properties: any?)
 	local command: Task.Command = {
 		name = PREFIX..bundleName,
-		args = {"Player"},
-		roles = {ROLE},
+		roles = ROLES,
 		order = ORDER,
+		args = {"Player"},
 		hide = HIDE,
 		run = function(task: Task.Class, args: {any})
 			print("RAN the booster bundle:", bundleName)
@@ -44,9 +44,9 @@ local commands: Task.Commands = {
     --------------------
 	{
 		name = "Bundle",
-		args = {"Player"},
-		roles = {ROLE},
+		roles = ROLES,
 		order = ORDER,
+		args = {"Player"},
 		hide = HIDE,
 		run = function(task: Task.Class, args: {any})
 			
@@ -112,9 +112,9 @@ local commands: Task.Commands = {
 	--------------------
 	{
 		name = PREFIX.."Reset",
-		args = {"Player"},
-		roles = {ROLE},
+		roles = ROLES,
 		order = ORDER,
+		args = {"Player"},
 		hide = HIDE,
 		run = function(task: Task.Class, args: {any})
 			-- Reset

@@ -1,6 +1,6 @@
 --!strict
 local ORDER = 450
-local ROLE = "Build"
+local ROLES = {script.Parent.Name, "Build"}
 local modules = script:FindFirstAncestor("HD Admin").Core.MainModule.Value.Modules
 local Task = require(modules.Objects.Task)
 local getHumanoid = require(modules.PlayerUtil.getHumanoid)
@@ -9,9 +9,9 @@ local commands: Task.Commands = {
     --------------------
 	{
 		name = "SaveMap",
-		args = {"Player"},
-		roles = {ROLE},
+		roles = ROLES,
 		order = ORDER,
+		args = {"Player"},
 		run = function(task: Task.Class, args: {any})
 			
 		end
@@ -20,9 +20,9 @@ local commands: Task.Commands = {
     --------------------
 	{
 		name = "LoadMap",
-		args = {"Player"},
-		roles = {ROLE},
+		roles = ROLES,
 		order = ORDER,
+		args = {"Player"},
 		run = function(task: Task.Class, args: {any})
 			
 		end
@@ -31,9 +31,9 @@ local commands: Task.Commands = {
     --------------------
 	{
 		name = "LockMap",
-		args = {"Player"},
-		roles = {ROLE},
+		roles = ROLES,
 		order = ORDER,
+		args = {"Player"},
 		run = function(task: Task.Class, args: {any})
 			
 		end
@@ -43,9 +43,9 @@ local commands: Task.Commands = {
 	{
 		name = "LockCharacter",
 		aliases = {"LockChar", "LockPlayer"},
-		args = {"Player"},
-		roles = {ROLE},
+		roles = ROLES,
 		order = ORDER,
+		args = {"Player"},
 		run = function(task: Task.Class, args: {any})
 			
 		end
@@ -55,9 +55,9 @@ local commands: Task.Commands = {
 	{
 		name = "CreateTeam",
 		undoAliases = {"RemoveTeam"},
-		args = {"Player"},
-		roles = {ROLE},
+		roles = ROLES,
 		order = ORDER,
+		args = {"Player"},
 		run = function(task: Task.Class, args: {any})
 			
 		end

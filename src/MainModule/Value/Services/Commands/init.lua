@@ -29,11 +29,11 @@ local lowerCaseNameAndAliasCommandsDictionary: {[string]: Command} = {}
 local sortedNameAndAliasWithOverrideLengthArray: {string} = {}
 local commandsRequireUpdating = true
 local commandPrefixes: {[string]: boolean} = {}
-
+local serverUser: User.Class? = nil
 
 
 -- TYPES
-export type MessageSource = "Chat" | "ChatCommand" | "Script" | "ClientCommandBar" | "ClientPreviewRun" | "ClientRun" | "ClientCommand" | "Other" | "Unknown"
+export type MessageSource = "Chat" | "ChatCommand" | "API" | "ClientCommandBar" | "ClientPreviewRun" | "ClientRun" | "ClientCommand" | "Other" | "Unknown"
 type User = User.Class
 type Batch = ParserTypes.ParsedBatch
 type Statement = ParserTypes.ParsedStatement
@@ -58,7 +58,7 @@ function Commands.updateCommands()
 	commandPrefixes = {}
 	local forEveryCommand = require(modules.CommandUtil.forEveryCommand)
 	local creationOrder = 0
-	for _, commandModule in pairs(script:GetChildren()) do
+	for _, commandModule in pairs(script:GetDescendants()) do
 		if not commandModule:IsA("ModuleScript") then
 			continue
 		end
@@ -241,12 +241,23 @@ function Commands.request(user: User.Class, message: string, messageSource: Mess
 	return approved, notices, tasks :: {Task}
 end
 
-function Commands.processNotices(notices: {any})
+function Commands.getServerUser(): User.Class?
+	if not serverUser then
+		serverUser = User.new("HDAdminServerUser", "PlayerStore", true)
+	end
+	return serverUser
+end
+
+function Commands.processNotices(caller: Player, notices: {any})
 	for _, noticeTable in notices do
 		local isWarning = noticeTable[1] == false
 		local string = noticeTable[2]
-		local initial = `[HD Admin {isWarning and "WARNING" or "Notice"}]: `
-		warn(initial..string)
+		local Prompt = require(modules.Prompt)
+		if isWarning then
+			Prompt.warn(caller, string)
+		else
+			Prompt.info(caller, string)
+		end
 	end
 end
 
@@ -256,7 +267,7 @@ function Commands.processStatementAsync(callerUser: User, statement: Statement):
 	if not approved then
 		return false, (warning or "Statement denied")
 	end
-	local callerUserId = callerUser.userId :: number
+	local callerUserId = callerUser.userId
 	local tasks = Commands.executeStatement(callerUserId, statement)
 	return true, tasks
 end
@@ -297,7 +308,7 @@ function Commands.verifyStatementAsync(user: User, statement: Statement)--: (app
 	ParserUtility.convertStatementToRealNames(statement)
 
 	-- Is user still active?
-	local callerUserId = user.userId :: number
+	local callerUserId = user.userId
 	if not user.isActive then
 		return false, "User hasn't loaded yet!"
 	end
@@ -506,7 +517,7 @@ function Commands.verifyStatementAsync(user: User, statement: Statement)--: (app
 	return true, nil
 end
 
-function Commands.executeStatement(callerUserId: number, statement: Statement): {Task}
+function Commands.executeStatement(callerUserId: number | string, statement: Statement): {Task}
 
 	-- Ensure statement is converted
 	local ParserUtility = require(parser.ParserUtility)

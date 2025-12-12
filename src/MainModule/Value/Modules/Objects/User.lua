@@ -86,7 +86,16 @@ function User.getUser(playerOrKey: UserKey, canBeUnloaded: boolean?): Class?
 	return user
 end
 
-function User.getUserByUserId(userId: number, canBeUnloaded: boolean?): Class?
+function User.getUserByUserId(userId: number | string, canBeUnloaded: boolean?): Class?
+	if typeof(userId) == "string" then
+		local users = User.getUsers()
+		for _, user in users do
+			if user.userId == userId then
+				return user
+			end
+		end
+		return nil
+	end
 	local player = Players:GetPlayerByUserId(userId)
 	if not player then
 		return nil
@@ -123,7 +132,7 @@ function User.getUsers(canBeUnloaded: boolean?): {Class}
 		end
 		table.insert(usersArray, user)
 	end
-	return usersArray
+	return usersArray :: {Class}
 end
 
 function User._getSavesThisMinute(dataTable, andIncrement)
@@ -148,13 +157,13 @@ end
 
 
 -- CONSTRUCTOR
-function User.new(playerOrKey: UserKey, dataStoreName: string?)
+function User.new(playerOrKey: UserKey, dataStoreName: string?, blockLoadingAndSaving: boolean?)
 
 	-- Define properties
 	local realKey, isPlayer = User.getRealKey(playerOrKey)
 	local janitor = Janitor.new()
 	local player = if isPlayer then playerOrKey :: Player else nil
-	local userId = if isPlayer and player then player.UserId else nil
+	local userId = if isPlayer and player then player.UserId else realKey
 	local self = {
 		janitor = janitor,
 		perm = State.new(true), -- We don't destroy perm until after a successful save and release
@@ -163,7 +172,7 @@ function User.new(playerOrKey: UserKey, dataStoreName: string?)
 		beforeSaving = janitor:add(Signal.new()),
 		realKey = realKey :: string,
 		player = player,
-		userId = userId :: number?,
+		userId = userId :: number | string,
 		policyInfo = {},
 		policyInfoLoaded = false :: boolean,
 		isPlayer = isPlayer :: boolean,
@@ -208,7 +217,7 @@ function User.new(playerOrKey: UserKey, dataStoreName: string?)
 
 	-- If a dataTemplateGenerator is provided, then begin the loading and handling of data
 	if dataStoreName then
-		self:_loadAndAutoSaveData(dataStoreName)
+		self:_loadAndAutoSaveData(dataStoreName, blockLoadingAndSaving)
 	end
 
 	return self
@@ -221,10 +230,10 @@ type UserKey = (Player | string | number)?
 
 
 -- METHODS
-function User._loadAndAutoSaveData(self: Class, dataStoreName: string)
+function User._loadAndAutoSaveData(self: Class, dataStoreName: string, blockLoadingAndSaving: boolean?)
 	if typeof(dataStoreName) ~= "string" then
 		error("dataStoreName must be a string")
-	end 
+	end
 	local dataStores = modules.DataStores
 	local store = dataStores:FindFirstChild(dataStoreName)
 	if not store then
@@ -242,33 +251,34 @@ function User._loadAndAutoSaveData(self: Class, dataStoreName: string)
 	local player = self.player
 	local perm = self.perm
 	local temp = self.temp
+	local permitSaveAndLoad = blockLoadingAndSaving ~= true
 	local startData = {
 		perm = {},
 		temp = {},
 	}
-	if player and typeof(player) == "Instance" and player:IsA("Player") then
-		local function getPathwaysToLimitTo(dataType)
-			local limiters: {any} = {}
-			for _, detail in template do
-				detail = detail :: {any}
-				local items = detail[3]
-				local startTable = startData[dataType]
-				if detail[1] == dataType then
-					if detail[2] == "public" then
-						for key, _ in items do
-							local pathway = {key}
-							table.insert(limiters, pathway)
-						end
-					end
-					for key, value in items do
-						startTable[key] = value
+	local function getPathwaysToLimitTo(dataType)
+		local limiters: {any} = {}
+		for _, detail in template do
+			detail = detail :: {any}
+			local items = detail[3]
+			local startTable = startData[dataType]
+			if detail[1] == dataType then
+				if detail[2] == "public" then
+					for key, _ in items do
+						local pathway = {key}
+						table.insert(limiters, pathway)
 					end
 				end
+				for key, value in items do
+					startTable[key] = value
+				end
 			end
-			return limiters :: {{string}}
 		end
-		local permLimiters = getPathwaysToLimitTo("perm")
-		local tempLimiters = getPathwaysToLimitTo("temp")
+		return limiters :: {{string}}
+	end
+	local permLimiters = getPathwaysToLimitTo("perm")
+	local tempLimiters = getPathwaysToLimitTo("temp")
+	if player and typeof(player) == "Instance" and player:IsA("Player") then
 		local function yieldUntilLoaded()
 			User.getUserAsync(self.realKey)
 		end
@@ -287,7 +297,7 @@ function User._loadAndAutoSaveData(self: Class, dataStoreName: string)
 	local waitTimeRetry = 2
 	local retries = 0
 	local firstSessionLockRejectTime: number? = nil
-	while true do
+	while permitSaveAndLoad do
 		if self.isActive == false then
 			return
 		end
@@ -422,6 +432,9 @@ function User._loadAndAutoSaveData(self: Class, dataStoreName: string)
 	local hasReleasedProfile = false
 	local serverIsShuttingDown = false
 	local function saveAsync()
+		if not permitSaveAndLoad then
+			return false, "Saving and loading blocked for this user"
+		end
 		if isReleasingProfile then
 			return false, "Already releasing profile"
 		end
@@ -476,27 +489,31 @@ function User._loadAndAutoSaveData(self: Class, dataStoreName: string)
 	-- Save data and release session when server is shutting down
 	-- Binding to close in studio can negatively impact the experience of a developer
 	-- as it forces play test end to hang until bind to close is complete
-	game:BindToClose(function()
-		serverIsShuttingDown = true
-		task.defer(saveAsync)
-		while hasReleasedProfile == false do
-			task.wait(1)
-		end
-	end)
+	if permitSaveAndLoad then
+		game:BindToClose(function()
+			serverIsShuttingDown = true
+			task.defer(saveAsync)
+			while hasReleasedProfile == false do
+				task.wait(1)
+			end
+		end)
+	end
 	
 	-- This acts as an 'auto save', with the added bonus of only saving data *when it needs*
 	-- to be saved. It applies a cooldown of AUTO_SAVE_COOLDOWN seconds between saves
-	local Queue = require(modules.Objects.Queue)
-	local queue = Queue.new()
-	perm:changed(function()
-		queue:add(function()
-			local INITIAL_DELAY = 1
-			task.wait(INITIAL_DELAY) -- Wait a second to include addiitonal values if a lot of changes are made at once
-			queue:clear()
-			saveAsync()
-			task.wait(AUTO_SAVE_COOLDOWN-INITIAL_DELAY)
+	if permitSaveAndLoad then
+		local Queue = require(modules.Objects.Queue)
+		local queue = Queue.new()
+		perm:changed(function()
+			queue:add(function()
+				local INITIAL_DELAY = 1
+				task.wait(INITIAL_DELAY) -- Wait a second to include addiitonal values if a lot of changes are made at once
+				queue:clear()
+				saveAsync()
+				task.wait(AUTO_SAVE_COOLDOWN-INITIAL_DELAY)
+			end)
 		end)
-	end)
+	end
 
 	-- Now fire that we have loaded!
 	self.isLoaded = true :: any

@@ -1,7 +1,7 @@
 -- LOCAL
 --!strict
 local modules = script:FindFirstAncestor("MainModule").Value.Modules
-local getTargets = require(modules.PlayerUtil.getTargets)
+local getTargets = require(modules.CommandUtil.getTargets)
 local Remote = require(modules.Objects.Remote)
 local RunService = game:GetService("RunService")
 local runClientCommand: Remote.Class? = nil
@@ -69,7 +69,7 @@ local function setupReplicateListener()
 			return false, warning2
 		end
 		local getDataSize = require(modules.VerifyUtil.getDataSize)
-		local dataSize = getDataSize(table.pack(...))
+		local dataSize = getDataSize({...})
 		if dataSize > DATA_LIMIT then
 			return false, `Exceeded replicate data limit of {DATA_LIMIT} bytes`
 		end
@@ -106,7 +106,12 @@ end
 type TargetType = getTargets.TargetType
 export type Class = {
     run: typeof(TaskClient.run),
-	replicator: ((replicate: (toPlayer: Player, ...any) -> (), ...any) -> ())?
+	runAll: typeof(TaskClient.runAll),
+	runOthers: typeof(TaskClient.runOthers),
+	runNearby: typeof(TaskClient.runNearby),
+	replicator: ((replicate: (toPlayer: Player, ...any) -> (), ...any) -> ())?,
+	expose: typeof(TaskClient.expose),
+	exposeAll: typeof(TaskClient.exposeAll),
 }
 
 
@@ -124,7 +129,7 @@ function TaskClient.run(self: Class, player: Player?, ...)
 	if not runClientCommand then
 		runClientCommand = Remote.new("RunClientCommand", "Event")
 	end
-	local clientArgs = table.pack(...)
+	local clientArgs = {...}
 	local properties = {
 		callerUserId = task.callerUserId,
 		targetUserId = task.targetUserId,
@@ -137,6 +142,66 @@ function TaskClient.run(self: Class, player: Player?, ...)
 		runClientCommand:fireClient(player, properties)
 	end
 	setupReplicateListener() -- Setup listener in case the client makes a replication request
+end
+
+function TaskClient.runAll(self: Class, ...)
+	local targets = getTargets("All")
+	for _, targetPlayer in targets do
+		self:run(targetPlayer, ...)
+	end
+end
+
+function TaskClient.runOthers(self: Class, originPlayer: Player, ...)
+	local targets = getTargets("Others", originPlayer)
+	for _, targetPlayer in targets do
+		self:run(targetPlayer, ...)
+	end
+end
+
+function TaskClient.runNearby(self: Class, originPlayer: Player?, radius: number, ...)
+	local targets = getTargets("Nearby", originPlayer, radius)
+	for _, targetPlayer in targets do
+		self:run(targetPlayer, ...)
+	end
+end
+
+function TaskClient._exposeInstances(self: Class, instances: Instance | {Instance}, container: Instance)
+	if typeof(instances) ~= "table" then
+		instances = {instances}
+	end
+	for _, instance in instances do
+		if typeof(instance) ~= "Instance" then
+			continue
+		end
+		local originalParent = instance.Parent
+		if not container then
+			return
+		end
+		instance.Parent = container
+		task.defer(function()
+			if instance.Parent == container then
+				instance.Parent = originalParent
+			end
+		end)
+	end
+end
+
+function TaskClient.expose(self: Class, player: Player, instances: Instance | {Instance})
+	-- There's not a guarantee that an instance replicates instantly to a client
+	-- (for example, Streaming can limit what gets replicated to that client)
+	-- This provides a guarantee that the instance is received on the client
+	local playerGui = player:FindFirstChildOfClass("PlayerGui")
+	if playerGui then
+		self = self :: any
+		self:_exposeInstances(instances, playerGui)
+	end
+end
+
+function TaskClient.exposeAll(self: Class, instances: Instance | {Instance})
+	-- Same as TaskClient.expose, but for all players in the server
+	local ReplicatedStorage = game:GetService("ReplicatedStorage")
+	self = self :: any
+	self:_exposeInstances(instances, ReplicatedStorage)
 end
 
 

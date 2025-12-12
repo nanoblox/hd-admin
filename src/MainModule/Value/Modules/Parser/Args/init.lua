@@ -376,7 +376,6 @@ local items = {
 			return unparsePlayer(arrayOfPlayers)
 		end,
 		parse = function(self, qualifiers, callerUserId)
-			print("qualifiers =", qualifiers)
 			local isTableEmpty = require(modules.TableUtil.isTableEmpty)
 			local defaultToAll = qualifiers == nil or isTableEmpty(qualifiers)
 			if defaultToAll then
@@ -408,7 +407,7 @@ local items = {
 			return players
 		end,
 	}),
-
+	
 	["AnyUser"] = Args.create({
 		inputObject = {
 			inputType = "ItemSelector",
@@ -639,13 +638,6 @@ local items = {
 		defaultValue = 10,
 	})),
 
-	["AnimationSpeed"] = Args.createAliasOf("Number", register({
-		minValue = 0,
-		maxValue = 2,
-		stepAmount = 0.1,
-		defaultValue = 1,
-	})),
-
 	["Degrees"] = Args.createAliasOf("Number", register({
 		description = "Accepts a number and returns a value between 0 and 360.",
 		minValue = 0,
@@ -725,7 +717,7 @@ local items = {
 			end
 			local hexValue = stringToParse:sub(2, #stringToParse)
 			local hexToColor = require(modules.DataUtil.hexToColor)
-			local color3 = hexToColor(stringToParse)
+			local color3 = #stringToParse > 2 and hexToColor(stringToParse)
 			if color3 then
 				return color3
 			end
@@ -801,20 +793,6 @@ local items = {
 			return defaultValue
 		end,
 	}),
-
-	["ServersOptions"] = Args.createAliasOf("Options", register({
-		inputObject = {
-			inputType = "Options",
-			optionsArray = {"Current", "All"}
-		},
-	})),
-
-	["BanLengthOptions"] = Args.createAliasOf("Options", register({
-		inputObject = {
-			inputType = "Options",
-			optionsArray = {"Infinite", "Time"}
-		},
-	})),
 
 	["Leaderstat"] = Args.create({
 		-- Accepts the names of stats within the player's leaderstats:

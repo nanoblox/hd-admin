@@ -1,6 +1,6 @@
 --!strict
 local ORDER = 300
-local ROLE = "Ability"
+local ROLES = {script.Parent.Name, "Ability"}
 local modules = script:FindFirstAncestor("HD Admin").Core.MainModule.Value.Modules
 local Task = require(modules.Objects.Task)
 local getHumanoid = require(modules.PlayerUtil.getHumanoid)
@@ -9,9 +9,9 @@ local commands: Task.Commands = {
     --------------------
 	{
 		name = "Music",
-		args = {"Player"},
-		roles = {ROLE},
+		roles = ROLES,
 		order = ORDER,
+		args = {"Player"},
 		run = function(task: Task.Class, args: {any})
 			
 		end
@@ -20,9 +20,9 @@ local commands: Task.Commands = {
     --------------------
 	{
 		name = "Pitch",
-		args = {"Player"},
-		roles = {ROLE},
+		roles = ROLES,
 		order = ORDER,
+		args = {"Player"},
 		run = function(task: Task.Class, args: {any})
 			
 		end
@@ -31,9 +31,9 @@ local commands: Task.Commands = {
     --------------------
 	{
 		name = "Volume",
-		args = {"Player"},
-		roles = {ROLE},
+		roles = ROLES,
 		order = ORDER,
+		args = {"Player"},
 		run = function(task: Task.Class, args: {any})
 			
 		end

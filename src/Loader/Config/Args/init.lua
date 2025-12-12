@@ -22,14 +22,30 @@ type ArgumentDetail = ArgTypes.ArgumentDetail
 return function(Args)
 	return {
 
-		["TestNumber1"] = Args.createAliasOf("Number", register({
+		["Scale"] = Args.createAliasOf("Number", register({
 			minValue = -100,
 			maxValue = 100,
 		})),
-
-		["TestNumber2"] = Args.createAliasOf("Number", register({
+		
+		["AnimationSpeed"] = Args.createAliasOf("Number", register({
 			minValue = 0,
-			maxValue = 10000,
+			maxValue = 2,
+			stepAmount = 0.1,
+			defaultValue = 1,
+		})),
+
+		["ServersOptions"] = Args.createAliasOf("Options", register({
+			inputObject = {
+				inputType = "Options",
+				optionsArray = {"Current", "All"}
+			},
+		})),
+
+		["BanLengthOptions"] = Args.createAliasOf("Options", register({
+			inputObject = {
+				inputType = "Options",
+				optionsArray = {"Infinite", "Time"}
+			},
 		})),
 
 	}

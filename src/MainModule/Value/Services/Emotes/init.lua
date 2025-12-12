@@ -48,7 +48,7 @@ function Emotes.getEmotesAsync(): (boolean, EmoteTable | string)
 	local waitTime = 1
 	while true do
 		success, catalogPages = pcall(function()
-			return AvatarEditorService:SearchCatalog(params)
+			return (AvatarEditorService :: any):SearchCatalog(params)
 		end)
 		if success then
 			break

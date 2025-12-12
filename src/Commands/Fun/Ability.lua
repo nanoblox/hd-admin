@@ -1,171 +1,104 @@
 --!strict
--- includes: jump
-local ORDER = 40
-local ROLE = script.Name
+local ORDER = 50
+local ROLES = {script.Parent.Name, "Ability"}
 local modules = script:FindFirstAncestor("HD Admin").Core.MainModule.Value.Modules
+local Internal = require(modules.Internal)
 local Task = require(modules.Objects.Task)
-local getHumanoid = require(modules.PlayerUtil.getHumanoid)
-local commands: Task.Commands = {
+local loadCommand = Internal.loadCommand
+type Command = Task.Command
+
+return {
 
     --------------------
-	{
-		name = "Spin",
-		args = {"Player"},
-		roles = {ROLE},
-		order = ORDER,
-		run = function(task: Task.Class, args: {any})
-			
-		end
-	},
+	loadCommand("Spin", function(command: Command)
+		command.order = ORDER
+		command.roles = ROLES
+	end),
 
     --------------------
-	{
-		name = "Fire",
-		args = {"Player"},
-		roles = {ROLE},
-		order = ORDER,
-		run = function(task: Task.Class, args: {any})
-			
-		end
-	},
+	loadCommand("ForceField", function(command: Command)
+		command.order = ORDER
+		command.roles = ROLES
+	end),
 
     --------------------
-	{
-		name = "Smoke",
-		args = {"Player"},
-		roles = {ROLE},
-		order = ORDER,
-		run = function(task: Task.Class, args: {any})
-			
-		end
-	},
+	loadCommand("Fire", function(command: Command)
+		command.order = ORDER
+		command.roles = ROLES
+	end),
 
     --------------------
-	{
-		name = "Sparkles",
-		args = {"Player"},
-		roles = {ROLE},
-		order = ORDER,
-		run = function(task: Task.Class, args: {any})
-			
-		end
-	},
+	loadCommand("Smoke", function(command: Command)
+		command.order = ORDER
+		command.roles = ROLES
+	end),
 
     --------------------
-	{
-		name = "Sit",
-		args = {"Player"},
-		roles = {ROLE},
-		order = ORDER,
-		run = function(task: Task.Class, args: {any})
-			
-		end
-	},
+	loadCommand("Sparkles", function(command: Command)
+		command.order = ORDER
+		command.roles = ROLES
+	end),
 
     --------------------
-	{
-		name = "NightVision",
-		args = {"Player"},
-		roles = {ROLE},
-		order = ORDER,
-		run = function(task: Task.Class, args: {any})
-			
-		end
-	},
+	loadCommand("Sit", function(command: Command)
+		command.order = ORDER
+		command.roles = ROLES
+	end),
 
     --------------------
-	{
-		name = "Refresh",
-		args = {"Player"},
-		roles = {ROLE},
-		order = ORDER,
-		run = function(task: Task.Class, args: {any})
-			
-		end
-	},
+	loadCommand("NightVision", function(command: Command)
+		command.order = ORDER
+		command.roles = ROLES
+	end),
 
     --------------------
-	{
-		name = "Respawn",
-		aliases = {"Re"},
-		args = {"Player"},
-		roles = {ROLE},
-		order = ORDER,
-		run = function(task: Task.Class, args: {any})
-			local player: Player = unpack(args)
-			local loadCharacter = require(modules.PlayerUtil.loadCharacter)
-			loadCharacter(player)
-		end
-	},
+	loadCommand("Respawn", function(command: Command)
+		command.order = ORDER
+		command.roles = ROLES
+	end),
 
     --------------------
-	{
-		name = "Jump",
-		args = {"Player"},
-		roles = {ROLE},
-		order = ORDER,
-		run = function(task: Task.Class, args: {any})
-			
-		end
-	},
+	loadCommand("Jump", function(command: Command)
+		command.order = ORDER
+		command.roles = ROLES
+	end),
 
     --------------------
-	{
-		name = "Warp",
-		args = {"Player"},
-		roles = {ROLE},
-		order = ORDER,
-		run = function(task: Task.Class, args: {any})
-			
-		end
-	},
+	loadCommand("Warp", function(command: Command)
+		command.order = ORDER
+		command.roles = ROLES
+	end),
 
     --------------------
-	{
-		name = "Blur",
-		args = {"Player"},
-		roles = {ROLE},
-		order = ORDER,
-		run = function(task: Task.Class, args: {any})
-			
-		end
-	},
+	loadCommand("Blur", function(command: Command)
+		command.order = ORDER
+		command.roles = ROLES
+	end),
 
     --------------------
-	{
-		name = "Freeze",
-		args = {"Player"},
-		roles = {ROLE},
-		order = ORDER,
-		run = function(task: Task.Class, args: {any})
-			
-		end
-	},
+	loadCommand("Freeze", function(command: Command)
+		command.order = ORDER
+		command.roles = ROLES
+	end),
 
     --------------------
-	{
-		name = "Name",
-		args = {"Player"},
-		roles = {ROLE},
-		order = ORDER,
-		run = function(task: Task.Class, args: {any})
-			
-		end
-	},
+	loadCommand("Name", function(command: Command)
+		command.order = ORDER
+		command.roles = ROLES
+	end),
 
     --------------------
-	{
-		name = "HideName",
-		undoAliases = {"ShowName"},
-		args = {"Player"},
-		roles = {ROLE},
-		order = ORDER,
-		run = function(task: Task.Class, args: {any})
-			
-		end
-	},
+	loadCommand("HideName", function(command: Command)
+		command.order = ORDER
+		command.roles = ROLES
+	end),
 
     --------------------
-	
+	loadCommand("Reset", function(command: Command)
+		command.order = ORDER
+		command.roles = ROLES
+	end),
+
+    --------------------
+
 }
-return commands

@@ -25,6 +25,16 @@ local appNameClean = APPLICATION_NAME:gsub(" ", "") -- Removes spaces
 local hasStarted = false
 local sharedMainModule = script:FindFirstAncestor("MainModule")
 local sharedValue = sharedMainModule.Value
+local Signal = require(sharedValue.Modules.Objects.Signal)
+local hasLoaded = false
+local hasLoadedSignal = Signal.new()
+
+local function registerAsLoaded()
+	if not hasLoaded then
+		hasLoaded = true
+		hasLoadedSignal:Fire()
+	end
+end
 
 local function convertViewportToFolder(instance: Instance?)
 	-- We use ViewportFrames initially as containers as they 'hide' descendant
@@ -60,14 +70,14 @@ function Framework.initialize(loader)
 
 	-- This ensures HD Admin hasn't already been initialized, for example, if there
 	-- are two applications running in the same game
-	local hasLoaded = script:FindFirstChild("HasLoaded")
-	if hasLoaded then
+	local hasStarted = script:FindFirstChild("HasStarted")
+	if hasStarted then
 		return false
 	end
-	hasLoaded = Instance.new("ObjectValue")
-	hasLoaded.Value = loader
-	hasLoaded.Name = "HasLoaded"
-	hasLoaded.Parent = script
+	hasStarted = Instance.new("ObjectValue")
+	hasStarted.Value = loader
+	hasStarted.Name = "HasStarted"
+	hasStarted.Parent = script
 
 	-- This now loads the server
 	Framework.startServer()
@@ -75,12 +85,19 @@ function Framework.initialize(loader)
 	return true
 end
 
+function Framework.waitUntilLoaded()
+	if hasLoaded then
+		return
+	end
+	hasLoadedSignal:Wait()
+end
+
 function Framework.getLoader()
-	local hasLoaded = script:FindFirstChild("HasLoaded")
-	if not hasLoaded then
+	local hasStarted = script:FindFirstChild("HasStarted")
+	if not hasStarted then
 		return nil
 	end
-	return hasLoaded.Value
+	return hasStarted.Value
 end
 
 function Framework.getSharedContainer(): Instance?
@@ -93,6 +110,22 @@ function Framework.getServerContainer(): Instance?
 	local serverService = game:GetService(Framework.serverLocation)
 	local serverContainer = serverService:FindFirstChild(Framework.serverName)
 	return serverContainer
+end
+
+function Framework.getServerValue()
+	local serverContainer = Framework.getServerContainer()
+	if not serverContainer then
+		return nil
+	end
+	return serverContainer.Core.MainModule:FindFirstChild("Value")
+end
+
+function Framework.getServerModules()
+	local serverValue = Framework.getServerValue()
+	if not serverValue then
+		return nil
+	end
+	return serverValue.Modules
 end
 
 function Framework.getInstance(container: Folder | ModuleScript, instanceName: string): Instance?
@@ -180,8 +213,8 @@ function Framework.canStart()
 	if hasStarted then
 		return false, "Framework has already started"
 	end
-	local hasLoaded = script:WaitForChild("HasLoaded", 999)
-	if hasLoaded.Value == false then
+	local hasStarted = script:WaitForChild("HasStarted", 999)
+	if not hasStarted or hasStarted.Value == false then
 		return false, "Another HD Admin was initialized"
 	end
 	hasStarted = true
@@ -219,6 +252,9 @@ function Framework.startClient()
 
 	-- Start Controllers
 	Framework.requireChildren(sharedValue.Controllers)
+
+	-- Done
+	registerAsLoaded()
 end
 
 function Framework.startServer()
@@ -281,6 +317,7 @@ function Framework.startServer()
 	local moduleReference = framework.ModuleReference
 	local referenceBack = framework.ReferenceBack
 	local referenceBackConfig = framework.ReferenceBackConfig
+	local referenceBackAPI = framework.ReferenceBackAPI
 	local emptyFunction = framework.EmptyFunction
 	local coreConfig = modules.Parent.Services.Config
 	local CoreConfig = require(coreConfig) --loaderConfig
@@ -305,8 +342,36 @@ function Framework.startServer()
 	-- First move Loader Commands from under Config Roles to under the Commands service
 	-- We do this to prevent long pathways being created, and to avoid any merging
 	-- confusions which can occur from the modules being located under Configuration instances
+	local function labelAsForClient(child)
+		if not child:IsA("ModuleScript") then
+			return
+		end
+		if child.Name:lower() ~= "client" then
+			return
+		end
+		child:SetAttribute("Client", true)
+	end
 	local configRoles = loaderConfig and loaderConfig:FindFirstChild("Roles")
 	if configRoles then
+		local coreCommands = sharedValue.Services.Commands
+		local function moveChildrenToCoreCommands(configInstance, coreInstance)
+			for _, child in configInstance:GetChildren() do
+				if not child:IsA("ModuleScript") then
+					local newFolder = Instance.new("Folder")
+					newFolder.Name = child.Name
+					newFolder.Parent = coreInstance
+					moveChildrenToCoreCommands(child, newFolder)
+					continue
+				end
+				for _, subChild in child:GetChildren() do
+					labelAsForClient(subChild)
+				end
+				child.Parent = coreInstance
+			end
+		end
+		moveChildrenToCoreCommands(configRoles, coreCommands)
+
+		--[[
 		local deepCopyTable = require(modules.TableUtil.deepCopyTable)
 		local forEveryCommand = require(modules.CommandUtil.forEveryCommand)
 		local function checkForRolesAndCommands(instanceToCheck, rolesArray)
@@ -323,9 +388,9 @@ function Framework.startServer()
 				end
 				--
 				local rolesString = table.concat(rolesArray, " ||| ")
-				roleConfigOrModule:SetAttribute("RolesToAdd", rolesString)
-				--
-				roleConfigOrModule:SetAttribute("PrimaryRole", true)
+				-- Disabled as script.Parent.Name is easier to understand / less abstraction
+				-- roleConfigOrModule:SetAttribute("RolesToAdd", rolesString)
+				-- roleConfigOrModule:SetAttribute("PrimaryRole", true)
 				for _, child in roleConfigOrModule:GetChildren() do
 					-- We set a 'Child' attribute for all child modules named 'Client'
 					-- in case the creator of the command forgets to tag the module
@@ -342,6 +407,15 @@ function Framework.startServer()
 			end
 		end
 		checkForRolesAndCommands(configRoles, {})
+		--]]
+	end
+
+	-- We also update modules within Internal labelled 'Client'
+	local serverModules = modules
+	for _, internalModule in serverModules.Internal:GetChildren() do
+		for _, child in internalModule:GetChildren() do
+			labelAsForClient(child)
+		end
 	end
 	
 	-- Merge Loader Config items into the core
@@ -494,6 +568,21 @@ function Framework.startServer()
 	
 	-- Start Services
 	Framework.requireChildren(sharedValue.Services)
+
+	-- Move the API so that it can access modules normally, and add a fake module in its place
+	local originalAPI = loader.Core.API
+	local fakeAPI = referenceBackAPI:Clone()
+	fakeAPI.Name = "API"
+	fakeAPI.Parent = loader.Core
+	originalAPI.Parent = clientContainer.Core
+	
+	-- Insert a marker into the API to show that the framework is ready to retrieve
+	local hasLoaded = Instance.new("ObjectValue")
+	hasLoaded.Value = loader
+	hasLoaded.Name = "HasLoaded"
+	hasLoaded.Parent = originalAPI
+	registerAsLoaded()
+
 end
 
 return Framework

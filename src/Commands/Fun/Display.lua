@@ -1,17 +1,17 @@
 --!strict
-local ORDER = 60
-local ROLE = script.Name
+local ORDER = 70
+local ROLES = {script.Parent.Name, "Display"}
 local modules = script:FindFirstAncestor("HD Admin").Core.MainModule.Value.Modules
 local Task = require(modules.Objects.Task)
 local getHumanoid = require(modules.PlayerUtil.getHumanoid)
 local commands: Task.Commands = {
-
+	
     --------------------
 	{
 		name = "Ping",
-		args = {"Player"},
-		roles = {ROLE},
+		roles = ROLES,
 		order = ORDER,
+		args = {"Player"},
 		run = function(task: Task.Class, args: {any})
 			
 		end
@@ -21,9 +21,9 @@ local commands: Task.Commands = {
 	{
 		name = "HideGuis",
 		undoAliases = {"ShowGuis"},
-		args = {"Player"},
-		roles = {ROLE},
+		roles = ROLES,
 		order = ORDER,
+		args = {"Player"},
 		run = function(task: Task.Class, args: {any})
 			
 		end
@@ -32,9 +32,9 @@ local commands: Task.Commands = {
     --------------------
 	{
 		name = "ShowGuis",
-		args = {"Player"},
-		roles = {ROLE},
+		roles = ROLES,
 		order = ORDER,
+		args = {"Player"},
 		run = function(task: Task.Class, args: {any})
 			
 		end
@@ -43,9 +43,9 @@ local commands: Task.Commands = {
     --------------------
 	{
 		name = "Cmds",
-		args = {"Player"},
-		roles = {ROLE},
+		roles = ROLES,
 		order = ORDER,
+		args = {"Player"},
 		run = function(task: Task.Class, args: {any})
 			
 		end
@@ -54,4 +54,5 @@ local commands: Task.Commands = {
     --------------------
 	
 }
+
 return commands

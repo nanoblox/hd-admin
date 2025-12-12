@@ -83,8 +83,4 @@ end
 --testAreValuesEqual()
 
 
-local Args = require(modules.Parser.Args)
-local testArg = Args.get("TestNumber1")
-
-
 return TestService

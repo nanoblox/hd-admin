@@ -8,6 +8,7 @@ local loadCharacterStarted = require(script.Parent.loadCharacterStarted)
 local function loadCharacter(player: Player?)
 	if player then
 		loadCharacterStarted:Fire(player)
+		player = player :: any
 		player:LoadCharacter()
 	end
 end

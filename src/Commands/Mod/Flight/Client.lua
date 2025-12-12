@@ -12,7 +12,7 @@ local clientCommands: Task.ClientCommands = {
 				task.wait(0.25)
 			end)
 		end,
-		replicate = function(...)
+		replication = function(...)
 			print("   >>> received from replication:", ...)
 		end
 	},

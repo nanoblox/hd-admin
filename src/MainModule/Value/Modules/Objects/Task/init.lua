@@ -25,7 +25,7 @@ local RunService = game:GetService("RunService")
 local deepCopyTable = require(modules.TableUtil.deepCopyTable)
 local generateUID = require(modules.DataUtil.generateUID)
 local getHumanoid = require(modules.PlayerUtil.getHumanoid)
-local getTargets = require(modules.PlayerUtil.getTargets)
+local getTargets = require(modules.CommandUtil.getTargets)
 local registerSound = require(modules.AssetUtil.registerSound)
 local isServer = RunService:IsServer()
 local isClient = not isServer
@@ -99,10 +99,11 @@ function Task.construct(properties: Properties)
 		UID = UID,
 		isActive = true :: any,
 		bypassLimits = false :: any,  --!!! roles: CHECK IF USER ROLES
-		caller = if callerUserId then Players:GetPlayerByUserId(callerUserId) else nil,
+		caller = if typeof(callerUserId) == "number" then Players:GetPlayerByUserId(callerUserId) else nil,
 		target = if targetUserId then Players:GetPlayerByUserId(targetUserId) else nil,
 		client = TaskClient.new(UID),
 		server = TaskServer.new(UID),
+		extra = {},
 
 		-- Private
 		isPaused = false,
@@ -126,6 +127,7 @@ function Task.construct(properties: Properties)
 		hasCompletedCooldown = false :: boolean,
 		cooldown = cooldown,
 		dictOfGroupsLower = dictOfGroupsLower,
+		activeTweens = {} :: {[Tween]: true},
 	}
 	setmetatable(self, Task)
 	tasks[UID] = self :: any
@@ -241,7 +243,7 @@ function Task.run(self: Task)
 
 	-- This is what parses the args and runs the actual command function
 	local function runCommand(parseArgs, ...)
-		local additional = table.pack(...)
+		local additional = {...}
 		
 		-- Convert arg strings into arg values
 		-- Only execute the command once all args have been converted
@@ -289,7 +291,8 @@ function Task.run(self: Task)
 		-- We wrap with xpcall as it enables the job to be cleaned up even if the
 		-- command throws an error
 		xpcall(run, function(errorMessage)
-			warn(ERROR_START..tostring(errorMessage))
+			local traceback = debug.traceback("", 2)
+			warn(ERROR_START..tostring(errorMessage), traceback)
 		end, self, unpack(additional))
 		runningDone()
 
@@ -384,6 +387,9 @@ end
 function Task.pause(self: Task)
 	self.pauseTime = os.clock()
 	self.isPaused = true
+	for tween, _ in self.activeTweens do
+		tween:Pause()
+	end
 end
 
 function Task.resume(self: Task)
@@ -394,6 +400,9 @@ function Task.resume(self: Task)
 		task.defer(function()
 			self:unregisterHold(callback, remainingTime)
 		end)
+	end
+	for tween, _ in self.activeTweens do
+		tween:Play()
 	end
 	if self.resumed then
 		self.resumed:Fire()
@@ -445,14 +454,31 @@ function Task.updateBuffs(self: Task, player: BuffPlayer?, group: BuffGroup?, ig
 	end)
 	-- We call top buffs last so that they override lower priority buffs
 	local totalToCall = #sortedBuffs
+	local originalValue = nil
 	for i = totalToCall, 1, -1 do
 		local buff = sortedBuffs[i]
 		local hasEnded = false
 		local isTop = i == 1
-		xpcall(buff.callback, function(errorMessage)
-			warn(ERROR_START..tostring(errorMessage))
-		end, hasEnded, isTop)
+		local newOriginalValue = self:callBuff(buff, hasEnded, originalValue, isTop)
+		if originalValue == nil and newOriginalValue ~= nil then
+			originalValue = newOriginalValue
+		end
 	end
+end
+
+function Task.callBuff(self: Task, buff: Buff, hasEnded: boolean, forcedOriginalValue: any?, isTop: boolean)
+	if forcedOriginalValue ~= nil then
+		buff.originalValue = forcedOriginalValue
+	end
+	local originalValue = buff.originalValue
+	local success, incomingOriginalValue = xpcall(buff.callback, function(errorMessage)
+		warn(ERROR_START..tostring(errorMessage))
+	end, hasEnded, originalValue, isTop)
+	if success and originalValue == nil then
+		originalValue = incomingOriginalValue
+		buff.originalValue = originalValue
+	end
+	return originalValue
 end
 
 
@@ -489,11 +515,10 @@ function Task.buff(self: Task, player: BuffPlayer, group: BuffGroup, priorityOrC
 			end
 		end
 		local hasEnded = true
+		local originalValue = nil
 		local isTop = false
 		buff.isActive = false
-		xpcall(buff.callback, function(errorMessage)
-			warn(ERROR_START..tostring(errorMessage))
-		end, hasEnded, isTop)
+		self:callBuff(buff, hasEnded, originalValue, isTop)
 		task.defer(function()
 			-- We defer to give time for other identical buffs to remove themselves
 			-- (such as when all tasks are cleaned up at the same time) so that only
@@ -508,6 +533,7 @@ function Task.buff(self: Task, player: BuffPlayer, group: BuffGroup, priorityOrC
 		callback = callback :: BuffCallback,
 		timeAdded = os.clock(),
 		taskUID = self.UID,
+		originalValue = nil,
 		isActive = true,
 		destroy = destroyBuffCallback,
 		Destroy = destroyBuffCallback,
@@ -525,7 +551,12 @@ function Task.buff(self: Task, player: BuffPlayer, group: BuffGroup, priorityOrC
 	-- Re-apply the buff when the player respawns
 	if typeof(player) == "Instance" and player:IsA("Player") then
 		self.janitor:add(player.CharacterAdded:Connect(function(char)
+			local humanoid = char:WaitForChild("Humanoid", 5)
+			local hrp = char:WaitForChild("HumanoidRootPart", 5)
 			task.defer(function()
+				if not hrp or not hrp.Parent or not humanoid or not humanoid.Parent then
+					return
+				end
 				if not self.isActive then
 					return
 				end
@@ -542,17 +573,22 @@ function Task.buff(self: Task, player: BuffPlayer, group: BuffGroup, priorityOrC
 	return buff
 end
 
-function Task.redo(self: Task, player: Player?, callback: (hasEnded: boolean) -> ())
+function Task.redo(self: Task, player: Player?, callback: () -> ())
 	-- "callback" is called 1. right away, 2. every time the player respawns (assuming
 	-- the task is still active), and 3. when the task is destroyed. This is useful for
 	-- behaviours that you want to re-apply past death - for example, when controlling
 	-- another player, it's desirable to re-apply control when the target respawns.
-	self:onEnded(function()
-		callback(true)
-	end)
+	--self:onEnded(function()
+		--callback(true)
+	--end)
 	if typeof(player) == "Instance" and player:IsA("Player") then
 		self.janitor:add(player.CharacterAdded:Connect(function(char)
+			local humanoid = char:WaitForChild("Humanoid", 5)
+			local hrp = char:WaitForChild("HumanoidRootPart", 5)
 			task.defer(function()
+				if not hrp or not hrp.Parent or not humanoid or not humanoid.Parent then
+					return
+				end
 				if not self.isActive then
 					return
 				end
@@ -675,6 +711,31 @@ function Task.register(self: Task, sound: Sound, soundType: registerSound.SoundT
 	return registerSound(sound, soundType)
 end
 
+function Task.tween(self: Task, instance: Instance, tweenInfo: TweenInfo, propertyTable: {[any]: any})
+	local TweenService = game:GetService("TweenService")
+	local tween = TweenService:Create(instance, tweenInfo, propertyTable) :: Tween
+	if not self.isActive then
+		tween:Destroy()
+		return tween
+	end
+	self.activeTweens[tween] = true
+	if self.isPaused then
+		tween:Pause()
+	end
+	local hasCleaned = false
+	local function cleanup()
+		if not hasCleaned then
+			hasCleaned = true
+			tween:Destroy()
+			self.activeTweens[tween] = nil
+		end
+	end
+	self.janitor:add(tween.Completed:Once(cleanup))
+	self.janitor:add(cleanup)
+	tween:Play()
+	return tween
+end
+
 function Task.onEnded(self: Task, callback: () -> ())
 	if self.isActive then
 		self.janitor:add(callback)
@@ -725,10 +786,10 @@ export type TargetType = getTargets.TargetType
 export type TriStateSetting = "Default" | "True" | "False"
 
 export type Persistence =
-	"UntilTargetDies" | -- Waits until the player dies or leaves before killing the task
+	--"UntilTargetDies" | -- Waits until the player dies or leaves before killing the task
 	"UntilTargetRespawns" | -- Waits until the player respawns or leaves before killing the task
 	"UntilTargetLeaves" | -- Waits until the player leaves before killing the task
-	"UntilCallerDies" | -- Waits until the caller dies or leaves before killing the task
+	--"UntilCallerDies" | -- Waits until the caller dies or leaves before killing the task
 	"UntilCallerRespawns" | -- Waits until the caller respawns or leaves before killing the task
 	"UntilCallerLeaves" | -- Waits until the caller (i.e. the person who executed the command) leaves before killing the task
 	"Indefinitely" -- The task is only killed when :destroy is manually called (i.e. ;unCommandName), or when its associated player leaves
@@ -737,9 +798,7 @@ export type BuffPlayer = Player? | "Server"
 
 export type BuffGroup = string -- "All" | "Player" | "Camera" | "Character" | "Humanoid" | "Outfit" | "Server" | "Map" | "Other"
 
-export type BuffCallback = typeof(function(hasEnded: boolean, isTop: boolean)
-	return
-end)
+export type BuffCallback = (hasEnded: boolean, originalValue: any?, isTop: boolean) -> (...any)
 
 export type Buff = {
 	player: BuffPlayer,
@@ -748,13 +807,14 @@ export type Buff = {
 	callback: BuffCallback,
 	timeAdded: number,
 	taskUID: string,
+	originalValue: any?,
 	isActive: boolean,
 	destroy: (buff: Buff) -> (),
 }
 
 export type Properties = {
 	UID: string?,
-	callerUserId: number,
+	callerUserId: number | string, -- Can be a string for non-player callers such as the "Server User"
 	targetUserId: number?,
 	commandKey: string,
 	args: {[string]: {string}}?,
@@ -789,7 +849,7 @@ export type ClientCommand = {
 	--[string]: any,
 	name: string,
 	run: ((Class, ...any) -> () | any)?,
-	replicate: (() -> ())?,
+	replication: ((...any) -> () | any)?,
 }
 
 export type ClientCommands = {ClientCommand}
@@ -811,6 +871,8 @@ type TaskMethods = {
     resume: (self: Class) -> any,
 	buff: (self: Class, player: BuffPlayer, buffGroup: BuffGroup, priorityOrCallback: number | BuffCallback, callback: BuffCallback?) -> any,
     keep: (self: Class, persistence: Persistence) -> any,
+	redo: (self: Class, player: Player?, callback: () -> ()) -> any,
+	tween: (self: Class, instance: Instance, tweenInfo: TweenInfo, propertyTable: {[any]: any}) -> Tween,
     getOriginalArg: (self: Class, argNameOrIndex: string | number) -> any,
     onEnded: (self: Class, callback: () -> ()) -> any,
     destroy: (self: Class) -> any,
@@ -824,6 +886,7 @@ type TaskProperties = {
 	target: Player?,
 	client: TaskClient.Class,
 	server: TaskServer.Class,
+	extra: {[string]: any},
 }
 
 export type Class = TaskMethods & TaskProperties

@@ -46,14 +46,12 @@ function TaskServer.replicate(self: Class, ...)
 	end
 	local taskUID = task.UID
 	local thisRemote = requestReplication
-	local packedArgs = table.pack(...)
+	local packedArgs = {...}
 	task.defer(function()
-		print("task.isActive (1) =", task.isActive)
 		if not task.isActive then
 			return
 		end
 		local success, warning = thisRemote:invokeServerAsync(taskUID, unpack(packedArgs))
-		print("task.isActive (2) =", task.isActive, success, warning)
 		if not task.isActive then
 			return
 		end
