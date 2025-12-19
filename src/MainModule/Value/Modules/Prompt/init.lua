@@ -91,8 +91,12 @@ end
 function Prompt.info(...: Player? | string | PromptOptions?): Disconnect
 	-- Sidebar notice with standard notify sound
 	return handleClient("info", function(text, options)
+
+		------------ UI CODE ------------
 		warn(`ℹ️ HD Admin Info: {text}`) -- Do client stuff
 		return -- Make sure to return the notice instance or a table with .Destroy, as this can be cleaned up
+		---------------------------------
+		
 	end, ...)
 end
 
