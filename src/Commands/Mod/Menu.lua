@@ -1,6 +1,6 @@
 --!strict
 local ORDER = 330
-local ROLES = {script.Parent.Name, "Display"}
+local ROLES = {script.Parent.Name, "Utility"}
 local modules = script:FindFirstAncestor("HD Admin").Core.MainModule.Value.Modules
 local Task = require(modules.Objects.Task)
 local getHumanoid = require(modules.PlayerUtil.getHumanoid)

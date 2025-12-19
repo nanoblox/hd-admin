@@ -41,5 +41,15 @@ local commands: Task.Commands = {
 	},
 	
     --------------------
+	{
+		name = "SystemMessage",
+		aliases	= {"SystemChat", "SystemChat", "SC"},
+		args = {"Text"},
+		run = function(task: Task.Class, args: {any})
+			
+		end
+	},
+
+    --------------------
 }
 return commands

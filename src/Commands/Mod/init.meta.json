@@ -1,6 +1,18 @@
 {
-	"className": "Configuration",
-	"attributes": {
-	  "Rank": 200
-	}
+  "className": "Configuration",
+  "attributes": {
+    "GiveToEveryone": false,
+    "GiveToFriends": false,
+    "GiveToGroupRoles": "",
+    "GiveToGroups": "",
+    "GiveToPasses": "ExampleModPass",
+    "GiveToPrivateServerOwner": false,
+    "GiveToUsers": "",
+    "PermitBypassLimits": false,
+	"PermitModifiersGlobal": false,
+	"PermitModifiersAbusive": false,
+	"PermitMultipleTargets": true,
+	"PermitTargetingOthers": true,
+	"Rank": 200
   }
+}

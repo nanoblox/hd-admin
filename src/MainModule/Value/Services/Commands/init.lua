@@ -612,7 +612,7 @@ function Commands.executeStatement(callerUserId: number | string, statement: Sta
 		-- Undo tasks if already applied to player (or server level)
 		local runningTasks = Task.getTasks(commandKey, optionalTargetUserId)
 		local hasACooldown = typeof(command.cooldown) == "number" and command.cooldown > 0
-		if not hasACooldown then
+		if not hasACooldown and not command.stackable == true then
 			for _, task in pairs(runningTasks) do
 				task:destroy()
 			end

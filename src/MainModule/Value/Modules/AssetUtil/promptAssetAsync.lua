@@ -1,10 +1,12 @@
+--!strict
 local MarketplaceService = game:GetService("MarketplaceService")
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 local isClient = RunService:IsClient()
 local modules = script:FindFirstAncestor("MainModule").Value.Modules
 local products = require(modules.References.products)
-local promptProduct
+local promptProduct: any? = nil
+local gamepassLogConnection: RBXScriptConnection? = nil
 
 return function(assetIdOrProductName: number | products.ProductName, player: Player?)
 	if typeof(assetIdOrProductName) ~= "number" then
@@ -12,7 +14,7 @@ return function(assetIdOrProductName: number | products.ProductName, player: Pla
 		if not productInfo then
 			return false, `Invalid product name: {assetIdOrProductName}`
 		end
-		assetIdOrProductName = productInfo.Id
+		assetIdOrProductName = productInfo.passId
 	end
 	local assetId = assetIdOrProductName :: number
 	if isClient then
@@ -23,7 +25,7 @@ return function(assetIdOrProductName: number | products.ProductName, player: Pla
 		local success, warning = promptProduct:invokeServerAsync(assetId)
 		return success, warning
 	end
-	if typeof(player) ~= "Instance" and not player:IsA("Player") then
+	if typeof(player) ~= "Instance" or not player:IsA("Player") then
 		return false, "Player must be specified on server"
 	end
 	local Assets = require(modules.Parent.Services.Assets) :: any
@@ -33,7 +35,7 @@ return function(assetIdOrProductName: number | products.ProductName, player: Pla
 	end
 	local productInfo: products.Product? = nil
 	for _, product in products do
-		if product.Id == assetId then
+		if product.passId == assetId then
 			productInfo = product
 			break
 		end
@@ -42,7 +44,7 @@ return function(assetIdOrProductName: number | products.ProductName, player: Pla
 	if productInfo and RunService:IsStudio() then
 		return false, "This can only be purchased in-game"
 	end
-	if productInfo and productInfo.Type ~= "GamePass" and productInfo.Type ~= "DevProduct" then
+	if productInfo and productInfo.passType ~= Enum.InfoType.GamePass and productInfo.passType ~= Enum.InfoType.Product then
 		-- Accessories must be prompted via BulkPurchase
 		local promptBulkPurchaseAsync = require(modules.AssetUtil.promptBulkPurchaseAsync)
 		return promptBulkPurchaseAsync(assetId, player)
@@ -79,5 +81,5 @@ return function(assetIdOrProductName: number | products.ProductName, player: Pla
 	local success, warning = pcall(function()
 		return MarketplaceService:PromptGamePassPurchase(player, assetId)
 	end)
-	return success, warning
+	return success, tostring(warning)
 end

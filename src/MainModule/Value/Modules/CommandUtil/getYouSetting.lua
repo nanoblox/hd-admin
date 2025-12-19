@@ -8,7 +8,6 @@ return function(settingName: string, optionalPlayer: Player?)
 		local clientUser = require(modules.References.clientUser)
 		local perm = clientUser.perm
 		local success, value = perm:fetchAsync("YouSettings", settingName)
-		print("success, value =", success, value)
 		if not success then
 			value = nil
 		end

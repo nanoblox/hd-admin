@@ -61,7 +61,7 @@ local Settings = {
 		},
 
 		MinimumAccountAge = 0, -- Kicks accounts younger than x days (0 to disable)
-
+		
 		-- Recommended colors when customizing theme settings
 		ThemeColors = {
 			{"Blurple", Color3.fromRGB(94, 86, 213)},

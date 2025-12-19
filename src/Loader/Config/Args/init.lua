@@ -23,11 +23,20 @@ return function(Args)
 	return {
 
 		["Scale"] = Args.createAliasOf("Number", register({
-			minValue = -100,
-			maxValue = 100,
+			-- This can be exceeded if a user has a role with 'bypassLimits' enabled
+			minValue = 0.01,
+			maxValue = 4,
+		})),
+
+		["CountdownTime"] = Args.createAliasOf("Number", register({
+			-- This can be exceeded if a user has a role with 'bypassLimits' enabled
+			minValue = 1,
+			stepAmount = 1,
+			maxValue = 60,
 		})),
 		
 		["AnimationSpeed"] = Args.createAliasOf("Number", register({
+			-- This can be exceeded if a user has a role with 'bypassLimits' enabled
 			minValue = 0,
 			maxValue = 2,
 			stepAmount = 0.1,

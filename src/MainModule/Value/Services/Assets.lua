@@ -42,7 +42,7 @@ end)
 -- Permit HD Gamepasses and Accessories
 local products = require(modules.References.products)
 for _, productInfo in products do
-	Assets.permitAsset(productInfo.Id)
+	Assets.permitAsset(productInfo.passId)
 end
 
 -- Initialize the Sound Handler

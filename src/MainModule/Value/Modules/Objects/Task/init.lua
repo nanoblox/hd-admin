@@ -100,6 +100,7 @@ function Task.construct(properties: Properties)
 		isActive = true :: any,
 		bypassLimits = false :: any,  --!!! roles: CHECK IF USER ROLES
 		caller = if typeof(callerUserId) == "number" then Players:GetPlayerByUserId(callerUserId) else nil,
+		callerUserId = callerUserId,
 		target = if targetUserId then Players:GetPlayerByUserId(targetUserId) else nil,
 		client = TaskClient.new(UID),
 		server = TaskServer.new(UID),
@@ -109,7 +110,6 @@ function Task.construct(properties: Properties)
 		isPaused = false,
 		pauseTime = 0,
 		holdsToResume = {} :: {any},
-		callerUserId = callerUserId,
 		targetUserId = targetUserId,
 		commandKey = commandKey:lower(),
 		args = properties.args,
@@ -234,11 +234,29 @@ function Task.run(self: Task)
 		firstCommandArg = commandArgs[1]
 		firstArgItem = Args.get(firstCommandArg :: any)
 	end
-
+	if firstArgItem then
+		if firstArgItem.key == "OptionalPlayer" then
+			-- This fixes a bug with the parser where the qualifier is accidentally
+			-- passed into self.args when it shouldn't be. For now, it's easier to
+			-- fix here, then in the future I'd like to refactor the parser itself
+			-- to avoid this issue entirely
+			if args and commandArgs and #args >= #commandArgs then
+				table.remove(args :: any, 1)
+			end
+		end
+	end
+	
 	-- For when a command finishes running
 	local function runningDone()
 		self.isRunning = false
 		self:checkToDestroy()
+	end
+
+	-- This is essential for checking if an arg was originally nil
+	local function registerOriginalArg(argName, argIndex, value)
+		local argNameLower = tostring(argName):lower()
+		self.originalArgReturnValues[argNameLower] = value
+		self.originalArgReturnValuesFromIndex[argIndex] = value
 	end
 
 	-- This is what parses the args and runs the actual command function
@@ -273,9 +291,7 @@ function Task.run(self: Task)
 					}
 				end
 				local returnValue = argItem:parse(argString, callerUserId, targetUserId)
-				local argNameLower = tostring(argName):lower()
-				self.originalArgReturnValues[argNameLower] = returnValue
-				self.originalArgReturnValuesFromIndex[iNow] = returnValue
+				registerOriginalArg(argName, iNow, returnValue)
 				if returnValue == nil then
 					local defaultValue = argItem.defaultValue
 					if typeof(defaultValue) == "table" then
@@ -317,7 +333,17 @@ function Task.run(self: Task)
 
 	-- If the job has no associated player *but* does contain qualifiers...
 	-- ...that require executing for each player (such as in ;globalKill all)
-	local targetPlayers = if firstArgItem then firstArgItem:parse(qualifiers, callerUserId) else nil
+	local targetPlayers = nil
+	if firstArgItem then
+		local firstArgResult = firstArgItem:parse(qualifiers, callerUserId)
+		local argName = firstArgItem.key
+		if firstArgResult then
+			registerOriginalArg(argName, 1, firstArgResult)
+		else
+			firstArgResult = firstArgItem.defaultValue
+		end
+		targetPlayers = firstArgResult
+	end
 	if firstArgItem and firstArgItem.runForEachPlayer then -- If the firstArg has runForEachPlayer, convert the job into subjobs for each player returned by the qualifiers
 		for i, plr in targetPlayers do
 			local subProperties: Properties = {
@@ -369,7 +395,8 @@ function Task.unregisterHold(self: Task, callback: () -> ()?, remainingTime: num
 	end
 	if typeof(callback) == "function" and self.isActive then
 		xpcall(callback :: any, function(errorMessage)
-			warn(ERROR_START..tostring(errorMessage))
+			local traceback = debug.traceback("", 2)
+			warn(ERROR_START..tostring(errorMessage), traceback)
 		end, firstArg, secondArg)
 	end
 	self.activeHolds -= 1
@@ -472,7 +499,8 @@ function Task.callBuff(self: Task, buff: Buff, hasEnded: boolean, forcedOriginal
 	end
 	local originalValue = buff.originalValue
 	local success, incomingOriginalValue = xpcall(buff.callback, function(errorMessage)
-		warn(ERROR_START..tostring(errorMessage))
+		local traceback = debug.traceback("", 2)
+		warn(ERROR_START..tostring(errorMessage), traceback)
 	end, hasEnded, originalValue, isTop)
 	if success and originalValue == nil then
 		originalValue = incomingOriginalValue
@@ -713,6 +741,7 @@ end
 
 function Task.tween(self: Task, instance: Instance, tweenInfo: TweenInfo, propertyTable: {[any]: any})
 	local TweenService = game:GetService("TweenService")
+local first = require(script.Parent.Parent.Parent.Packages[".pesde"]["csqrl_sift@0.0.9"].sift.Array.first)
 	local tween = TweenService:Create(instance, tweenInfo, propertyTable) :: Tween
 	if not self.isActive then
 		tween:Destroy()
@@ -746,7 +775,6 @@ function Task.destroy(self: Task)
 	if self.isActive == false then
 		return
 	end
-	print("TASK DIED:", self.commandKey)
 	if isServer then
 		if not endClientTask then
 			endClientTask = Remote.new("EndClientTask", "Event")
@@ -834,7 +862,9 @@ export type Command = {
 	description: string?,
 	groups: {string}?, -- all commands in the same group are *undone* when another is run
 	cooldown: number?, -- if > 0, the command cannot be run again until finished and its cooldown expired
+	stackable: boolean?, -- if true, multiple instances of the command can be run at once by the same caller/target
 	autoPreview: boolean?, -- if true, the command is viewed first in UI (useful for ban command)
+
 	contributors: {string}?,
 	args: {Args.Argument | Args.ArgumentDetail},
 	run: ((Class, {any}) -> () | any)?,
@@ -883,6 +913,7 @@ type TaskProperties = {
 	UID: string,
 	isActive: boolean,
 	caller: Player?,
+	callerUserId: number | string,
 	target: Player?,
 	client: TaskClient.Class,
 	server: TaskServer.Class,

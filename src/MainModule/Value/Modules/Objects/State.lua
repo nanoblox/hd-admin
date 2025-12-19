@@ -34,6 +34,7 @@ local Remote = require(modules.Objects.Remote)
 local stateReplication: Remote.Class?, stateReplicationRequest: Remote.Class? = nil, nil
 local replicationHandlers = {}
 local firstFetchCallbacks: {[string]: (boolean | {any})} = {}
+local createConnection = require(modules.AssetUtil.createConnection)
 local State = {}
 State.__index = State
 
@@ -113,7 +114,7 @@ end
 
 -- CLASS
 export type Class = typeof(State.new(...))
-type Disconnect = {disconnect: (any?) -> ()}
+type Disconnect = createConnection.Disconnect
 
 
 -- METHODS
@@ -274,7 +275,7 @@ end
 function State.changed(self: Class, callback: (pathwayKey: string, value: any) -> (...any))
 	local callbacksArray = self._changedCallbacks :: any
 	table.insert(callbacksArray, callback)
-	return self:_createConnection(function()
+	return createConnection(function()
 		if self.isActive ~= true then
 			return
 		end
@@ -283,16 +284,6 @@ function State.changed(self: Class, callback: (pathwayKey: string, value: any) -
 			table.remove(callbacksArray, index)
 		end
 	end)
-end
-
-function State._createConnection(self: Class, disconnectCallback): Disconnect
-	local connection = {}
-	function connection.disconnect(connection: any?)
-		disconnectCallback()
-	end
-	connection.Disconnect = connection.disconnect
-	connection.Destroy = connection.disconnect
-	return connection
 end
 
 function State.listen(self: Class, ...: string | {string} | (...any) -> (...any)): Disconnect
@@ -322,7 +313,7 @@ function State.listen(self: Class, ...: string | {string} | (...any) -> (...any)
 			self:fetchAsync(table.unpack(pathwayAndCallback :: {string}))
 		end)
 	end
-	return self:_createConnection(function()
+	return createConnection(function()
 		if self.isActive ~= true then
 			return
 		end
@@ -333,7 +324,7 @@ function State.listen(self: Class, ...: string | {string} | (...any) -> (...any)
 	end)
 end
 
-function State.observe(self: Class, ...: string | {string} | (...any) -> (...any)): {disconnect: (any?) -> ()}
+function State.observe(self: Class, ...: string | {string} | (...any) -> (...any)): Disconnect
 	-- This is the same as listen, but the callback is called immediately with the current value
 	local totalArgs = select("#", ...)
 	local finalArg = select(totalArgs, ...)
@@ -523,7 +514,7 @@ function State.replicate(self: Class, player: Player, replicationName: string, p
 		stateEvent:fireClient(player, replicationKey, pathway, value)
 	end))
 
-	return self:_createConnection(function()
+	return createConnection(function()
 		if repJanitor.destroy then
 			repJanitor:destroy()
 		end
@@ -640,7 +631,7 @@ function State.verify(self: Class, callback: (Player, {string}, any) -> (...any)
 	-- certain players to certain data
 	local callbacksArray = self._verifyCallbacks :: any
 	table.insert(callbacksArray, callback)
-	return self:_createConnection(function()
+	return createConnection(function()
 		if self.isActive ~= true then
 			return
 		end

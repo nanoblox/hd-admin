@@ -275,7 +275,7 @@ local items = {
 		parse = function(self, qualifiers: any, callerUserId, additional: any)
 			local ParserUtility = require(modules.Parser.ParserUtility)
 			local defaultToMe = qualifiers == nil or ParserUtility.isQualifiersEmpty(qualifiers :: any)
-			local ignoreDefault = (additional and additional.ignoreDefault)
+			local ignoreDefault = if typeof(additional) == "table" then additional.ignoreDefault else nil
 			if defaultToMe and not ignoreDefault then
 				local players: { Player } = {}
 				local callerPlayer = Players:GetPlayerByUserId(callerUserId)
@@ -349,7 +349,7 @@ local items = {
 			onlySelectOne = true,
 		},
 		description = "Accepts qualifiers (e.g. 'raza', '@ForeverHD', 'others' from ';paint raza,@ForeverHD,others') and returns a single Player instance (or nil).",
-		defaultValue = false,
+		defaultValue = {},
 		playerArg = true,
 		runForEachPlayer = true,
 		unparse = function(self, arrayOfPlayers: {QualifierInput} | QualifierInput)
@@ -359,6 +359,7 @@ local items = {
 			local argPlayer = Args.get("Player" :: any)
 			local players = if argPlayer then argPlayer:parse(qualifiers, callerUserId, {ignoreDefault = true}) else {}
 			return {players[1]} -- We return as an array as runForEachPlayer is true
+			--return players[1]
 		end,
 	}),
 
@@ -368,7 +369,7 @@ local items = {
 			pickerName = "Players",
 			getPickerItemsFromServerPlayers = true,
 		},
-		description = "Hides the players argument for general use and only displays it within the preview menu. If no player specified, defaults to everyone. This is useful for message commands. For example, you can do ;m others Hello World, AND ;m Hello World",
+		description = "Hides the players argument for general use and only displays it within the preview menu. If no player specified, defaults to me",
 		playerArg = true,
 		hidden = true,
 		runForEachPlayer = true,
@@ -376,10 +377,16 @@ local items = {
 			return unparsePlayer(arrayOfPlayers)
 		end,
 		parse = function(self, qualifiers, callerUserId)
+			-- Defaults to ME
 			local isTableEmpty = require(modules.TableUtil.isTableEmpty)
-			local defaultToAll = qualifiers == nil or isTableEmpty(qualifiers)
-			if defaultToAll then
-				return Players:GetPlayers()
+			local defaultToMe = qualifiers == nil or isTableEmpty(qualifiers)
+			if defaultToMe then
+				local players: {Player} = {}
+				local callerPlayer = Players:GetPlayerByUserId(callerUserId)
+				if callerPlayer then
+					table.insert(players, callerPlayer)
+				end
+				return players
 			end
 			local argPlayer = Args.get("Player" :: any)
 			local players = if argPlayer then argPlayer:parse(qualifiers, callerUserId, {ignoreDefault = true}) else {}
@@ -393,7 +400,7 @@ local items = {
 			pickerName = "Server & Offline Players",
 			getPickerItemsFromAnyUser = true,
 		},
-		description = "Hides the players argument for general use and only displays it within the preview menu.",
+		description = "Hides the players argument for general use and only displays it within the preview menu. This is useful for message commands. For example, you can do ;m others Hello World, AND ;m Hello World",
 		defaultValue = {},
 		playerArg = true,
 		hidden = true,
@@ -402,8 +409,13 @@ local items = {
 			return unparsePlayer(arrayOfPlayers)
 		end,
 		parse = function(self, qualifiers, callerUserId)
-			local argPlayer = Args.get("OptionalPlayer" :: any)
-			local players = if argPlayer then argPlayer:parse(qualifiers, callerUserId) else {}
+			local isTableEmpty = require(modules.TableUtil.isTableEmpty)
+			local defaultToAll = qualifiers == nil
+			if typeof(qualifiers) ~= "table" or isTableEmpty(qualifiers) or qualifiers[""] then
+				return nil
+			end
+			local argPlayer = Args.get("Player" :: any)
+			local players = if argPlayer then argPlayer:parse(qualifiers, callerUserId, {ignoreDefault = true}) else {}
 			return players
 		end,
 	}),
@@ -603,7 +615,7 @@ local items = {
 			local safeNumberString = Args.processStringToParse(tostring(number))
 			return safeNumberString
 		end,
-		parse = function(self, stringToParse): number?
+		parse = function(self, stringToParse, callerUserId): number?
 			-- The stringToParse is already filtered of dangerous numbers thanks to
 			-- Args.processStringToParse, so we don't need to worry about size limits
 			-- or NaN/Inf values here
@@ -615,9 +627,12 @@ local items = {
 			if typeof(divAmount) == "number" then
 				numberValue = numberValue % divAmount
 			end
+			local User = require(modules.Objects.User)
+			local user = User.getUserByUserId(callerUserId)
+			local canBypassLimits = false --!!! RoleService.verifySettings(callerUser).have("bypassLimits")
 			local minValue = self.minValue or -math.huge
 			local maxValue = self.maxValue or math.huge
-			local clampedValue = math.clamp(numberValue, minValue, maxValue)
+			local clampedValue = if canBypassLimits then numberValue else math.clamp(numberValue, minValue, maxValue)
 			local stepAmount = self.stepAmount
 			if typeof(stepAmount) == "number" then
 				local roundToNearest = require(modules.MathUtil.roundToNearest)

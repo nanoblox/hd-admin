@@ -125,6 +125,8 @@ end
 Modifiers.items = {
 	
 	["Preview"] = register({
+		isGlobal = false,
+		isAbusive = false,
 		description = "Displays a menu that previews the command instead of executing it.",
 		preAction = function(callerUserId: number, statement: Statement)
 			local caller = Players:GetPlayerByUserId(callerUserId)
@@ -137,6 +139,8 @@ Modifiers.items = {
 	}),
 
 	["Random"] = register({
+		isGlobal = false,
+		isAbusive = false,
 		description = "Randomly selects a command within a statement. All other commands are discarded.",
 		preAction = function(_, statement)
 			local commands = statement.commands
@@ -151,6 +155,8 @@ Modifiers.items = {
 	}),
 
 	["Perm"] = register({
+		isGlobal = true,
+		isAbusive = true,
 		description = "Permanently saves the task. This means in addition to the initial execution, the command will be executed whenever a server starts, or if player specific, every time the player joins a server.",
 		preAction = function(_, statement)
 			local modifiers = statement.modifiers
@@ -168,6 +174,8 @@ Modifiers.items = {
 	}),
 
 	["Global"] = register({
+		isGlobal = true,
+		isAbusive = true,
 		description = "Broadcasts the task to all servers.",
 		preAction = function(callerUserId: number, statement: Statement)
 			--!! Complete this later
@@ -184,6 +192,8 @@ Modifiers.items = {
 	}),
 
 	["Undo"] = register({
+		isGlobal = false,
+		isAbusive = false,
 		description = "Ends all Tasks that match the given command name(s). To end a task across all servers, the 'global' modifier must be included.",
 		preAction = function(callerUserId: number, statement: Statement)
 			local Commands = require(services.Commands)
@@ -219,6 +229,8 @@ Modifiers.items = {
 	["Un"] = Modifiers.createAliasOf("Undo"),
 
 	["Epoch"] = register({
+		isGlobal = false,
+		isAbusive = true,
 		description = "Waits until the given epoch time before executing. If the epoch time has already passed, the command will be executed right away. Combine with 'global' and 'perm' for a permanent game effect. Example: ``;globalPermEpoch(3124224000)message(green) Happy new year!``",
 		isCustomizable = true,
 		executeRightAway = false,
@@ -239,6 +251,8 @@ Modifiers.items = {
 	}),
 
 	["Delay"] = register({
+		isGlobal = false,
+		isAbusive = true,
 		description = "Waits x amount of time before executing the command. Time can be represented in seconds as 's', minutes as 'm', hours as 'h', days as 'd', weeks as 'w' and years as 'y'. Example: ``;delay(3s)kill all``.",
 		isCustomizable = true,
 		executeRightAway = false,
@@ -257,6 +271,8 @@ Modifiers.items = {
 	}),
 
 	["Loop"] = register({
+		isGlobal = false,
+		isAbusive = true,
 		description = "Repeats a command for x iterations every y time delay. If not specified, x defaults to ∞ and y to 1s. Time can be represented in seconds as 's', minutes as 'm', hours as 'h', days as 'd', weeks as 'w' and years as 'y'. Example: ``;loop(50,1s)jump me``.",
 		isCustomizable = true,
 		executeRightAway = true,
@@ -284,6 +300,8 @@ Modifiers.items = {
 	}),
 
 	["Spawn"] = register({
+		isGlobal = false,
+		isAbusive = true,
 		description = "Executes the command every time the given player(s) respawn (in addition to the initial execution). This modifier only works for commands with player-related arguments.",
 		executeRightAway = true,
 		executeAfterThread = false,
@@ -311,6 +329,8 @@ Modifiers.items = {
 	}),
 
 	["Expire"] = register({
+		isGlobal = false,
+		isAbusive = true,
 		description = "Revokes the command after its first execution plus the given time. Time can be represented in seconds as 's', minutes as 'm', hours as 'h', days as 'd', weeks as 'w' and years as 'y'. Example: ``;expire(2m30s)mute player``.",
 		isCustomizable = true,
 		executeRightAway = true,
@@ -343,6 +363,8 @@ export type ModifierDetail = {
 	mustCreateAliasOf: any?,
 	aliasOf: string?,
 	requiresCapsule: boolean?,
+	isGlobal: boolean?,
+	isAbusive: boolean?,
 }
 
 

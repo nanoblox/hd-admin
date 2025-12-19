@@ -76,7 +76,7 @@ return {
 	end),
 
     --------------------
-	loadCommand("Freeze", function(command: Command)
+	loadCommand("Anchor", function(command: Command)
 		command.order = ORDER
 		command.roles = ROLES
 	end),

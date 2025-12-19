@@ -7,42 +7,41 @@ end
 local products = {
 	----------------
 	["LaserEyes"] = register({
-		Id = 1007746205,
-		Type = "GamePass",
+		passId = 1007746205,
+		passType = Enum.InfoType.GamePass,
 	}),
 
 	----------------
 	["OldBooster"] = register({
-		Id = 1007884962,
-		Type = "GamePass",
+		passId = 1007884962,
+		passType = Enum.InfoType.GamePass,
 	}),
 
 	----------------
 	["OldDonor"] = register({
-		Id = 5745895,
-		Type = "GamePass",
+		passId = 5745895,
+		passType = Enum.InfoType.GamePass,
 	}),
 
 	----------------
 	["Booster"] = register({
-		Id = 91265843061691,
-		Type = "UGC",
+		passId = 91265843061691,
+		passType = Enum.InfoType.Asset,
 	}),
 
 	----------------
 	["BoosterDiscount"] = register({
-		Id = 78104307094868,
-		Type = "UGC",
+		passId = 78104307094868,
+		passType = Enum.InfoType.Asset,
 	}),
 
 	----------------
 }
 
-export type ProductType = "GamePass" | "DevProduct" | "Accessory" | "Bundle" | "Emote"
 export type ProductName = keyof<typeof(products)>
 export type Product = {
-	Id: number,
-	Type: ProductType,
+	passId: number,
+	passType: Enum.InfoType,
 }
 
 return products :: {[ProductName]: Product}

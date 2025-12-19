@@ -21,7 +21,7 @@ local REQUEST_USER_INFO: (UserId: number) -> (boolean, Types.User) = function(Us
 	if RunService:IsStudio() then
 		local BaseInfo = UserInformant.User(UserId)
 
-		if UserId == 1 then
+		if UserId == 82347291 then
 			return true,
 				Sift.Dictionary.merge({
 					Roles = { "Owner", "Guest" },

@@ -1,4 +1,5 @@
-local MarketplaceService = game:GetService("MarketplaceService")
+--!strict
+local MarketplaceService = game:GetService("MarketplaceService") :: any
 local RunService = game:GetService("RunService")
 local Players = game:GetService("Players")
 local isClient = RunService:IsClient()
@@ -12,34 +13,35 @@ return function(assetIdOrProductName: number | products.ProductName, player: Pla
 		if not productInfo then
 			return false, `Invalid product name: {assetIdOrProductName}`
 		end
-		assetIdOrProductName = productInfo.Id
+		assetIdOrProductName = productInfo.passId
 	end
 	local assetId = assetIdOrProductName :: number
 	if isClient then
 		player = Players.LocalPlayer
 	end
-	if typeof(player) ~= "Instance" and not player:IsA("Player") then
+	if typeof(player) ~= "Instance" or not player:IsA("Player") then
 		return false, "Player must be specified on server"
 	end
 	local productInfo: products.Product? = nil
 	for _, product in products do
-		if product.Id == assetId then
+		if product.passId == assetId then
 			productInfo = product
 			break
 		end
 	end
 	if productInfo then
-		if productInfo.Type == "Bundle" then
+		if productInfo.passType == Enum.InfoType.Bundle then
 			return pcall(function()
 				return MarketplaceService:PlayerOwnsBundleAsync(player, assetId)
 			end)
-		elseif productInfo.Type ~= "GamePass" and productInfo.Type ~= "DevProduct" then
+		elseif productInfo.passType ~= Enum.InfoType.GamePass and productInfo.passType ~= Enum.InfoType.Product then
 			return pcall(function()
 				return MarketplaceService:PlayerOwnsAssetAsync(player, assetId)
 			end)
 		end
 	end
 	return pcall(function()
-		return MarketplaceService:UserOwnsGamePassAsync(player.UserId, assetId)
+		local playerToCheck = player :: Player
+		return MarketplaceService:UserOwnsGamePassAsync(playerToCheck.UserId, assetId)
 	end)
 end

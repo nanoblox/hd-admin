@@ -3,13 +3,22 @@
 local DEFAULT_ROLE = {
 	name = "UnnamedRole",
 	key = "unnamedrole",
-	members = {""},
-	rank = 1,
-	modifiers = "",
-	bypassLimits = false, -- This enables command cooldowns, batch size limits, etc to be bypassed when true, in addition to command-specific limits that are determined with task.bypassLimits
-	modifiers = "",
-	qualifiers = "",
 	hide = false,
+	giveToEveryone = false,
+    giveToFriends = false,
+    giveToGroupRoles = "",
+    giveToGroups = "",
+    giveToPasses = "",
+    giveToPrivateServerOwner = false,
+    giveToUsers = "",
+    limitCommandsPerMinute = 60,
+    limitRequestsPerSecond = 10,
+    permitBypassLimits = false, -- When true, users can bypass limits across all commands and arguments
+    permitModifiersAbusive = false, -- When true, users can use potentially abusive modifiers like 'loop' and 'delay'
+    permitModifiersGlobal = false, -- When true, users can can broadcast any useable command to all servers with modifiers like 'global' and 'perm'. Be VERY careful about who you permit this to!
+	permitMultipleTargets = true, -- When true, users can target multiple people at once with commands (e.g. ;kill others)
+    permitTargetingOthers = true, -- When true, users can run commands on players other than themselves
+    rank = 1,
 }
 
 local CLIENT_PROPERTIES_TO_EXCLUDE = {
@@ -102,11 +111,10 @@ function Roles.getRoles()
 	return rolesOrdered
 end
 
-function Roles.getOwnedRoles(player): ({string}, {[string]: boolean})
+function Roles.getOwnedRoles(user: User.Class?): ({string}, {[string]: boolean})
 	-- This takes roles from both temp and perm of a player's user, and collects
 	-- them all together. This is recommended instead of checking perm and temp
 	-- manually, as this covers potential changes to role storage in the future
-	local user = User.getUser(player)
 	if not user then
 		return {}, {}
 	end

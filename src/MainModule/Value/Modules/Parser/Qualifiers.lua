@@ -304,8 +304,10 @@ Qualifiers.items = {
 			end
 			local targets = {}
 			local Players = game:GetService("Players")
+			local User = require(modules.Objects.User)
 			for i, player in Players:GetPlayers() do
-				local ownedRoles = Roles.getOwnedRoles(player)
+				local user = User.getUser(player)
+				local ownedRoles = Roles.getOwnedRoles(user)
 				for _, roleNameToCheck in ownedRoles do
 					local toCheckName = tostring(roleNameToCheck):lower()
 					if foundRolesDict[toCheckName] then

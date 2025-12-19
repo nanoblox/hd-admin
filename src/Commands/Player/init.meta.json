@@ -1,0 +1,20 @@
+{
+  "className": "Configuration",
+  "attributes": {
+    "GiveToEveryone": true,
+    "GiveToFriends": false,
+    "GiveToGroupRoles": "",
+    "GiveToGroups": "",
+    "GiveToPasses": "",
+    "GiveToPrivateServerOwner": false,
+    "GiveToUsers": "",
+    "LimitCommandsPerMinute": 20,
+    "LimitRequestsPerSecond": 2,
+    "PermitBypassLimits": false,
+	"PermitModifiersGlobal": false,
+	"PermitModifiersAbusive": false,
+	"PermitMultipleTargets": false,
+	"PermitTargetingOthers": false,
+	"Rank": 1
+  }
+}

@@ -1,7 +1,0 @@
-{
-	"className": "Configuration",
-	"attributes": {
-	  "DisplayName": "Example GamePass B",
-	  "GiveRoles": "VIP"
-	}
-  }

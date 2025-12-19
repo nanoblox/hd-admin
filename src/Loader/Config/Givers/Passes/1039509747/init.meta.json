@@ -1,7 +1,0 @@
-{
-	"className": "Configuration",
-	"attributes": {
-	  "DisplayName": "Example GamePass A",
-	  "GiveRoles": "Mod"
-	}
-  }

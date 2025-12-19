@@ -1,6 +1,6 @@
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
-local foreverhd = Players:WaitForChild("ForeverHD")
+local foreverhd = Players:WaitForChild("ForeverHD", 999999)
 local leaderstats = foreverhd:WaitForChild("leaderstats")
 local cashStat = leaderstats:WaitForChild("Cash")
 local Teams = game:GetService("Teams")

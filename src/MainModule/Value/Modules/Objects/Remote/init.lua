@@ -3,6 +3,7 @@
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local modules = script:FindFirstAncestor("MainModule").Value.Modules
+local createConnection = require(modules.AssetUtil.createConnection)
 local Janitor = require(modules.Objects.Janitor)
 local Serializer = require(modules.Serializer)
 local Remote = {}
@@ -75,7 +76,7 @@ end
 -- CLASS
 export type Class = typeof(Remote.new(...))
 export type RemoteType = "Event" | "Function"
-type Disconnect = {disconnect: (any?) -> ()}
+type Disconnect = createConnection.Disconnect
 
 
 -- METHODS
@@ -103,16 +104,6 @@ function Remote._getContainer(self: Class): Instance?
 		remotesContainerSaved = remotesContainerToGet :: any
 	end
 	return remotesContainerToGet
-end
-
-function Remote._createConnection(self: Class, disconnectCallback: () -> ()): Disconnect
-	local connection = {}
-	function connection.disconnect(connection: any?)
-		disconnectCallback()
-	end
-	connection.Disconnect = connection.disconnect
-	connection.Destroy = connection.disconnect
-	return connection
 end
 
 function Remote._waitForInstance(self: Class): Instance?
@@ -240,7 +231,7 @@ function Remote.onClientEvent(self: Class, callback: (...any) -> ...any)
 			callback(table.unpack(decompressedData))
 		end))
 	end)
-	return self:_createConnection(function()
+	return createConnection(function()
 		if realConnection then
 			realConnection = realConnection :: any
 			realConnection:Disconnect()
@@ -259,7 +250,7 @@ function Remote.onServerEvent(self: Class, callback: (Player, ...any) -> ...any)
 	local realConnection = self.janitor:add(remoteInstance.OnServerEvent:Connect(function(...)
 		callback(...)
 	end))
-	return self:_createConnection(function()
+	return createConnection(function()
 		if realConnection then
 			realConnection:Disconnect()
 		end
@@ -283,7 +274,7 @@ function Remote.onServerInvoke(self: Class, callback: (Player, ...any) -> ...any
 		return compressedData
 	end
 	self = self :: any
-	return self:_createConnection(function()
+	return createConnection(function()
 		remoteInstance.OnServerInvoke = nil :: any
 	end)
 end
