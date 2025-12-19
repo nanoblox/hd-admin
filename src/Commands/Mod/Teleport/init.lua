@@ -56,6 +56,7 @@ local commands: Task.Commands = {
 	{
 		name = "Farland",
 		args = {"Player"},
+		credit = {"MiIoshiee", "ForeverHD"},
 		run = function(task: Task.Class, args: {any})
 			local target = unpack(args)
 			local FARLAND_CFRAME = CFrame.new(5836480,683648,583648)

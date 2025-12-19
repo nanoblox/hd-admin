@@ -864,8 +864,7 @@ export type Command = {
 	cooldown: number?, -- if > 0, the command cannot be run again until finished and its cooldown expired
 	stackable: boolean?, -- if true, multiple instances of the command can be run at once by the same caller/target
 	autoPreview: boolean?, -- if true, the command is viewed first in UI (useful for ban command)
-
-	contributors: {string}?,
+	credit: {string}?,
 	args: {Args.Argument | Args.ArgumentDetail},
 	run: ((Class, {any}) -> () | any)?,
 	prefix: string?, -- custom display prefix, useful for overrides
