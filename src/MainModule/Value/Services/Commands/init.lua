@@ -169,6 +169,7 @@ function Commands.updateCommands()
 	end
 	User.everyone:set("Commands", commandsArray)
 	User.everyone:set("CommandInfo", keyToCommand)
+	print("lowerCaseNameAndAliasCommandsDictionary =", lowerCaseNameAndAliasCommandsDictionary)
 	return true
 end
 

@@ -189,7 +189,7 @@ function ParsedData.parsedDataUpdateIsValidFlag(parsedData, parserRejection: Par
 		return
 	end
 	local utilityModule = require(modules.Parser.ParserUtility)
-	
+	print("parsedData, parserRejection =", parsedData, parserRejection)
 	if parserRejection == "MissingCommandDescription" then
 		parsedData.errorMessage = "Invalid command name(s)"
 		if parsedData.commandDescription == "" then

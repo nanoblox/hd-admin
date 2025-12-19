@@ -3,10 +3,9 @@ local ORDER = 340
 local ROLES = {script.Parent.Name, "Ability"}
 local modules = script:FindFirstAncestor("HD Admin").Core.MainModule.Value.Modules
 local Task = require(modules.Objects.Task)
-local TeleportAsync = require(modules.PlayerUtil.teleportAsync)
+local teleportAsync = require(modules.PlayerUtil.teleportAsync)
 local getHumanoid = require(modules.PlayerUtil.getHumanoid)
-local getDescription = require(modules.PlayerUtil.getDescription)
-local getHRPPos = require(modules.PlayerUtil.getHRPPos)
+local getHRP = require(modules.PlayerUtil.getHRP)
 local commands: Task.Commands = {
 
     --------------------
@@ -56,26 +55,28 @@ local commands: Task.Commands = {
 	--------------------
 	{
 		name = "Farland",
-		groups = {"Location"},
 		args = {"Player"},
 		run = function(task, args: {any})
-			local target = args[1]
-			local oldLocation = getHRP(target).CFrame
-			task:keep("Indefinitely")
-			task:buff(target,"HumanoidDescription", function(hasEnded, isTop)
-				local humanoid = getHumanoid(target)
-				local location = if hasEnded then oldLocation else CFrame.new(583648,683648,583648)
-				if humanoid then
-					TeleportAsync(target, location)
+			local target = unpack(args)
+			task:keep("UntilTargetRespawns")
+			task:buff(target, "Teleport", function(hasEnded, originalValue)
+				local hrp = getHRP(target)
+				local originalCFrame = if hrp then hrp.CFrame else CFrame.new(0, 0, 0)
+				local targetCFrame = if hasEnded then originalValue else CFrame.new(583648,683648,583648)
+				if hrp then
+					hrp.Anchored = true
 				end
-			end)
-			task:onEnded(function()
-				TeleportAsync(target, oldLocation)
+				teleportAsync(target, targetCFrame)
+				if hrp then
+					task.wait(3)
+					hrp.Anchored = false
+				end
+				return originalCFrame
 			end)
 		end
 	},
 	--------------------
 }
 	
-}
+
 return commands

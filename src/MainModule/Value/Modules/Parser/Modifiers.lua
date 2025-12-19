@@ -190,12 +190,13 @@ Modifiers.items = {
 			return false
 		end,
 	}),
-
+	
 	["Undo"] = register({
 		isGlobal = false,
 		isAbusive = false,
 		description = "Ends all Tasks that match the given command name(s). To end a task across all servers, the 'global' modifier must be included.",
 		preAction = function(callerUserId: number, statement: Statement)
+			print("CALL UNDO!!!")
 			local Commands = require(services.Commands)
 			local Args = require(script.Parent.Args)
 			for commandName, _ in statement.commands do
