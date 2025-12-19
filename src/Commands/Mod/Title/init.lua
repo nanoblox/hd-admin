@@ -22,7 +22,7 @@ local commands: Task.Commands = {
 			local color = task:getOriginalArg("OptionalColor") or Color3.fromRGB(255,255,255)
 			local janitor = task.janitor
 			local h,s,v = color:ToHSV()
-			local title = janitor:add(script.Title:Clone())
+			local title = janitor:add(require(script.title)()) :: any
 			task:keep("UntilTargetRespawns")
 			title.Name = "HDAdminTitle"
 			title.Parent = head

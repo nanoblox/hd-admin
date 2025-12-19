@@ -41,7 +41,7 @@ local commands: Task.Commands = {
     --------------------
 	{
 		name = "Notice",
-		aliases = {"N"},
+		aliases = {"Not"}, -- Can't be called "N" as this conflicts with the "Un" modifier due to a current limitation with the parser
 		args = {"OptionalPlayers", "Text"},
 		run = function(task: Task.Class, args: {any})
 			local targets = task:getOriginalArg("OptionalPlayers") or Players:GetPlayers()

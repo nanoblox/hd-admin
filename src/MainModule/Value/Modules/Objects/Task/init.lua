@@ -775,7 +775,6 @@ function Task.destroy(self: Task)
 	if self.isActive == false then
 		return
 	end
-	print("DESTROY TASK: ", self.commandKey)
 	if isServer then
 		if not endClientTask then
 			endClientTask = Remote.new("EndClientTask", "Event")
