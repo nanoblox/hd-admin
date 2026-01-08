@@ -79,6 +79,7 @@ local commands: Task.Commands = {
 		args = {"Player", "Color"},
 		run = function(task: Task.Class, args: {any})
 			local target, color = unpack(args)
+			print("Paint:", target)
 			task:keep("UntilTargetRespawns")
 			task:buff(target, "Outfit", function(hasEnded, originalValue)
 				local humanoid = getHumanoid(target)

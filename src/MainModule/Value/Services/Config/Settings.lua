@@ -5,9 +5,11 @@
 
 	- Use this to configure player and system settings within HD Admin
 	- For most users, you don't need to worry about editing this file
-	- Roles (formerly Ranks) and Bans (formerly Banland) are now located under Config
-	- Role Givers, such as Passes (formerly Gamepasses), Individuals, Goups, etc are
-	  now located under 'Givers' within Config
+	- Roles (formerly Ranks) are now located under Config -> Roles
+	- Commands are now configurable and located under Config -> Roles -> [ROLE]
+	- Bans (formerly Banland) are now located under Config -> Bans -> Groups/Users
+	- You can give Roles to players (via Passes, Goups, Friends, etc) by
+	  configuring the Attributes of each [ROLE] and Presets under Config -> Presets
 	- Make sure to only edit the values within here if you're familiar with Luau
 	  and HD Admin Settings, otherwise you risk breaking HD Admin
 
@@ -54,24 +56,11 @@ local Settings = {
 		PlayerUndefinedSearch = "DisplayName" :: PlayerSearch, -- 'Undefined' means *without* the 'playerIdentifier' (e.g. ";fly Ben)
 		PlayerDefinedSearch = "UserName" :: PlayerSearch, -- 'Defined' means *with* the 'playerIdentifier' (e.g. ";fly @ForeverHD)
 		
+		-- Command Limits
 		Limits = { -- While strongly recommended, can be disabled by setting `BypassLimits` to false in Role attributes
 			RequestSize = 1000, -- Maximum number of characters in a message request until it's cutoff
 			RequestsPerSecond = 10, -- Maximum message requests that can be parsed per second per second. When disabled, this is still capped to 20.
 			CommandsPerMinute = 60, -- Maximum number of commands a player can run per minute
-		},
-
-		MinimumAccountAge = 0, -- Kicks accounts younger than x days (0 to disable)
-		
-		-- Recommended colors when customizing theme settings
-		ThemeColors = {
-			{"Blurple", Color3.fromRGB(94, 86, 213)},
-			{"Red", Color3.fromRGB(199, 80, 82)},
-			{"Orange", Color3.fromRGB(152, 114, 69)},
-			{"Green", Color3.fromRGB(73, 148, 104)},
-			{"Blue", Color3.fromRGB(0, 100, 150)},
-			{"Blue", Color3.fromRGB(91, 122, 189)},
-			{"Pink", Color3.fromRGB(172, 121, 167)},
-			{"Black", Color3.fromRGB(35, 39, 47)},
 		},
 
 		-- Colors to be used for commands with the Color arg
@@ -89,90 +78,21 @@ local Settings = {
 			["White"] = Color3.fromRGB(255, 255, 255),
 		},
 
-		-- Display
-		ShowOnlyUsableAndBuyableCommands = true, -- Only display commands equal to or below the user's rank on the Commands page OR commands from Ranks or Roles they can purchase.
+		-- Recommended colors when customizing theme settings
+		ThemeColors = {
+			{"Blurple", Color3.fromRGB(94, 86, 213)},
+			{"Red", Color3.fromRGB(199, 80, 82)},
+			{"Orange", Color3.fromRGB(152, 114, 69)},
+			{"Green", Color3.fromRGB(73, 148, 104)},
+			{"Blue", Color3.fromRGB(0, 100, 150)},
+			{"Blue", Color3.fromRGB(91, 122, 189)},
+			{"Pink", Color3.fromRGB(172, 121, 167)},
+			{"Black", Color3.fromRGB(35, 39, 47)},
+		},
+		
+		-- Moderation, Utility & Saving
+		MinimumAccountAge = 0, -- Kicks accounts younger than x days (0 to disable)
 		DisableBoosterBundles = false, -- This disables the Booster bundles. Please keep enabled to support the development of HD Admin.
-		WelcomeRankNotice = true, -- The 'You're a [rankName]' notice that appears when you join the game. Set to false to disable.
-		WarnIncorrectPrefix = true, -- Warn the user if using the wrong prefix | "Invalid prefix! Try using [correctPrefix][commandName] instead!"
-		DisableAllNotices = false, -- Set to true to disable all HD Admin notices.
-		HideWarningsIfBelowRank = 1, -- Hide core notices such as 'CommandName is not a valid command!' and 'You do not have permission to use this command' for ranks below the specified rank
-		RankRequiredToViewCommandsIcon = 0, -- Minimum rank to view the icon which opens the Commands-Only page. This is hidden if the user can view the dashboard.
-		RankRequiredToViewDashboardIcon = 1, -- Minimum rank to view the icon which opens the Dashboard
-		RankRequiredToViewPage = { -- || The pages on the main menu ||
-			["Commands"] = 0,
-			["Moderation"] = 100,
-			["Revenue"] = 100,
-			["Settings"] = 1,
-		},
-
-		-- Commands
-		ScaleLimit = 3, -- The maximum size players with a rank lower than 'IgnoreScaleLimit' can scale theirself. For example, players will be limited to ,size me 4 (if limit is 4) - any number above is blocked.
-		IgnoreScaleLimit = 3, -- Any ranks equal or above this value will ignore 'ScaleLimit'
-		VIPServerCommandBlacklist = {"permRank", "permBan", "globalAnnouncement"}, -- Commands players are probihited from using in VIP Servers
-		CommandLimits = { -- Enables you to set limits for commands which have a number argument. Ranks equal to or higher than 'IgnoreLimit' will not be affected by Limit.
-			["fly"]	= {
-				Limit = 10000,
-				IgnoreLimit = 3,
-			},
-			["fly2"]	= {
-				Limit = 10000,
-				IgnoreLimit = 3,
-			},
-			["noclip"]	= {
-				Limit = 10000,
-				IgnoreLimit = 3,
-			},
-			["noclip2"]	= {
-				Limit = 10000,
-				IgnoreLimit = 3,
-			},
-			["speed"]	= {
-				Limit = 10000,
-				IgnoreLimit = 3,
-			},
-			["jumpPower"]	= {
-				Limit = 10000,
-				IgnoreLimit = 3,
-			},
-			["animations"]	= {
-				Limit = 2,
-				Minimum = 0.5,
-				IgnoreLimit = 6,
-				SilentlyChange = true,
-			},
-		},
-
-		-- Restrict Gear / Assets
-		RestrictedIDs = {
-			LibraryAndCatalog = { -- LibraryIds (Sounds, Images, Models, etc) and CatalogIds (Gear, Accessories, Faces, etc)
-				Denylist = {["0000"] = true,},
-				Allowlist = {},
-			},
-			Bundle = { -- Bundles
-				Denylist = {},
-				Allowlist = {},
-			},
-		},
-
-		-- Replace Gear / Assets
-		OverrideIDs = { -- Replaces the item with a corresponding *libraryId*
-			LibraryAndCatalog = {
-				["80661504"] = "6965147933",
-			},
-		},
-
-		-- Warning System (Coming Soon)
-		WarnExpiryTime = 604800, -- 1 week
-		KickUsers = true,
-		WarnsToKick = 3,
-		ServerBanUsers = true,
-		WarnsToServerBan = 4,
-		ServerBanTime = 7200, -- 2 hours
-		GlobalBanUsers = true,
-		WarnsToGlobalBan = 5,
-		GlobalBanTime = 172800, -- 2 days
-
-		-- DataStore
 		DataGroupName = "HD" -- CHANGING THIS WILL RESET ALL DATA. Only change if you wish to reset all saved data within HD Admin. For example, player data with a DataGroupName of 'HD' is structured as 'HDAdmin/HD/PlayerStore/[USER_ID]/Profile'
 
 	}

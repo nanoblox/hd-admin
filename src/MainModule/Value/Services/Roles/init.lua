@@ -1,24 +1,55 @@
 --!strict
 -- CONFIG
 local DEFAULT_ROLE = {
-	name = "UnnamedRole",
-	key = "unnamedrole",
+	
 	hide = false,
+	key = "unnamedrole",
+	name = "UnnamedRole",
+	
 	giveToEveryone = false,
-    giveToFriends = false,
-    giveToGroupRoles = "",
-    giveToGroups = "",
-    giveToPasses = "",
-    giveToPrivateServerOwner = false,
-    giveToUsers = "",
-    limitCommandsPerMinute = 60,
-    limitRequestsPerSecond = 10,
-    permitBypassLimits = false, -- When true, users can bypass limits across all commands and arguments
-    permitModifiersAbusive = false, -- When true, users can use potentially abusive modifiers like 'loop' and 'delay'
-    permitModifiersGlobal = false, -- When true, users can can broadcast any useable command to all servers with modifiers like 'global' and 'perm'. Be VERY careful about who you permit this to!
+	giveToFriends = false,
+	giveToGroupRoles = "",
+	giveToGroups = "",
+	giveToPasses = "",
+	giveToPrivateServerOwner = false,
+	giveToUsers = "",
+
+	limitCommandsPerMinute = 60,
+	limitRequestsPerSecond = 10,
+
+	mayEditAll = false, -- When true, users can edit everything, including roles above them
+	mayEditGameSettings = false, -- When true, users can edit game settings, such as the default prefix, default interface presets, command colors, etc
+	mayEditRoles = false, -- When true, users can create, edit, and delete roles below their rank. 'mayEditAll' is required to edit the same or higher roles, *and* to edit role permissions which their own role permissions don't have
+	mayEditTasks = false, -- When true, users can pause, resume and cancel any task within tasks
+
+	mayViewAll = false,
+	mayViewAnalytics = false,
+	mayViewBans = false,
+	mayViewCommands = true,
+	mayViewCommandsIcon = true, -- When true, displays the commands icon which opens solely the commands page
+	mayViewDashboardIcon = false, -- When true, overrides mayViewCommandsIcon, and displays the dashboard icon (the main HD icon)
+	mayViewGameSettings = false,
+	mayViewLogs = false,
+	mayViewMembers = false,
+	mayViewRoles = false,
+	mayViewTasks = false,
+	mayViewUnavailableCommands = false,
+	mayViewWarns = false,
+	mayViewYouSettings = true,
+
+	permitAll = false,
+	permitBypassLimits = false, -- When true, users can bypass limits across all commands and arguments
+	permitModifiersAbusive = false, -- When true, users can use potentially abusive modifiers like 'loop' and 'delay'
+	permitModifiersGlobal = false, -- When true, users can can broadcast any useable command to all servers with modifiers like 'global' and 'perm'. Be VERY careful about who you permit this to!
 	permitMultipleTargets = true, -- When true, users can target multiple people at once with commands (e.g. ;kill others)
-    permitTargetingOthers = true, -- When true, users can run commands on players other than themselves
-    rank = 1,
+	permitTargetingOthers = true, -- When true, users can run commands on players other than themselves
+	permitCommandInheritence = false, -- When true, users can run commands that are permitted for roles below this role
+	
+	promptAll = false, -- Displays all prompts
+	promptWarnings = false, -- Displays warning notices (such as 'Invalid prefix! Try using [correctPrefix] instead!', '[CommandName] is not a valid command!', 'You do not have permission to use this command', etc)
+	promptWelcome = false, -- Displays welcome notices (such as 'You're a [highestRoleName]', etc)
+
+	rank = 1,
 }
 
 local CLIENT_PROPERTIES_TO_EXCLUDE = {

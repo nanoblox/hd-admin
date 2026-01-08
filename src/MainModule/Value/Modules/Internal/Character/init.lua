@@ -535,6 +535,7 @@ local commands: Task.Commands = {
 		run = function(task: Task.Class, args: {any})
 			local playerToView = unpack(args)
 			local caller = task.caller
+			print("playerToView =", playerToView)
 			if not playerToView or not caller then return end
 			if caller == playerToView then return end
 			task:keep("UntilCallerLeaves")

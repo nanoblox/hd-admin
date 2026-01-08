@@ -30,10 +30,11 @@ local sortedNameAndAliasWithOverrideLengthArray: {string} = {}
 local commandsRequireUpdating = true
 local commandPrefixes: {[string]: boolean} = {}
 local serverUser: User.Class? = nil
+local sharedTypes = require(modules.References.sharedTypes)
 
 
 -- TYPES
-export type MessageSource = "Chat" | "ChatCommand" | "API" | "ClientCommandBar" | "ClientPreviewRun" | "ClientRun" | "ClientCommand" | "Other" | "Unknown"
+export type MessageSource = sharedTypes.MessageSource
 type User = User.Class
 type Batch = ParserTypes.ParsedBatch
 type Statement = ParserTypes.ParsedStatement
@@ -169,7 +170,6 @@ function Commands.updateCommands()
 	end
 	User.everyone:set("Commands", commandsArray)
 	User.everyone:set("CommandInfo", keyToCommand)
-	print("lowerCaseNameAndAliasCommandsDictionary =", lowerCaseNameAndAliasCommandsDictionary)
 	return true
 end
 
@@ -523,7 +523,7 @@ function Commands.executeStatement(callerUserId: number | string, statement: Sta
 	-- Ensure statement is converted
 	local ParserUtility = require(parser.ParserUtility)
 	ParserUtility.convertStatementToRealNames(statement)
-
+	
 	-- This enables restrictions to be bypassed if customized
 	-- This is useful for fake server users for example
 	if statement.isRestricted == nil then
@@ -565,7 +565,7 @@ function Commands.executeStatement(callerUserId: number | string, statement: Sta
 			end
 		end
 	end
-
+	
 	-- This handles any preActions within present modifiers
 	-- Also, if the modifier preAction value returns false then cancel the execution
 	local Modifiers = require(parser.Modifiers) :: any -- 'Any' to remove cyclic warning
@@ -587,8 +587,7 @@ function Commands.executeStatement(callerUserId: number | string, statement: Sta
 	local qualifiers = (statement.qualifiers or {}) :: ArgGroup
 	local modifiers = (statement.modifiers or {}) :: ArgGroup
 	local generateUID = require(modules.DataUtil.generateUID)
-	local taskUID = statement.taskUID or generateUID(10)
-
+	
 	-- Tasks are split into separate players (such as those with the 'Player' arg),
 	-- while some do not (such as those with the 'Players' arg, or without any type
 	-- of player arg at all)
@@ -599,6 +598,7 @@ function Commands.executeStatement(callerUserId: number | string, statement: Sta
 		-- Setup task properties
 		local commandKey = command.key :: string
 		local args = (arguments or {}) :: ArgGroup
+		local taskUID = statement.taskUID or generateUID(10)
 		local properties: Properties = {
 			callerUserId = callerUserId,
 			targetUserId = optionalTargetUserId,
@@ -614,7 +614,7 @@ function Commands.executeStatement(callerUserId: number | string, statement: Sta
 		local runningTasks = Task.getTasks(commandKey, optionalTargetUserId)
 		local hasACooldown = typeof(command.cooldown) == "number" and command.cooldown > 0
 		if not hasACooldown and not command.stackable == true then
-			for _, task in pairs(runningTasks) do
+			for _, task in runningTasks do
 				task:destroy()
 			end
 		end

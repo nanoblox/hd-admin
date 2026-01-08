@@ -28,6 +28,10 @@ return function(Args)
 			maxValue = 4,
 		})),
 
+		["Distance"] = Args.createAliasOf("Number", register({
+			-- Nothing to change, just an alias
+		})),
+
 		["CountdownTime"] = Args.createAliasOf("Number", register({
 			-- This can be exceeded if a user has a role with 'bypassLimits' enabled
 			minValue = 1,

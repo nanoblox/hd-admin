@@ -20,6 +20,15 @@ local commands: Task.Commands = {
 	},
 
     --------------------
+	{
+		name = "Insert",
+		args = {"Player"},
+		run = function(task: Task.Class, args: {any})
+			print("INSERT =", task.config)
+		end
+	},
+
+    --------------------
 	
 }
 return commands

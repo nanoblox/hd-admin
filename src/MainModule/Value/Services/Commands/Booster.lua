@@ -42,18 +42,6 @@ end
 local commands: Task.Commands = {
 
     --------------------
-	{
-		name = "Bundle",
-		roles = ROLES,
-		order = ORDER,
-		args = {"Player"},
-		hide = HIDE,
-		run = function(task: Task.Class, args: {any})
-			
-		end
-	},
-
-    --------------------
 	createEmoteCommand("Shake", 132367660388476, {Looped = true});
 	createEmoteCommand("Dolphin", 5938365243, {Looped = true, Aliases = {"Dance0"}});
 	createEmoteCommand("Dorky", 4212499637, {Looped = true, Aliases = {"Dance1"}});

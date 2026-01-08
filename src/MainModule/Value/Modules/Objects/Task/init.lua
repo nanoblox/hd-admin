@@ -73,10 +73,11 @@ function Task.construct(properties: Properties)
 	local commandKey = properties.commandKey
 	local callerUserId = properties.callerUserId
 	local targetUserId = properties.targetUserId
-	local UID = properties.UID or generateUID()
+	local UID = properties.UID or generateUID(10)
 	local services = modules.Parent.Services
 	local dictOfGroupsLower = {}
 	local cooldown = 0
+	local config = {}
 	if isServer then
 		local Commands = require(services.Commands) :: any
 		local command = Commands.getCommand(commandKey) :: Command?
@@ -90,6 +91,9 @@ function Task.construct(properties: Properties)
 		local thisCooldown = command and command.cooldown
 		if thisCooldown and typeof(thisCooldown) == "number" and thisCooldown > 0 then
 			cooldown = thisCooldown
+		end
+		if command and typeof(command.config) == "table" then
+			config = command.config
 		end
 	end
 	local self = {
@@ -105,6 +109,7 @@ function Task.construct(properties: Properties)
 		client = TaskClient.new(UID),
 		server = TaskServer.new(UID),
 		extra = {},
+		config = config,
 
 		-- Private
 		isPaused = false,
@@ -291,6 +296,13 @@ function Task.run(self: Task)
 					}
 				end
 				local returnValue = argItem:parse(argString, callerUserId, targetUserId)
+				--
+				if argItem.runForEachPlayer and typeof(returnValue) == "table" then
+					-- If an additional arg is a player arg and has runForEachPlayer, it's
+					-- important that we convert it to a single player instance
+					returnValue = returnValue[1]
+				end
+				--
 				registerOriginalArg(argName, iNow, returnValue)
 				if returnValue == nil then
 					local defaultValue = argItem.defaultValue
@@ -860,6 +872,7 @@ export type Command = {
 	aliases: {string}?,
 	undoAliases: {string}?, -- aliases to undone the command, e.g. "ice" might have "thaw"
 	description: string?,
+	config: {string: any}?,
 	groups: {string}?, -- all commands in the same group are *undone* when another is run
 	cooldown: number?, -- if > 0, the command cannot be run again until finished and its cooldown expired
 	stackable: boolean?, -- if true, multiple instances of the command can be run at once by the same caller/target
@@ -917,6 +930,7 @@ type TaskProperties = {
 	client: TaskClient.Class,
 	server: TaskServer.Class,
 	extra: {[string]: any},
+	config: {[string]: any},
 }
 
 export type Class = TaskMethods & TaskProperties

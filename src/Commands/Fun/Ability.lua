@@ -94,11 +94,5 @@ return {
 	end),
 
     --------------------
-	loadCommand("Reset", function(command: Command)
-		command.order = ORDER
-		command.roles = ROLES
-	end),
-
-    --------------------
 
 }

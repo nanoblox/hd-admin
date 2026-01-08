@@ -365,6 +365,7 @@ export type ModifierDetail = {
 	requiresCapsule: boolean?,
 	isGlobal: boolean?,
 	isAbusive: boolean?,
+	--blockInPrivateServers: boolean?, -- To do later: consider a 'blockInPrivateServers' property for modifiers and commands that prevents the command being used in private servers. One consideration: game owners who wish to broadcast commands like a message within their own private server to other servers
 }
 
 
