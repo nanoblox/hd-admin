@@ -251,7 +251,7 @@ local clientCommands: Task.ClientCommands = {
 
 	--------------------
 	{
-		name = "Noclip",
+		name = "NoClip",
 		run = function(task: Task.Class, speed: number)
 			handleInput(task, function()
 				local humanoid = getHumanoid()
@@ -284,7 +284,7 @@ local clientCommands: Task.ClientCommands = {
 
 	--------------------
 	{
-		name = "Noclip2",
+		name = "NoClip2",
 		run = function(task: Task.Class, speed: number)
 			handleInput(task, function()
 				startFlight(task, speed, "Sit", true)

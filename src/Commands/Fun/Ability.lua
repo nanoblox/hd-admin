@@ -10,85 +10,85 @@ type Command = Task.Command
 return {
 
     --------------------
-	loadCommand("Spin", function(command: Command)
+	loadCommand("Ability", "Spin", function(command: Command)
 		command.order = ORDER
 		command.roles = ROLES
 	end),
 
     --------------------
-	loadCommand("ForceField", function(command: Command)
+	loadCommand("Ability", "ForceField", function(command: Command)
 		command.order = ORDER
 		command.roles = ROLES
 	end),
 
     --------------------
-	loadCommand("Fire", function(command: Command)
+	loadCommand("Ability", "Fire", function(command: Command)
 		command.order = ORDER
 		command.roles = ROLES
 	end),
 
     --------------------
-	loadCommand("Smoke", function(command: Command)
+	loadCommand("Ability", "Smoke", function(command: Command)
 		command.order = ORDER
 		command.roles = ROLES
 	end),
 
     --------------------
-	loadCommand("Sparkles", function(command: Command)
+	loadCommand("Ability", "Sparkles", function(command: Command)
 		command.order = ORDER
 		command.roles = ROLES
 	end),
 
     --------------------
-	loadCommand("Sit", function(command: Command)
+	loadCommand("Ability", "Sit", function(command: Command)
 		command.order = ORDER
 		command.roles = ROLES
 	end),
 
     --------------------
-	loadCommand("NightVision", function(command: Command)
+	loadCommand("Ability", "NightVision", function(command: Command)
 		command.order = ORDER
 		command.roles = ROLES
 	end),
 
     --------------------
-	loadCommand("Respawn", function(command: Command)
+	loadCommand("Ability", "Respawn", function(command: Command)
 		command.order = ORDER
 		command.roles = ROLES
 	end),
 
     --------------------
-	loadCommand("Jump", function(command: Command)
+	loadCommand("Ability", "Jump", function(command: Command)
 		command.order = ORDER
 		command.roles = ROLES
 	end),
 
     --------------------
-	loadCommand("Warp", function(command: Command)
+	loadCommand("Ability", "Warp", function(command: Command)
 		command.order = ORDER
 		command.roles = ROLES
 	end),
 
     --------------------
-	loadCommand("Blur", function(command: Command)
+	loadCommand("Ability", "Blur", function(command: Command)
 		command.order = ORDER
 		command.roles = ROLES
 	end),
 
     --------------------
-	loadCommand("Anchor", function(command: Command)
+	loadCommand("Ability", "Anchor", function(command: Command)
 		command.order = ORDER
 		command.roles = ROLES
 	end),
 
     --------------------
-	loadCommand("Name", function(command: Command)
+	loadCommand("Ability", "Name", function(command: Command)
 		command.order = ORDER
 		command.roles = ROLES
 	end),
 
     --------------------
-	loadCommand("HideName", function(command: Command)
+	loadCommand("Ability", "HideName", function(command: Command)
 		command.order = ORDER
 		command.roles = ROLES
 	end),

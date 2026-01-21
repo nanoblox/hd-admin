@@ -1,3 +1,4 @@
+--!strict
 -- These are internal groups of commands
 -- We 'internalize' a lot of commands so that they can continue to receive fixes
 -- and updates/improvements while we build the separate HD Admin plugin to
@@ -15,8 +16,7 @@ local Internal = {}
 local modules = script:FindFirstAncestor("MainModule").Value.Modules
 local Framework = require(modules.Framework)
 local Task = require(modules.Objects.Task)
-local hasCheckedModules = false
-local internalCommandsLowercase: {[string]: Task.Command} = {}
+local internalCommandsLowercase: {[string]: any} = {}
 local forEveryCommand = require(modules.CommandUtil.forEveryCommand)
 
 
@@ -28,7 +28,7 @@ end
 
 -- FUNCTIONS
 function Internal.loadCommandGroup(moduleName: string, callback: ((command: any) -> ()))
-	local serverModules = Framework.getServerModules()
+	local serverModules = Framework.getServerModules() :: any
 	if not serverModules then
 		warn("HD Admin: loadCommands must be called from server")
 		return {}
@@ -43,40 +43,46 @@ function Internal.loadCommandGroup(moduleName: string, callback: ((command: any)
 		warn("HD Admin: Internal Shared Command '" .. moduleName .. "' not found")
 		return {}
 	end
-	local reference = require(commandsModule)
+	local reference = require(commandsModule) :: any
 	commandsModuleShared:SetAttribute("IsActive", true)
 	if typeof(callback) ~= "function" then
 		return reference
 	end
-	forEveryCommand(reference, function(command: Task.Command)
+	forEveryCommand(reference, function(command: any)
 		callback(command)
 	end)
 	return reference :: Task.Commands
 end
 
-function Internal.loadCommand(commandName: string, callback: ((command: any) -> ())): any
-	if not hasCheckedModules then
-		hasCheckedModules = true
-		for _, module in modules.Internal:GetChildren() do
-			if module:IsA("ModuleScript") then
-				local commands = require(module)
-				forEveryCommand(commands, function(command: Task.Command)
-					internalCommandsLowercase[string.lower(command.name)] = {
-						command = command,
-						moduleName = module.Name,
-					}
-				end)
-			end
-		end
-	end
-	local commandInfo = internalCommandsLowercase[string.lower(commandName)]
-	if not commandInfo then
-		warn("HD Admin: Internal Command '" .. commandName .. "' not found")
+function Internal.loadCommand(groupName: string, commandName: string, callback: ((command: any) -> ())): any
+	local commandsModuleShared = modules.Internal:FindFirstChild(groupName)
+	if not commandsModuleShared then
+		warn("HD Admin: Internal Command Module (Shared) '" .. groupName .. "' not found")
 		return {}
 	end
-	local commandsModuleShared = modules.Internal:FindFirstChild(commandInfo.moduleName)
-	if not commandsModuleShared then
-		warn("HD Admin: Internal Command Module '" .. commandInfo.moduleName .. "' not found")
+	local commandsModuleServer = modules.Internal:FindFirstChild(groupName)
+	if not commandsModuleServer then
+		warn("HD Admin: Internal Command Module (Server) '" .. groupName .. "' not found")
+		return {}
+	end
+	local commandNameLower = string.lower(commandName)
+	local commandInfo = internalCommandsLowercase[commandNameLower]
+	if not commandInfo then
+		local commands = require(commandsModuleServer) :: any
+		forEveryCommand(commands, function(command: any)
+			local newCommandInfo = {
+				command = command,
+				moduleName = groupName,
+			}
+			local newCommandNameLower = command.name:lower()
+			internalCommandsLowercase[newCommandNameLower] = newCommandInfo
+			if newCommandNameLower == commandNameLower then
+				commandInfo = newCommandInfo
+			end
+		end)
+	end
+	if not commandInfo then
+		warn("HD Admin: Internal Command '" .. commandName .. "' not found")
 		return {}
 	end
 	local command = commandInfo.command

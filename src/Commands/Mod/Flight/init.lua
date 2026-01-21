@@ -39,7 +39,7 @@ local commands: Task.Commands = {
 
     --------------------
 	{
-		name = "Noclip",
+		name = "NoClip",
 		undoAliases = {"Clip"},
 		groups = GROUPS,
 		roles = ROLES,

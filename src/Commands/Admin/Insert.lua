@@ -4,7 +4,6 @@ local ROLES = {script.Parent.Name, "Ability"}
 local modules = script:FindFirstAncestor("HD Admin").Core.MainModule.Value.Modules
 local Internal = require(modules.Internal)
 local Task = require(modules.Objects.Task)
-local loadCommand = Internal.loadCommand
 local getHumanoid = require(modules.PlayerUtil.getHumanoid)
 type Command = Task.Command
 

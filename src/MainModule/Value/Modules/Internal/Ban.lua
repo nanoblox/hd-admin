@@ -2,6 +2,7 @@
 local modules = script:FindFirstAncestor("MainModule").Value.Modules
 local Task = require(modules.Objects.Task)
 local getHumanoid = require(modules.PlayerUtil.getHumanoid)
+local Prompt = require(modules.Prompt)
 local commands: Task.Commands = {
 
     --------------------
@@ -9,7 +10,8 @@ local commands: Task.Commands = {
 		name = "Ban",
 		args = {"Player"},
 		run = function(task: Task.Class, args: {any})
-			
+			local target = unpack(args)
+			Prompt.info(target, "Coming Soon")
 		end
 	},
 
@@ -18,7 +20,8 @@ local commands: Task.Commands = {
 		name = "TimeBan",
 		args = {"Player"},
 		run = function(task: Task.Class, args: {any})
-			
+			local target = unpack(args)
+			Prompt.info(target, "Coming Soon")
 		end
 	},
 

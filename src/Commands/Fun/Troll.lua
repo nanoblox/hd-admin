@@ -10,31 +10,31 @@ type Command = Task.Command
 return {
 
     --------------------
-	loadCommand("Ice", function(command: Command)
+	loadCommand("Troll", "Ice", function(command: Command)
 		command.order = ORDER
 		command.roles = ROLES
 	end),
 
     --------------------
-	loadCommand("Jail", function(command: Command)
+	loadCommand("Troll", "Jail", function(command: Command)
 		command.order = ORDER
 		command.roles = ROLES
 	end),
 
     --------------------
-	loadCommand("LaserEyes", function(command: Command)
+	loadCommand("Troll", "LaserEyes", function(command: Command)
 		command.order = ORDER
 		command.roles = ROLES
 	end),
 
     --------------------
-	loadCommand("Explode", function(command: Command)
+	loadCommand("Troll", "Explode", function(command: Command)
 		command.order = ORDER
 		command.roles = ROLES
 	end),
 
     --------------------
-	loadCommand("Fling", function(command: Command)
+	loadCommand("Troll", "Fling", function(command: Command)
 		command.order = ORDER
 		command.roles = ROLES
 	end),

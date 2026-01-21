@@ -128,7 +128,7 @@ function Framework.getServerValue()
 	return serverContainer.Core.MainModule:FindFirstChild("Value")
 end
 
-function Framework.getServerModules()
+function Framework.getServerModules(): Instance?
 	local serverValue = Framework.getServerValue()
 	if not serverValue then
 		return nil

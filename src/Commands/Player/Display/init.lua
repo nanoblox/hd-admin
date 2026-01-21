@@ -43,7 +43,7 @@ local commands: Task.Commands = {
 	},
 
     --------------------
-	loadCommand("Commands", function(command: Command)
+	loadCommand("Other", "Commands", function(command: Command)
 		command.order = ORDER
 		command.roles = ROLES
 	end),

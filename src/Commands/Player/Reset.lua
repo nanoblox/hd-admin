@@ -10,7 +10,7 @@ type Command = Task.Command
 return {
 
     --------------------
-	loadCommand("Reset", function(command: Command)
+	loadCommand("Other", "Reset", function(command: Command)
 		command.order = ORDER
 		command.roles = ROLES
 	end),
