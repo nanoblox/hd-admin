@@ -9,11 +9,16 @@ local commands: Task.Commands = {
     --------------------
 	{
 		name = "Team",
+		aliases	= {"JoinTeam", "SwitchTeam"},
 		roles = ROLES,
 		order = ORDER,
-		args = {"Player"},
+		args = {"Player", "Team"},
 		run = function(task: Task.Class, args: {any})
-			
+			local target, team = unpack(args)
+			if team then
+				target.Team = team
+				target.TeamColor = team.TeamColor
+			end
 		end
 	},
 

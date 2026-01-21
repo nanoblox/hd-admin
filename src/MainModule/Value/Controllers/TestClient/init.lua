@@ -10,9 +10,9 @@ local TestController = {}
 -- Test replication everyone
 local clientUser = require(modules.References.clientUser)
 local everyone = clientUser.everyone
-everyone:observe("Emotes", function(value)
-	--print("TEST Emotes:", value)
-end)
+--[[everyone:observe("Emotes", function(value)
+	print("TEST Emotes:", value)
+end)--]]
 local clientUser = require(modules.References.clientUser)
 everyone:observe("Roles", function(value)
 	print("TEST Roles:", value)
@@ -89,9 +89,10 @@ local success, value = everyone:fetchAsync("GameSettings", "PlayerIdentifier")
 local Parser = require(modules.Parser)
 local TestArgs = require(modules.Parent.Controllers.TestClient.TestArgs)
 local testArgs = TestArgs[1]
-local testValues = TestArgs[2] :: {any}
---local finalString = Parser.unparse("Test", {"GLOBAL", "LOOP"}, unpack(testValues))
-
+local Players = game:GetService("Players") :: any
+local testValues = {nil, Color3.fromRGB(255, 0, 0), "hello world this is a test notice!"}
+local finalString = Parser.unparse("Hint", {"GLOBAL"}, unpack(testValues))
+--print("FINAL STRING:", finalString)
 
 local selectedPlayers = {"random", "role(admin)"}
 local materialEnum = Enum.Material.Sandstone

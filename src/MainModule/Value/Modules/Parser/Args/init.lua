@@ -11,6 +11,14 @@ To do:
 -- CONFIG
 local DEFAULT_MAX_CHARACTERS = 100
 local TEXT_MAX_CHARACTERS = 420
+local KEYS_TO_MOVE_INTO_INPUT_OBJECT = { -- Make sure to also update 'ArgTypes.lua'
+		"defaultValue",
+		"minValue",
+		"maxValue",
+		"maxItems",
+		"stepAmount",
+		"pickerText",
+	}
 
 
 -- LOCAL
@@ -33,6 +41,7 @@ local splitByCollective = require(modules.Parser.splitByCollective)
 local function register(item: ArgumentDetail): ArgumentDetail
 	return item :: ArgumentDetail -- We do this to support type checking within the table
 end
+
 local function newParse(callback: (...any) -> (...any)): (...any) -> (...any)
 	-- This verifies every string so that they are safe
 	-- For example, it automatically removes dangerous values like nan nad inf
@@ -45,6 +54,7 @@ local function newParse(callback: (...any) -> (...any)): (...any) -> (...any)
 		return callback(self, stringToParse, ...)
 	end
 end
+
 local function processDeveloperArg(argumentDetail: ArgumentDetail)
 	-- This ensures that newParse, etc and all relevant properties are set for
 	-- the argumentDetail that is created by the developer
@@ -58,18 +68,13 @@ local function processDeveloperArg(argumentDetail: ArgumentDetail)
 	end
 	return argumentDetail
 end
+
 local function moveMultiKeysIntoInputObject(argumentDetail: ArgumentDetail)
 	if true then
 		return
 	end
-	local keysToMove = {
-		"defaultValue",
-		"minValue",
-		"maxValue",
-		"stepAmount",
-	}
 	argumentDetail = argumentDetail :: any
-	for _, key in keysToMove do
+	for _, key in KEYS_TO_MOVE_INTO_INPUT_OBJECT do
 		local value = argumentDetail[key]
 		if value == nil then
 			continue
@@ -83,6 +88,7 @@ local function moveMultiKeysIntoInputObject(argumentDetail: ArgumentDetail)
 	end
 	return argumentDetail
 end
+
 local function becomeArg(item: ArgumentDetail, toBecomeName: string)
 	local argToBecome = Args.items[toBecomeName]
 	local argKeyCorrected = item.key
@@ -105,12 +111,14 @@ local function becomeArg(item: ArgumentDetail, toBecomeName: string)
 	moveMultiKeysIntoInputObject(item)
 	processDeveloperArg(item)
 end
+
 local function recordArg(argKey: string, argDetail)
 	if Args.items[argKey] and isServer then
 		warn(`HD Admin: Arg '{argKey}' already exists. Strongly consider renaming your Custom Arg to avoid conflicts.`)
 	end
 	Args.items[argKey] = argDetail
 end
+
 local function unparsePlayer(tableOfPlayersOrQualifiers: any): string
 	-- It's recommended to pass in an array of Players and Qualifiers. E.g:
 	-- {Players.ForeverHD, Players.ImAvafe, "others", "role(admin)"}
@@ -140,6 +148,45 @@ local function unparsePlayer(tableOfPlayersOrQualifiers: any): string
 	end
 	local originalString = table.concat(stringsArray, collective)
 	return tostring(originalString)
+end
+
+local function parseStringIntoRoles(self, stringToParse): {any}
+	if stringToParse == "" or stringToParse == " " then
+		return {}
+	end
+	local roleStrings = splitByCollective(stringToParse)
+	local roleStringsDict = {}
+	for _, roleString in (roleStrings) do
+		roleStringsDict[roleString:lower()] = true
+	end
+	local Roles = require(modules.Parent.Services.Roles)
+	local selectedRolesDict = {}
+	for _, role in Roles.getRoles() do
+		local roleName = role.name
+		if roleStringsDict[roleName:lower()] then
+			selectedRolesDict[roleName] = role
+			continue
+		end
+		local roleName = string.lower(role.name) or roleName
+		for selectedRoleName, _ in (roleStringsDict) do
+			local nameMatch = string.sub(roleName, 1, #selectedRoleName) == selectedRoleName
+			local keysMatch = roleName == selectedRoleName
+			if nameMatch or keysMatch then
+				selectedRolesDict[roleName] = role
+			end
+		end
+	end
+	local selectedRoleNames: {any} = {}
+	local maxItems = self.inputObject.maxItems or 100
+	local totalItems = 0
+	for i, role in selectedRolesDict do
+		if totalItems >= maxItems then
+			break
+		end
+		totalItems += 1
+		table.insert(selectedRoleNames, role)
+	end
+	return selectedRoleNames
 end
 
 
@@ -317,6 +364,8 @@ local items = {
 		end,
 	}),
 
+	["Caller"] = Args.createAliasOf("Player"),
+
 	["Players"] = Args.create({
 		inputObject = {
 			inputType = "ItemSelector",
@@ -477,42 +526,32 @@ local items = {
 		},
 		defaultValue = {},
 		description = "Accepts a string and returns a table of roles.",
-		unparse = function(self, arrayOfRoleNames: {string})
+		unparse = function(self, roleNames: {string} | string)
 			local PlayerSettings = require(modules.Parser.ParserSettings)
 			local collective = PlayerSettings.Collective
+			local arrayOfRoleNames: {string} = {}
+			if typeof(roleNames) == "table" then
+				arrayOfRoleNames = roleNames
+			else
+				arrayOfRoleNames = {tostring(roleNames)}
+			end
 			local rolesToString = table.concat(arrayOfRoleNames, collective)
 			return rolesToString
 		end,
 		parse = function(self, stringToParse, callerUserId)
-			local roleStrings = splitByCollective(stringToParse)
-			local roleStringsDict = {}
-			for _, roleString in (roleStrings) do
-				roleStringsDict[roleString:lower()] = true
-			end
-			local Roles = require(modules.Parent.Services.Roles)
-			local selectedRolesDict = {}
-			for _, role in Roles.getRoles() do
-				local roleName = role.name
-				if roleStringsDict[roleName:lower()] then
-					selectedRolesDict[roleName] = role
-					continue
-				end
-				local roleDisplayName = string.lower(role.displayName) or roleName
-				for selectedRoleName, _ in (roleStringsDict) do
-					local nameMatch = string.sub(roleDisplayName, 1, #selectedRoleName) == selectedRoleName
-					local keysMatch = roleName == selectedRoleName
-					if nameMatch or keysMatch then
-						selectedRolesDict[roleName] = role
-					end
-				end
-			end
-			local selectedRoleNames = {}
-			for _, role in selectedRolesDict do
-				table.insert(selectedRoleNames, role)
-			end
-			return selectedRoleNames
+			return parseStringIntoRoles(self, stringToParse)
 		end,
 	}),
+
+	["Role"] = Args.createAliasOf("Roles", register({
+		maxItems = 1,
+		defaultValue = false,
+		parse = function(self, stringToParse, callerUserId)
+			local roles = parseStringIntoRoles(self, stringToParse)
+			local singleRole = roles[1]
+			return singleRole
+		end,
+	})),
 
 	["Text"] = Args.create({
 		inputObject = {
@@ -586,6 +625,23 @@ local items = {
 		end,
 	}),
 
+	["UnfilteredSingleText"] = Args.create({
+		inputObject = {
+			inputType = "TextInput",
+			filterText = false,
+			preventWhitespaces = true,
+		},
+		description = "Accepts a non-endless string (i.e. a string with no whitespace gaps).",
+		defaultValue = "",
+		endlessArg = false,
+		unparse = function(self, text: string)
+			return text
+		end,
+		parse = function(self, textToFilter)
+			return textToFilter
+		end,
+	}),
+
 	["UnfilteredText"] = Args.create({
 		inputObject = {
 			inputType = "TextInput",
@@ -602,6 +658,8 @@ local items = {
 			return stringToParse
 		end,
 	}),
+
+	["EmoteIdOrName"] = Args.createAliasOf("UnfilteredSingleText"),
 
 	["Code"] = Args.createAliasOf("UnfilteredText"),
 
@@ -692,11 +750,19 @@ local items = {
 			if typeof(color) ~= "Color3" then
 				color = Color3.fromRGB(255, 255, 255)
 			end
+			--[[
+			-- Remove this method as not compatable with OptionalColor arg which
+			-- requires colors within command capsule. For example, ';hint(255,0,0) hello!'
+			-- whereas ';hint(255,0,0) hello!' doesn't, because the latter contains
+			-- capsule separators (,) which causes the value to be split into multiple args
 			local round = require(modules.MathUtil.round)
 			local R = round(color.R * 255)
 			local G = round(color.G * 255)
 			local B = round(color.B * 255)
 			local rgbString = `{R},{G},{B}`
+			--]]
+			local colorToHex = require(modules.DataUtil.colorToHex)
+			local rgbString = colorToHex(color)
 			return rgbString
 		end,
 		parse = function(self, stringToParse: string): Color3?
@@ -751,6 +817,7 @@ local items = {
 	["Bool"] = Args.create({
 		inputObject = {
 			inputType = "Toggle",
+			pickerText = "This describes the toggle",
 		},
 		description = "Accepts 'true', 'false', 'yes', 'y', 'no' or 'n' and returns a boolean.",
 		defaultValue = false,
@@ -944,7 +1011,7 @@ local items = {
 		end,
 	}),
 
-	["Tool"] = Args.create({
+	["Tools"] = Args.create({
 		inputObject = {
 			inputType = "ItemSelector",
 			pickerName = "Tools",
@@ -954,9 +1021,9 @@ local items = {
 				return items
 			end,
 		},
-		displayName = "Tool",
-		description = "Accepts a name and returns a copy of any matching tool located in ServerStorage, ReplicatedStorage, StarterPack, Lighting. You MUST Clone this returned tool before using.",
-		defaultValue = false,
+		displayName = "ToolName",
+		description = "Accepts a name and returns a copy of any matching tools located in ServerStorage, ReplicatedStorage, StarterPack, Lighting. You MUST Clone the returned tool before using.",
+		defaultValue = {},
 		unparse = function(self, tool: Instance?)
 			if typeof(tool) == "Instance" or (typeof(tool) == "table" and typeof(tool.Name) == "string") then
 				return tool.Name
@@ -970,28 +1037,17 @@ local items = {
 				return nil
 			end
 			local stringLower = stringToParse:lower()
-			local matchingTool = toolLowerNamesDict[stringLower]
-			if not matchingTool then
-				for toolNameLower, tool in toolLowerNamesDict do
-					if string.sub(toolNameLower, 1, #stringToParse) == stringLower then
-						matchingTool = tool
-						break
-					end
+			local toolsDict = {}
+			for toolNameLower, tool in toolLowerNamesDict do
+				if stringLower == "all" or string.sub(toolNameLower, 1, #stringToParse) == stringLower or toolNameLower:match(stringLower) then
+					toolsDict[tool] = true
 				end
 			end
-			if matchingTool then
-				-- We do this to prevent modifications to the original tool
-				return {
-					Name = matchingTool.Name,
-					Clone = function(self)
-						return matchingTool:Clone()
-					end,
-					Destroy = function(self)
-						-- Do nothing
-					end,
-				}
+			local toolsArray: {any} = {}
+			for tool, _ in toolsDict do
+				table.insert(toolsArray, tool)
 			end
-			return nil
+			return toolsArray
 		end,
 	}),
 

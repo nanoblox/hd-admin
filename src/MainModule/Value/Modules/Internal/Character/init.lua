@@ -10,24 +10,10 @@ local applyDescription = require(modules.OutfitUtil.applyDescription)
 local getDescription = require(modules.OutfitUtil.getDescription)
 local getHead = require(modules.PlayerUtil.getHead)
 local isTypeAsync = require(modules.VerifyUtil.isTypeAsync)
+local outfitBuff = require(modules.OutfitUtil.outfitBuff)
 
 
 -- LOCAL FUNCTIONS
-local function outfitBuff(target, properties: {[string]: any})
-	return function(hasEnded, originalValue: any)
-		local humanoid = getHumanoid(target)
-		if not humanoid then return end
-		local char = target.Character
-		local originalDescription = (originalValue or getDescription(humanoid)) :: any
-		if hasEnded then
-			applyDescription(humanoid, originalDescription)
-		else
-			applyDescription(humanoid, originalValue, properties)
-		end
-		return originalDescription
-	end
-end
-
 local function getAccessoryTypeAsync(integer)
 	if integer <= 0 then
 		return false, "Invalid accessoryID"
@@ -499,21 +485,18 @@ local commands: Task.Commands = {
 		aliases = {"Character", "Become"},
 		args = {"OptionalPlayer", "AnyUser"},
 		run = function(task: Task.Class, args: {any})
-			print("CHAR COMMAND args =", args)
 			local target = unpack(args)
 			local userId = task:getOriginalArg("AnyUser") or 1
 			local Players = game:GetService("Players")
 			local success, newDescription = pcall(function()
 				return Players:GetHumanoidDescriptionFromUserIdAsync(userId)
 			end)
-			print("userId, target =", userId, target, typeof(userId))
-			print("success, newDescription =", success, newDescription)
 			if not success then
 				Prompt.warn(task.caller, tostring(newDescription))
 				return
 			end
 			task:keep("UntilTargetRespawns")
-			task:buff(target, "Outfit", function(hasEnded, originalValue: any)
+			task:buff(target, "Outfit", -10, function(hasEnded, originalValue: any)
 				local humanoid = getHumanoid(target)
 				if not humanoid then return end
 				local originalDescription = (originalValue or getDescription(humanoid)) :: any
@@ -535,7 +518,6 @@ local commands: Task.Commands = {
 		run = function(task: Task.Class, args: {any})
 			local playerToView = unpack(args)
 			local caller = task.caller
-			print("playerToView =", playerToView)
 			if not playerToView or not caller then return end
 			if caller == playerToView then return end
 			task:keep("UntilCallerLeaves")

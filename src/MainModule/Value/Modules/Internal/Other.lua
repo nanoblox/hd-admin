@@ -2,6 +2,7 @@
 local modules = script:FindFirstAncestor("HD Admin").Core.MainModule.Value.Modules
 local Task = require(modules.Objects.Task)
 local getHumanoid = require(modules.PlayerUtil.getHumanoid)
+local Prompt = require(modules.Prompt)
 local commands: Task.Commands = {
 
     --------------------
@@ -21,10 +22,12 @@ local commands: Task.Commands = {
 
     --------------------
 	{
-		name = "Insert",
+		name = "Commands",
+		aliases = {"Cmds"},
 		args = {"Player"},
 		run = function(task: Task.Class, args: {any})
-			print("INSERT =", task.config)
+			local target = unpack(args)
+			Prompt.info(target, "Coming Soon")
 		end
 	},
 

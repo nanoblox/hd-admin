@@ -11,9 +11,9 @@ return Internal.loadCommandGroup("Gear", function(command)
 	------------------------------
 	if command.name == "Gear" then
 		command.config = {
-			Denylist = {0000, 0000}, -- GearIds to block
-			Replacelist = {[0000] = 0000}, -- [GearIdA] = GearIdB, where GearIdA is replaced with GearIdB
-			Allowlist = {}, -- If more than 0 items, only these GearIds will be allowed
+			DenyList = {0000, 0000}, -- GearIds to block
+			AllowList = {--[[0000, 0000--]]}, -- If more than 0 items, only these GearIds will be allowed
+			ReplaceList = {[0000] = 0000}, -- [GearIdA] = GearIdB, where GearIdA is replaced with GearIdB
 		}
 	end
 

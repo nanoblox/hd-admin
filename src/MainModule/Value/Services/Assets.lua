@@ -25,17 +25,25 @@ Remote.new("PromptBulkPurchase", "Function"):onServerInvoke(function(player: Pla
 	if typeof(assetId) ~= "number" then
 		return false, "Invalid assetId number"
 	end
+	local isValid = Assets.isValidAsset(assetId)
+	if not isValid then
+		return false, `BulkPrompting of assetId {assetId} is not permitted`
+	end
 	local success, warning = promptBulkPurchaseAsync(assetId, player)
 	return success, warning
 end)
 
 -- Same for prompting products
-local promptAssetAsync = require(modules.AssetUtil.promptAssetAsync)
+local promptPurchaseAsync = require(modules.AssetUtil.promptPurchaseAsync)
 Remote.new("PromptProduct", "Function"):onServerInvoke(function(player: Player, assetId: unknown)
 	if typeof(assetId) ~= "number" then
 		return false, "Invalid assetId number"
 	end
-	local success, warning = promptAssetAsync(assetId, player)
+	local isValid = Assets.isValidAsset(assetId)
+	if not isValid then
+		return false, `Prompting of assetId {assetId} is not permitted`
+	end
+	local success, warning = promptPurchaseAsync(assetId, player)
 	return success, warning
 end)
 

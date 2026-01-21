@@ -106,11 +106,11 @@ local commands: Task.Commands = {
 		run = function(task: Task.Class, args: {any})
 			local target = unpack(args)
 			local color = task:getOriginalArg("Color") :: Color3 or Color3.fromRGB(255, 0, 0)
-			local promptAssetAsync = require(modules.AssetUtil.promptAssetAsync)
+			local promptPurchaseAsync = require(modules.AssetUtil.promptPurchaseAsync)
 			local ownsAssetAsync = require(modules.AssetUtil.ownsAssetAsync)
 			if not(ownsAssetAsync("LaserEyes", target) or ownsAssetAsync("OldDonor", target)) then
 				task.defer(function()
-					promptAssetAsync("LaserEyes", target)
+					promptPurchaseAsync("LaserEyes", target)
 				end)
 				return
 			end

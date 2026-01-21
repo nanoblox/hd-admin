@@ -1,45 +1,93 @@
 --!strict
+-- LOCAL
 local ORDER = 1000000
 local ROLES = {"_Booster"}
 local PREFIX = "/"
 local HIDE = true
 local modules = script:FindFirstAncestor("HD Admin").Core.MainModule.Value.Modules
 local Task = require(modules.Objects.Task)
+local Prompt = require(modules.Prompt)
 local getHumanoid = require(modules.PlayerUtil.getHumanoid)
-local function createEmoteCommand(emoteName: string, emoteId: number | false, properties: any?)
-	local aliases = (properties and properties.Aliases) or {}
-	for i, alias in aliases do
-		aliases[i] = PREFIX..alias
+local allDances: {any} = {}
+local allEmotas: {any} = {}
+
+
+-- LOCAL FUNCTIONS
+local function updateProperties(command: any)
+	command.name = PREFIX..command.name
+	command.roles = ROLES
+	command.order = ORDER
+	command.hide = HIDE
+	if command.aliases then
+		local newAliases = {}
+		for _, alias in command.aliases do
+			table.insert(newAliases, PREFIX..alias)
+		end
+		command.aliases = newAliases
 	end
-	local command: Task.Command = {
-		name = PREFIX..emoteName,
-		aliases = aliases,
-		roles = ROLES,
-		order = ORDER,
-		args = {"Player"},
-		hide = HIDE,
-		run = function(task: Task.Class, args: {any})
-			print("RAN the booster emote:", emoteName)
+end
+
+local function createEmoteCommand(emoteName: string, emoteId: number | false, properties: any?)
+	
+	-- Group 'dances' and 'actions/emotas'
+	if typeof(emoteId) == "number" then
+		local detail = {emoteName, emoteId, properties or {}}
+		if not properties then
+			table.insert(allEmotas, detail)
+		else
+			local aliases = properties.Aliases
+			if aliases then
+				for _, alias in aliases do
+					if alias:lower():match("dance") then
+						table.insert(allDances, detail)
+					end
+				end
+			end
 		end
-	}
+	end
+	
+	-- This now creates the emote command itself
+	local createEmoteCommand = require(modules.CommandUtil.createEmoteCommand)
+	local command: Task.Command?
+	if typeof(emoteId) == "number" then
+		-- Normal emote command
+		command = createEmoteCommand(emoteName, emoteId, properties)
+	else
+		-- If doesn't contain emoteId, input a callback to randomly generate an emoteId
+		command = createEmoteCommand(emoteName, function()
+			local query = (properties and properties.Query) or "Dance"
+			local targetPool = if query == "Dance" then allDances else allEmotas
+			local randomDetail = targetPool[math.random(1, #targetPool)]
+			return unpack(randomDetail)
+		end)
+	end
+	updateProperties(command)
 	return command
 end
-local function createBundleCommand(bundleName: string, properties: any?)
-	local command: Task.Command = {
-		name = PREFIX..bundleName,
-		roles = ROLES,
-		order = ORDER,
-		args = {"Player"},
-		hide = HIDE,
-		run = function(task: Task.Class, args: {any})
-			print("RAN the booster bundle:", bundleName)
-		end
-	}
+
+local function createBundleCommand(bundleName: string, bundleId: number, properties: any?)
+	local createBundleCommand = require(modules.CommandUtil.createBundleCommand)
+	local command = createBundleCommand(bundleName, bundleId, properties)
+	updateProperties(command)
 	return command
 end
 
 
+-- COMMANDS
 local commands: Task.Commands = {
+
+	--------------------
+	{
+		name = PREFIX.."Commands",
+		aliases = {PREFIX.."Cmds"},
+		roles = ROLES,
+		order = ORDER,
+		args = {"Player"},
+		run = function(task: Task.Class, args: {any})
+			local target = unpack(args)
+			Prompt.info(target, "Coming Soon")
+		end
+	},
 
     --------------------
 	createEmoteCommand("Shake", 132367660388476, {Looped = true});
@@ -54,8 +102,8 @@ local commands: Task.Commands = {
 	createEmoteCommand("Bouncy", 14353423348, {Looped = true, Aliases = {"Dance8"}});
 	createEmoteCommand("TopRock", 3570535774, {Looped = true, Aliases = {"Dance9"}});
 	
-	createEmoteCommand("Dance", false, {Looped = true});
-	createEmoteCommand("Emota", false, {Looped = false});
+	createEmoteCommand("Dance", false, {Query = "Dance"});
+	createEmoteCommand("Emota", false, {Query = "Action"});
 	
 	createEmoteCommand("Cheer", 3994127840);
 	createEmoteCommand("Backflip", 15694504637);
@@ -100,17 +148,50 @@ local commands: Task.Commands = {
 	--------------------
 	{
 		name = PREFIX.."Reset",
+		aliases = {PREFIX.."Re"},
 		roles = ROLES,
 		order = ORDER,
 		args = {"Player"},
 		hide = HIDE,
 		run = function(task: Task.Class, args: {any})
-			-- Reset
+			-- Clears all tasks for player that are outfit or emote related
+			-- (i.e. tasks that contain the "/" OVERRIDE prefix)
+			local player: Player = unpack(args)
+			local targetUserId = player.UserId
+			local tasks = Task.getTasks(nil, targetUserId) :: {Task.Class}
+			local Commands = require(modules.Parent.Services.Commands)
+			for _, targetTask: Task.Class in tasks do
+				local commandKey = targetTask.commandKey
+				local command = Commands.getCommand(commandKey)
+				local commandPrefix = (command and command.prefix) or ""
+				if commandPrefix == PREFIX then
+					targetTask:destroy()
+				end
+			end
 		end
 	},
 
     --------------------
 }
+
+
+-- ADDITIONAL EMOTES
+local forEveryCommand = require(modules.CommandUtil.forEveryCommand)
+local emoteCommands = require(modules.Internal.Emote) :: any
+local indexToInsertAt = 2
+forEveryCommand(emoteCommands, function(command: any)
+	local config = command.config
+	local emoteDetail = config and config.EmoteDetail
+	if emoteDetail then
+		local emoteName: string = emoteDetail[1]
+		local emoteId: number = emoteDetail[2]
+		local properties: any = emoteDetail[3]
+		local newProperties = {Looped = true, PlayVoice = properties.PlayVoice == true}
+		local additionalCommand = createEmoteCommand(emoteName, emoteId, newProperties)
+		table.insert(commands, indexToInsertAt, additionalCommand)
+		indexToInsertAt += 1
+	end
+end)
 
 
 return commands

@@ -5,9 +5,10 @@ local RunService = game:GetService("RunService")
 local isClient = RunService:IsClient()
 return function(commandName: string): any?
 	if isClient then
+		local commandNameLower = string.lower(commandName)
 		local clientUser = require(modules.References.clientUser)
 		local everyone = clientUser.everyone
-		local success, value = everyone:fetchAsync("CommandInfo", commandName)
+		local success, value = everyone:fetchAsync("CommandInfo", commandNameLower)
 		if success and typeof(value) == "table" then
 			return value
 		end

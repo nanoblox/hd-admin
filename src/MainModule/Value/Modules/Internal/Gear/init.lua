@@ -6,48 +6,35 @@ local Prompt = require(modules.Prompt)
 local commands: Task.Commands = {
 
     --------------------
-	{
-		name = "Mute",
+	--[[{
+		name = "Gears",
 		args = {"Player"},
 		run = function(task: Task.Class, args: {any})
-			
+			Prompt.info("Coming soon!")
 		end
-	},
+	},--]]
 
     --------------------
 	{
-		name = "Kick",
-		args = {"Player"},
+		name = "Gear",
+		args = {"Player", "Integer"},
 		run = function(task: Task.Class, args: {any})
-			
+			local target, integer = unpack(args)
+			local loadAssetCommand = require(modules.CommandUtil.loadAssetCommand)
+			loadAssetCommand(Enum.AssetType.Gear, task, integer, function(item: Instance)
+				item.Parent = target.Backpack
+			end)
 		end
 	},
-
+	
     --------------------
 	{
-		name = "Punish",
+		name = "Sword",
 		args = {"Player"},
 		run = function(task: Task.Class, args: {any})
-			
-		end
-	},
-
-    --------------------
-	{
-		name = "Warn",
-		args = {"Player"},
-		run = function(task: Task.Class, args: {any})
-			print("task.config =", task.config)
-			Prompt.warn(task.caller, "Command Coming Soon")
-		end
-	},
-
-    --------------------
-	{
-		name = "Follow",
-		args = {"AnyUser"},
-		run = function(task: Task.Class, args: {any})
-			
+			local target = unpack(args)
+			local toolClone = script.Sword:Clone()
+			toolClone.Parent = target.Backpack
 		end
 	},
 

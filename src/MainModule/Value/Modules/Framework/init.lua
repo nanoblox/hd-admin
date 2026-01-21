@@ -106,6 +106,14 @@ function Framework.getSharedContainer(): Instance?
 	return sharedContainer
 end
 
+function Framework.getSharedValue()
+	local sharedContainer = Framework.getSharedContainer()
+	if not sharedContainer then
+		return nil
+	end
+	return sharedContainer.Core.MainModule:FindFirstChild("Value")
+end
+
 function Framework.getServerContainer(): Instance?
 	local serverService = game:GetService(Framework.serverLocation)
 	local serverContainer = serverService:FindFirstChild(Framework.serverName)

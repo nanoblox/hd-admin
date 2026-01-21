@@ -9,8 +9,13 @@ local Emotes = {}
 local modules = script:FindFirstAncestor("MainModule").Value.Modules
 local AvatarEditorService = game:GetService("AvatarEditorService")
 local AssetService = game:GetService("AssetService")
+local MarketplaceService = game:GetService("MarketplaceService")
 local getEmotesDe = false
 local allEmotes: EmoteTable = {}
+local loadingEmotes: {[string]: boolean} = {}
+local lowestOrder = 0
+local toPascalCase = require(modules.DataUtil.toPascalCase)
+local emoteIdsArray: {number} = {}
 
 
 -- TYPES
@@ -20,6 +25,14 @@ export type Emote = {
 	originalName: string?,
 	order: number,
 	animationId: number,
+	emoteId: number,
+}
+export type IncompleteEmote = {
+	name: string?,
+	originalName: string?,
+	order: number?,
+	animationId: number?,
+	emoteId: number,
 }
 
 
@@ -78,9 +91,8 @@ function Emotes.getEmotesAsync(): (boolean, EmoteTable | string)
 		return false, "Unable to retrieve Emotes"
 	end
 	
-	-- This organies the returned data into a dictionary of emotes
+	-- This organises the returned data into a dictionary of emotes
 	local defaultEmotes = require(script.defaultEmotes) :: EmoteTable
-	local toCamelCase = require(modules.DataUtil.toCamelCase)
 	allEmotes = {}
 	for emoteId, emote in defaultEmotes do
 		allEmotes[emoteId] = emote
@@ -93,7 +105,7 @@ function Emotes.getEmotesAsync(): (boolean, EmoteTable | string)
 		local existing = allEmotes[emoteId]
 		local existingOriginalName = existing and existing.originalName
 		local originalName = existingOriginalName or tostring(result.Name)
-		local name = if existing and existing.name then existing.name else toCamelCase(originalName)
+		local name = if existing and existing.name then existing.name else toPascalCase(originalName)
 		local emote: any = {
 			name = name,
 			originalName = originalName,
@@ -110,30 +122,18 @@ function Emotes.getEmotesAsync(): (boolean, EmoteTable | string)
 		if not emoteIdNumber then
 			continue
 		end
-		Assets.permitAsset(emoteIdNumber)
-		local animationId = emote.animationId
-		if animationId then
-			continue
+		if not emote.emoteId then
+			emote.emoteId = emoteIdNumber
 		end
+		Assets.permitAsset(emoteIdNumber)
 		itemsRemaining += 1
-		task.defer(function()
-			local success, assetOrWarning = pcall(function()
-				return AssetService:LoadAssetAsync(emoteIdNumber)
-			end)
-			itemsRemaining -= 1
-			if success then
-				local animationObject = assetOrWarning:FindFirstChildWhichIsA("Animation", true)
-				local animationString = animationObject and animationObject.AnimationId
-				animationId = animationString and tonumber(string.match(animationString, "%d+"))
-			end
-			if not animationId or not success then
-				if not success then
-					warn(`HD Admin: Failed to load emote animationId ({emoteId}): {assetOrWarning}`)
-				end
+		task.spawn(function()
+			local success, warning = Emotes.addEmoteAsync(emote :: any, true)
+			if not success then
 				allEmotes[emoteId] = nil
-				return
+				warn(`HD Admin: Failed to load emote animationId ({emoteId}): {warning}`)
 			end
-			emote.animationId = animationId
+			itemsRemaining -= 1
 		end)
 	end
 
@@ -145,6 +145,104 @@ function Emotes.getEmotesAsync(): (boolean, EmoteTable | string)
 	User.everyone:set("Emotes", allEmotes)
 
 	return true, allEmotes
+end
+
+function Emotes.getEmoteById(emoteId: number): Emote?
+	Emotes.getEmotesAsync()
+	local emoteIdString = tostring(emoteId)
+	local emote = allEmotes[emoteIdString]
+	return emote
+end
+
+function Emotes.getEmoteByName(emoteName: string, matchLength: boolean?): Emote?
+	Emotes.getEmotesAsync()
+	local emoteNameLower = string.lower(emoteName)
+	for _, emoteToCheck in allEmotes do
+		local toCheckName = string.lower(emoteToCheck.name)
+		local length = if matchLength == true then #emoteNameLower else #toCheckName
+		if toCheckName:sub(1, length) == emoteNameLower then
+			return emoteToCheck
+		end
+	end
+	return nil
+end
+
+function Emotes.getRandomEmote(): Emote?
+	Emotes.getEmotesAsync()
+	if #emoteIdsArray == 0 then
+		return nil
+	end
+	local randomIndex = math.random(1, #emoteIdsArray)
+	local emoteId = emoteIdsArray[randomIndex]
+	return Emotes.getEmoteById(emoteId)
+end
+
+function Emotes.addEmoteAsync(emote: IncompleteEmote, dontRegister: boolean?): (boolean, Emote | string)
+	local emoteId = emote.emoteId
+	if not emoteId then
+		return false, "EmoteId is required"
+	end
+	local stringId = tostring(emoteId)
+	if loadingEmotes[stringId] then
+		repeat task.wait(0.05) until loadingEmotes[stringId] == nil
+	end
+	local alreadyLoadedEmote = not dontRegister and allEmotes[stringId]
+	if alreadyLoadedEmote then
+		return true, alreadyLoadedEmote
+	end
+	local function endLoading()
+		loadingEmotes[stringId] = nil
+	end
+	loadingEmotes[stringId] = true
+	local deepCopyTable = require(modules.TableUtil.deepCopyTable)
+	local completeEmote = deepCopyTable(emote) :: Emote
+	if not completeEmote.animationId or not completeEmote.originalName then
+		local success, assetOrWarning = pcall(function()
+			return AssetService:LoadAssetAsync(emoteId)
+		end)
+		if not completeEmote.animationId then
+			local animationId
+			if success then
+				local animationObject = assetOrWarning:FindFirstChildWhichIsA("Animation", true)
+				local animationString = animationObject and animationObject.AnimationId
+				animationId = animationString and tonumber(string.match(animationString, "%d+"))
+			end
+			if typeof(animationId) ~= "number" or not success then
+				endLoading()
+				return false, `HD Admin: Failed to load emote animationId ({emoteId}): {assetOrWarning}`
+			end
+			completeEmote.animationId = animationId
+		end
+		if not completeEmote.originalName then
+			local success, assetInfo = pcall(function()
+				return MarketplaceService:GetProductInfo(emoteId)
+			end)
+			local assetName = emote.name or "UnknownEmote"
+			if success and assetInfo and assetInfo.Name then
+				assetName = assetInfo.Name :: string
+			end
+			completeEmote.originalName = assetName
+		end
+	end
+	local updatedName = completeEmote.name or completeEmote.originalName
+	local emoteOrder = completeEmote.order
+	completeEmote.name = toPascalCase(updatedName :: string)
+	if emoteOrder and emoteOrder < lowestOrder then
+		lowestOrder = emoteOrder - 1
+	elseif not emoteOrder then
+		lowestOrder -= 1
+		completeEmote.order = lowestOrder
+	end
+	if not dontRegister then
+		local User = require(modules.Objects.User)
+		allEmotes[stringId] = completeEmote
+		User.everyone:set("Emotes", stringId, completeEmote)
+	end
+	local Assets = require(modules.Parent.Services.Assets)
+	Assets.permitAsset(emoteId)
+	endLoading()
+	table.insert(emoteIdsArray, emoteId)
+	return true, completeEmote
 end
 
 

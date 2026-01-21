@@ -16,10 +16,12 @@ local UserInputService = game:GetService("UserInputService")
 local TextChatService = game:GetService("TextChatService")
 local Players = game:GetService("Players")
 local ChatInputBarConfiguration = TextChatService:FindFirstChildOfClass("ChatInputBarConfiguration")
-local movementKeysPressed = {}
+local pressedMovementKeys = {}
 local modules = script:FindFirstAncestor("MainModule").Value.Modules
 local Signal = require(modules.Objects.Signal)
 local frameDragging: Frame? = nil
+local onPressedCallbacks: {[Enum.KeyCode]: {any}} = {}
+local createConnection = require(modules.AssetUtil.createConnection)
 
 
 -- PUBLIC
@@ -58,15 +60,22 @@ UserInputService.InputChanged:Connect(function(input, pressedUI)
 	end
 	checkPressFunctions(input.Position)
 end)
-UserInputService.InputBegan:Connect(function(input, pressedUI)
+UserInputService.InputBegan:Connect(function(input: InputObject, pressedUI)
+	local keyCode = input.KeyCode
 	if (input.UserInputType == CLICK_INPUT or input.UserInputType == TOUCH_INPUT) and (not pressedUI or frameDragging) and not isPressing then
 		isPressing = true
 		checkPressFunctions(input.Position)
 		InputController.pressed:Fire()
 	elseif not isFocused then
-		local direction = MOVEMENT_KEYS[input.KeyCode]
+		local direction = MOVEMENT_KEYS[keyCode]
 		if direction then
-			table.insert(movementKeysPressed, direction)
+			table.insert(pressedMovementKeys, direction)
+		end
+		local callbacksArray = onPressedCallbacks[keyCode]
+		if callbacksArray then
+			for _, callback in callbacksArray do
+				callback(input)
+			end
 		end
 	end
 end)
@@ -75,9 +84,9 @@ UserInputService.InputEnded:Connect(function(input, pressedUI)
 	if input.UserInputType == CLICK_INPUT or input.UserInputType == TOUCH_INPUT then
 		isPressing = false
 	elseif direction then
-		for i,v in pairs(movementKeysPressed) do
+		for i,v in pairs(pressedMovementKeys) do
 			if v == direction then
-				table.remove(movementKeysPressed,i)
+				table.remove(pressedMovementKeys,i)
 			end
 		end
 	end
@@ -95,6 +104,47 @@ end
 
 function InputController.getLastHitPosition()
 	return lastHitPosition
+end
+
+function InputController.getPressedMovementKeys()
+	return pressedMovementKeys
+end
+
+function InputController.onPressed(keyCode: Enum.KeyCode, callback: (InputObject)->())
+	local callbacksArray = onPressedCallbacks[keyCode]
+	if not callbacksArray then
+		callbacksArray = {}
+		onPressedCallbacks[keyCode] = callbacksArray
+	end
+	table.insert(callbacksArray, callback)
+	return createConnection(function()
+		local index = table.find(callbacksArray, callback)
+		if index then
+			table.remove(callbacksArray, index)
+		end
+	end)
+end
+
+function InputController.onDoubleJumped(humanoid: Humanoid, callback: ()->())
+	local jumps = 0
+	local jumpDe = true
+	local signal = humanoid:GetPropertyChangedSignal("Jump")
+	local connection = signal:Connect(function()
+		if jumpDe then
+			jumpDe = false
+			jumps = jumps + 1
+			if jumps == 4 then
+				callback()
+			end
+			task.wait()
+			jumpDe = true
+			task.wait(0.4)
+			jumps = jumps - 1
+		end
+	end)
+	return createConnection(function()
+		connection:Disconnect()
+	end)
 end
 
 function InputController.getHitPoint(rayLength: number?): (Vector3, Instance?)

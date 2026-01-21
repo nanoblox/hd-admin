@@ -12,9 +12,11 @@ export type ArgumentDetail = {
 	parse: any?, --((...any) -> (...any))?,
 	key: string?, -- Used for Arg.get(name)
 	displayName: string?, -- The actual name shown within the UI, defaults to name
+	pickerText: string?, -- Text shown on label next to object
 	defaultValue: any?,
 	minValue: number?,
 	maxValue: number?,
+	maxItems: number?,
 	stepAmount: number?,
 	divAmount: number?,
 	maxCharacters: number?,

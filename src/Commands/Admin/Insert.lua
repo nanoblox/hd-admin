@@ -10,16 +10,27 @@ type Command = Task.Command
 
 return {
 
-    --------------------
-	loadCommand("Insert", function(command: Command)
-		command.order = ORDER
-		command.roles = ROLES
-		command.config = {
-			Denylist = {0000, 0000}, -- AssetIds to block
-			Replacelist = {[0000] = 0000}, -- [IdA] = IdB, where IdA is replaced with IdB
-			Allowlist = {}, -- If more than 0 items, only these AssetIds can be inserted
-		}
-	end),
+	--------------------
+	{
+		name = "Insert",
+		order = ORDER,
+		roles = ROLES,
+		args = {"Integer"},
+		config = {
+			DenyList = {0000, 0000}, -- AssetIds to block
+			AllowList = {--[[0000, 0000--]]}, -- If more than 0 items, only these AssetIds can be inserted
+			ReplaceList = {[0000] = 0000}, -- [IdA] = IdB, where IdA is replaced with IdB
+		},
+		run = function(task: Task.Class, args: {any})
+			local integer = unpack(args)
+			local loadAssetCommand = require(modules.CommandUtil.loadAssetCommand)
+			loadAssetCommand(Enum.AssetType.Model, task, integer, function(item: Instance)
+				task:keep("Indefinitely")
+				task.janitor:add(item)
+				item.Parent = workspace
+			end)
+		end,
+	},
 
     --------------------
 	

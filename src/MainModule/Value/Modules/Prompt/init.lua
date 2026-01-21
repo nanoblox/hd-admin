@@ -18,6 +18,7 @@ local modules = script:FindFirstAncestor("MainModule").Value.Modules
 local Remote = require(modules.Objects.Remote)
 local promptRemote: Remote.Class? = nil
 local createConnection = require(modules.AssetUtil.createConnection)
+local recentMessages: {[string]: {}} = {}
 
 
 -- LOCAL FUNCTIONS
@@ -73,6 +74,26 @@ local function handleClient(promptType: PromptType, clientCallback: (text: strin
 	if options and typeof(options) ~= "table" then
 		error("HD Admin: Third argument must be a PromptOptions table or empty (on the server)")
 	end
+	-- If an identical message was recently sent, ignore. This is to prevent
+	-- spam, often for commands like ;gear where the caller is warned if a gear
+	-- id is invalid (e.g. ';gear all TEST' runs the same error to the caller
+	-- for however many players there are in the server)
+	local recentlyReceived = recentMessages[player.Name]
+	if not recentlyReceived then
+		recentlyReceived = {}
+		recentMessages[player.Name] = recentlyReceived
+	end
+	if recentlyReceived[text] then
+		return createConnection(function() end)
+	end
+	recentlyReceived[text] = true
+	task.delay(1, function()
+		local getTableSize = require(modules.TableUtil.getTableSize)
+		recentlyReceived[text] = nil
+		if getTableSize(recentlyReceived) == 0 then
+			recentMessages[player.Name] = nil
+		end
+	end)
 	addInUserInfo(options)
 	local Remote = require(modules.Objects.Remote)
 	if not promptRemote then
@@ -142,7 +163,6 @@ function Prompt.message(...: Player? | string | PromptOptions?): Disconnect
 		
 		------------ UI CODE ------------
 		warn(`💬 HD Admin Message: {text}`) -- Do client stuff
-		print("options =", options)
 		return -- Notice object
 		---------------------------------
 

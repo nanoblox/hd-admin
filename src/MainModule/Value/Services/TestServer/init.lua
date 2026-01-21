@@ -82,9 +82,7 @@ local function testAreValuesEqual()
 end
 --testAreValuesEqual()
 
-print("GET OWNER INFO (1)")
 local ownerInfo = require(modules.References.ownerInfo)
-print("ownerInfo =", ownerInfo)
-print("GET OWNER INFO (2)")
+--print("ownerInfo =", ownerInfo)
 
 return TestService

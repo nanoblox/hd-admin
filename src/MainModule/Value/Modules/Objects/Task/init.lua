@@ -45,6 +45,19 @@ function Task.getTask(UID: string?): Class?
 	return tasks[tostring(UID)]
 end
 
+function Task.getTasksByCallerId(callerUserId: number): {Class}
+	local tasksToReturn = {} :: {any}
+	local stringCallerUserId = tostring(callerUserId)
+	for _, task in tasks do
+		local ourCallerUserId = tostring(task.callerUserId)
+		if ourCallerUserId == stringCallerUserId then
+			table.insert(tasksToReturn, task)
+		end
+	end
+	tasksToReturn = tasksToReturn :: {Class}
+	return tasksToReturn
+end
+
 function Task.getTasks(commandKey: string?, targetUserId: number?): {Class}
 	local tasksToReturn = {} :: {any}
 	local commandKeyLower = if commandKey then commandKey:lower() else nil
@@ -110,13 +123,13 @@ function Task.construct(properties: Properties)
 		server = TaskServer.new(UID),
 		extra = {},
 		config = config,
+		commandKey = commandKey:lower(),
 
 		-- Private
 		isPaused = false,
 		pauseTime = 0,
 		holdsToResume = {} :: {any},
 		targetUserId = targetUserId,
-		commandKey = commandKey:lower(),
 		args = properties.args,
 		modifiers = properties.modifiers,
 		qualifiers = properties.qualifiers,
@@ -496,6 +509,14 @@ function Task.updateBuffs(self: Task, player: BuffPlayer?, group: BuffGroup?, ig
 	local originalValue = nil
 	for i = totalToCall, 1, -1 do
 		local buff = sortedBuffs[i]
+		local thisOriginalValue = buff.originalValue
+		if thisOriginalValue then
+			originalValue = thisOriginalValue
+			break
+		end
+	end
+	for i = totalToCall, 1, -1 do
+		local buff = sortedBuffs[i]
 		local hasEnded = false
 		local isTop = i == 1
 		local newOriginalValue = self:callBuff(buff, hasEnded, originalValue, isTop)
@@ -753,7 +774,6 @@ end
 
 function Task.tween(self: Task, instance: Instance, tweenInfo: TweenInfo, propertyTable: {[any]: any})
 	local TweenService = game:GetService("TweenService")
-local first = require(script.Parent.Parent.Parent.Packages[".pesde"]["csqrl_sift@0.0.9"].sift.Array.first)
 	local tween = TweenService:Create(instance, tweenInfo, propertyTable) :: Tween
 	if not self.isActive then
 		tween:Destroy()
@@ -767,6 +787,7 @@ local first = require(script.Parent.Parent.Parent.Packages[".pesde"]["csqrl_sift
 	local function cleanup()
 		if not hasCleaned then
 			hasCleaned = true
+			tween:Cancel()
 			tween:Destroy()
 			self.activeTweens[tween] = nil
 		end
@@ -781,6 +802,28 @@ function Task.onEnded(self: Task, callback: () -> ())
 	if self.isActive then
 		self.janitor:add(callback)
 	end
+end
+
+function Task.onEndedForGood(self: Task, callback: () -> ())
+	-- This is when the task dies AND if no other identical is applied right after,
+	-- so there's a chance that the callback won't run at all
+	-- This is useful for commands like ;serverLock and ;chatTag which want to display
+	-- a notice when the command finishes EXCEPT when the command is immediately re-applied
+	-- after, preventing a "Ended" then "Started" spam
+	local target = self.target
+	local targetUserId = target and target.UserId
+	local commandKey = self.commandKey
+	self:onEnded(function()
+		task.delay(0.1, function()
+			if commandKey then
+				local tasks = Task.getTasks(commandKey, targetUserId)
+				if #tasks > 0 then
+					return
+				end
+			end
+			callback()
+		end)
+	end)
 end
 
 function Task.destroy(self: Task)
@@ -900,6 +943,7 @@ type TaskFunctions = {
     new: (Properties) -> Class,
     getTask: (string?) -> Task?,
     getTasks: (string?, number?) -> {Task},
+	getTasksByCallerId: (number) -> {Task},
 }
 
 type TaskMethods = {
@@ -917,6 +961,7 @@ type TaskMethods = {
 	tween: (self: Class, instance: Instance, tweenInfo: TweenInfo, propertyTable: {[any]: any}) -> Tween,
     getOriginalArg: (self: Class, argNameOrIndex: string | number) -> any,
     onEnded: (self: Class, callback: () -> ()) -> any,
+	onEndedForGood: (self: Class, callback: () -> ()) -> any,
     destroy: (self: Class) -> any,
 }
 
@@ -931,6 +976,7 @@ type TaskProperties = {
 	server: TaskServer.Class,
 	extra: {[string]: any},
 	config: {[string]: any},
+	commandKey: string,
 }
 
 export type Class = TaskMethods & TaskProperties

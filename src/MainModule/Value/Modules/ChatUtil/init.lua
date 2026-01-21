@@ -1,0 +1,3 @@
+local ChatUtil = {}
+
+return ChatUtil

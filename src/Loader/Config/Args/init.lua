@@ -39,9 +39,19 @@ return function(Args)
 			maxValue = 60,
 		})),
 		
+		["FlightSpeed"] = Args.createAliasOf("Number", register({
+			-- This can be exceeded if a user has a role with 'bypassLimits' enabled
+			-- This is used for Emotes, etc
+			minValue = 1,
+			maxValue = 10000,
+			stepAmount = 1,
+			defaultValue = 50,
+		})),
+
 		["AnimationSpeed"] = Args.createAliasOf("Number", register({
 			-- This can be exceeded if a user has a role with 'bypassLimits' enabled
-			minValue = 0,
+			-- This is used for Emotes, etc
+			minValue = 0.5,
 			maxValue = 2,
 			stepAmount = 0.1,
 			defaultValue = 1,
@@ -60,6 +70,11 @@ return function(Args)
 				optionsArray = {"Infinite", "Time"}
 			},
 		})),
+
+		--[[["ClearEverythingBool"] = Args.createAliasOf("Bool", register({
+			pickerText = "Clear Everything? (i.e. tasks also with targets)",
+			defaultValue = false,
+		})),--]]
 
 	}
 end

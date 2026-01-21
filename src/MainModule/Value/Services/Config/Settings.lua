@@ -62,7 +62,7 @@ local Settings = {
 			RequestsPerSecond = 10, -- Maximum message requests that can be parsed per second per second. When disabled, this is still capped to 20.
 			CommandsPerMinute = 60, -- Maximum number of commands a player can run per minute
 		},
-
+		
 		-- Colors to be used for commands with the Color arg
 		CommandColors = {
 			["Red"]	= Color3.fromRGB(255, 0, 0),
@@ -90,7 +90,7 @@ local Settings = {
 			{"Black", Color3.fromRGB(35, 39, 47)},
 		},
 		
-		-- Moderation, Utility & Saving
+		-- Other Settings
 		MinimumAccountAge = 0, -- Kicks accounts younger than x days (0 to disable)
 		DisableBoosterBundles = false, -- This disables the Booster bundles. Please keep enabled to support the development of HD Admin.
 		DataGroupName = "HD" -- CHANGING THIS WILL RESET ALL DATA. Only change if you wish to reset all saved data within HD Admin. For example, player data with a DataGroupName of 'HD' is structured as 'HDAdmin/HD/PlayerStore/[USER_ID]/Profile'

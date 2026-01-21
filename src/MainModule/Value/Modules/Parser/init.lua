@@ -241,9 +241,10 @@ function Parser.unparse(commandName: string, modifiers: {string}, ...: any): str
 	local ParserSettings = require(modules.Parser.ParserSettings)
 	local endlessArgPattern = ParserSettings.EndlessArgPattern
 	local totalArgs = #commandArgs
+	local commandCapsuleArray = {}
 	forEveryArg(function(argInfo, i)
 		local stringValue = ""
-		local unparse = argInfo and argInfo.unparse	
+		local unparse = argInfo and argInfo.unparse
 		if unparse then
 			local newStringValue = argInfo:unparse(valuesToUnParse[i])
 			if typeof(newStringValue) == "string" then
@@ -253,7 +254,17 @@ function Parser.unparse(commandName: string, modifiers: {string}, ...: any): str
 				stringValue = newStringValue
 			end
 		end
-		table.insert(parsedArray, stringValue :: string)
+		if argInfo.playerArg and stringValue == "" then
+			return
+		end
+		if argInfo.hidden == true and not argInfo.playerArg then
+			-- We add to command capsule (e.g. ;paint(255,0,0) me) if is
+			-- an optionalArgument but not an optional player argument,
+			-- (such as 'OptionalColor' in the 'Hint' command)
+			table.insert(commandCapsuleArray, stringValue :: string)
+		else
+			table.insert(parsedArray, stringValue :: string)
+		end
 	end)
 
 	-- Next, we want to build the command string, which includes the command name
@@ -277,9 +288,10 @@ function Parser.unparse(commandName: string, modifiers: {string}, ...: any): str
 	local spaceSeparator = ParserSettings.SpaceSeparator
 	local unparsedArgsSpacedOut = table.concat(parsedArray, spaceSeparator)
 	local commandStart = table.concat(commandStartArray, "")
+	local commandCapsule = Parser.addCapsule("", commandCapsuleArray)
 	local getYouSetting = require(modules.CommandUtil.getYouSetting)
 	local prefix = getYouSetting("Prefix") or ""
-	local unparsedString = `{prefix}{commandStart}{spaceSeparator}{unparsedArgsSpacedOut}`
+	local unparsedString = `{prefix}{commandStart}{commandCapsule}{spaceSeparator}{unparsedArgsSpacedOut}`
 	return unparsedString
 end
 

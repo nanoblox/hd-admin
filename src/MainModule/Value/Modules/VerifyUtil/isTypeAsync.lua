@@ -19,7 +19,6 @@ return function(integer: unknown, assetType: Enum.AssetType | Enum.BundleType): 
 	if not success then
 		return false, tostring(productInfo)
 	end
-	print("productInfo =", productInfo)
 	if enumType == Enum.BundleType then
 		if productInfo.BundleType == assetType.Name then
 			return true, productInfo

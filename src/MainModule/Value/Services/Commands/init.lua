@@ -59,96 +59,103 @@ function Commands.updateCommands()
 	commandPrefixes = {}
 	local forEveryCommand = require(modules.CommandUtil.forEveryCommand)
 	local creationOrder = 0
-	for _, commandModule in pairs(script:GetDescendants()) do
-		if not commandModule:IsA("ModuleScript") then
-			continue
-		end
-		local commandsInside = require(commandModule) :: any
-		local rolesToAdd = commandModule:GetAttribute("RolesToAdd")
-		local rolesArray = if typeof(rolesToAdd) == "string" then string.split(rolesToAdd, " ||| ") else {}
-		if rolesToAdd then
-			commandModule:SetAttribute("RolesToAdd", nil)
-		end
-		forEveryCommand(commandsInside, function(command: any)
-			local prefixes = command.prefixes
-			local commandName = command.name
-			if typeof(commandName) ~= "string" then
-				return
+	local function getChildren(parentContainer: Instance)
+		for _, commandModule in parentContainer:GetChildren() do
+			if commandModule:IsA("Folder") then
+				getChildren(commandModule)
+				continue
 			end
-
-			-- Add roles from the Config roles the command was originally under
+			if not commandModule:IsA("ModuleScript") then
+				continue
+			end
+			local commandsInside = require(commandModule) :: any
+			local rolesToAdd = commandModule:GetAttribute("RolesToAdd")
+			local rolesArray = if typeof(rolesToAdd) == "string" then string.split(rolesToAdd, " ||| ") else {}
 			if rolesToAdd then
-				local newRoles = {}
-				for _, item in rolesArray do
-					-- Add the primary (config) roles first
-					table.insert(newRoles, item)
+				commandModule:SetAttribute("RolesToAdd", nil)
+			end
+			forEveryCommand(commandsInside, function(command: any)
+				local prefixes = command.prefixes
+				local commandName = command.name
+				if typeof(commandName) ~= "string" then
+					return
 				end
-				if typeof(command.roles) == "table" then
-					for _, item in command.roles do
-						-- Add the already existing roles second
+
+				-- Add roles from the Config roles the command was originally under
+				if rolesToAdd then
+					local newRoles = {}
+					for _, item in rolesArray do
+						-- Add the primary (config) roles first
 						table.insert(newRoles, item)
 					end
-				end
-				command.roles = newRoles
-			end
-			
-			-- If command contains a custom prefix
-			local commandNameLower = commandName:lower()
-			if typeof(prefixes) == "table" then
-				for _, prefix in prefixes do
-					if typeof(prefix) == "string" then
-						commandPrefixes[prefix] = true
-					end
-				end
-			end
-			creationOrder += 1
-			command.creationOrder = creationOrder
-			command.name = commandName
-			command.key = commandNameLower
-			table.insert(commandsArray, command :: Command)
-			keyToCommand[commandNameLower] = command
-			local function registerNameOrAlias(nameOrAlias: string?, isOverride: boolean?)
-				if typeof(nameOrAlias) ~= "string" then
-					return false
-				end
-				local writeTo = lowerCaseNameAndAliasCommandsDictionary
-				local nameOrAliasLower = nameOrAlias:lower()
-				local firstTime = writeTo[nameOrAliasLower] == nil
-				if not isOverride then
-					writeTo[nameOrAliasLower] = command
-				end
-				if firstTime then
-					table.insert(sortedNameAndAliasWithOverrideLengthArray, nameOrAliasLower)
-				end
-				return true
-			end
-			registerNameOrAlias(commandName)
-			local function registerAliases(array, isOverride)
-				if typeof(array) == "table" then
-					for _, alias in array do
-						if isOverride then
-							local overrideAlias = string.sub(alias, 2)
-							alias = overrideAlias
+					if typeof(command.roles) == "table" then
+						for _, item in command.roles do
+							-- Add the already existing roles second
+							table.insert(newRoles, item)
 						end
-						registerNameOrAlias(alias, isOverride)
+					end
+					command.roles = newRoles
+				end
+				
+				-- If command contains a custom prefix
+				local commandNameLower = commandName:lower()
+				if typeof(prefixes) == "table" then
+					for _, prefix in prefixes do
+						if typeof(prefix) == "string" then
+							commandPrefixes[prefix] = true
+						end
 					end
 				end
-			end
-			registerAliases(command.aliases)
-			registerAliases(command.undoAliases)
-			-- If command is an override (e.g. it's name contains a validPrefix, e.g. /helicopter)
-			local firstChar = string.sub(commandName, 1, 1)
-			local isValidPrefix = require(modules.CommandUtil.isValidPrefix)
-			if isValidPrefix(firstChar) then
-				local overrideName = string.sub(commandName, 2)
-				commandPrefixes[firstChar] = true
-				command.prefix = firstChar
-				command.name = overrideName
-				registerNameOrAlias(overrideName, true) -- Also register override so that it can be detected in parser
-				registerAliases(command.aliases, true) -- Same as line above, register for parser
-			end
-		end)
+				creationOrder += 1
+				command.creationOrder = creationOrder
+				command.name = commandName
+				command.key = commandNameLower
+				table.insert(commandsArray, command :: Command)
+				keyToCommand[commandNameLower] = command
+				local function registerNameOrAlias(nameOrAlias: string?, isOverride: boolean?)
+					if typeof(nameOrAlias) ~= "string" then
+						return false
+					end
+					local writeTo = lowerCaseNameAndAliasCommandsDictionary
+					local nameOrAliasLower = nameOrAlias:lower()
+					local firstTime = writeTo[nameOrAliasLower] == nil
+					if not isOverride then
+						writeTo[nameOrAliasLower] = command
+					end
+					if firstTime then
+						table.insert(sortedNameAndAliasWithOverrideLengthArray, nameOrAliasLower)
+					end
+					return true
+				end
+				registerNameOrAlias(commandName)
+				local function registerAliases(array, isOverride)
+					if typeof(array) == "table" then
+						for _, alias in array do
+							if isOverride then
+								local overrideAlias = string.sub(alias, 2)
+								alias = overrideAlias
+							end
+							registerNameOrAlias(alias, isOverride)
+						end
+					end
+				end
+				registerAliases(command.aliases)
+				registerAliases(command.undoAliases)
+				-- If command is an override (e.g. it's name contains a validPrefix, e.g. /helicopter)
+				local firstChar = string.sub(commandName, 1, 1)
+				local isValidPrefix = require(modules.CommandUtil.isValidPrefix)
+				if isValidPrefix(firstChar) then
+					local overrideName = string.sub(commandName, 2)
+					commandPrefixes[firstChar] = true
+					command.prefix = firstChar
+					command.name = overrideName
+					registerNameOrAlias(overrideName, true) -- Also register override so that it can be detected in parser
+					registerAliases(command.aliases, true) -- Same as line above, register for parser
+				end
+			end)
+		end
 	end
+	getChildren(script)
 	table.sort(sortedNameAndAliasWithOverrideLengthArray, function(a: string, b: string): boolean
 		if #a == #b then
 			return a < b

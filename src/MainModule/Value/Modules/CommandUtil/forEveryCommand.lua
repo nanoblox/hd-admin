@@ -10,7 +10,7 @@ return function(moduleReference, callback)
 		-- If it's an array of commands, loop through and call callback for each one
 		if #moduleReference > 0 then
 			for _, command in moduleReference do
-				 checkIfCommand(command)
+				checkIfCommand(command)
 			end
 		else
 			-- Otherwise just call the callback once with the table

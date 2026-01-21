@@ -41,8 +41,8 @@
               "Modules": {
                 "$path": "src/MainModule/Value/Modules"
               },
-			  "Items": {
-                 "$path": "src/MainModule/Value/Items"
+			  "Assets": {
+                 "$path": "src/MainModule/Value/Assets"
               },
               "Packages": {
                 "$path": "roblox_packages"

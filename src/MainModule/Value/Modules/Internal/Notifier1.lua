@@ -10,7 +10,7 @@ local commands: Task.Commands = {
 	{
 		name = "Hint",
 		aliases = {"H"},
-		args = {"OptionalPlayers", "OptionalColor", "Text"},
+		args = {"OptionalPlayers", "OptionalColor", "Text"}, --
 		run = function(task: Task.Class, args: {any})
 			local targets = task:getOriginalArg("OptionalPlayers") or Players:GetPlayers()
 			local color = task:getOriginalArg("OptionalColor")

@@ -70,6 +70,7 @@ return function(humanoid: Humanoid?, baseDescription: HumanoidDescription? | any
 	task.defer(function()
 		local accessories = desc:GetAccessories(false)
 		local accessoryChanges = 0
+		local baseProperties = {}
 		for _, otherProperties in collection.array do
 			for pName, pValue in otherProperties :: any do
 				if pName == "_Accessories" and type(pValue) == "table" then
@@ -83,11 +84,16 @@ return function(humanoid: Humanoid?, baseDescription: HumanoidDescription? | any
 					accessories = {}
 					continue
 				end
-				desc[pName] = pValue
+				baseProperties[pName] = pValue
 			end
 		end
 		if accessoryChanges > 0 then
 			desc:SetAccessories(accessories, true)
+		end
+		for pName, pValue in baseProperties do
+			-- We apply these after so that core accessories, like .HatAccessory, etc
+			-- aren't eliminated in :SetAccessories above
+			desc[pName] = pValue
 		end
 		deferringHumanoids[humanoid] = nil
 		pcall(function()
