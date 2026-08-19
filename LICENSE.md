@@ -1,74 +1,79 @@
-# Business Source License 1.1 (BSL-1.1) for HD Admin
+# HD Admin Source-Available License
 
-- **Licensor:** Nanoblox Limited
+**License Version 1.0, August 2026**
+
+- **Licensor:** Ben Horton (known as ForeverHD), trading as Nanoblox, and his successors and assigns
 - **Software:** HD Admin
-- **Creator:** ForeverHD (Ben Horton)
-- **Core Package - “Core”:** The Core directory, including but not limited to the MainModule, Commands, system logic, framework code and UI components
+- **Contact:** ben@nanoblox.com
 
 ----
 
-### 1. Grant of License
+### Summary
 
-Under this License, you are granted a **limited, non-exclusive, non-transferable** right to use and interact with the HD Admin software, subject to the following conditions:
+This summary is here to help you understand the License at a glance. It is not part of the License and does not replace it.
 
+- ✅ **Use HD Admin freely in any Roblox experience** through the official model
+- ✅ **Customise it via Config**, including Settings, Roles, Commands and Themes
+- ✅ **Extend it via the API**
+- 🚫 **No redistributing or reuploading the Core**, on or off Roblox
+- 🚫 **No using Core code in other products**, including Creator Store models and plugins
+- 🚫 **No using modified versions of the Core outside Private Experiences**
+- ✍️ **Sign the Contribution Agreement before contributing**
+- 📧 **For anything else, ask:** ben@nanoblox.com
 
-### 2. Restrictions on the Core
+----
 
-- **You may not distribute or create derivative works** of the Core without **explicit permission from the creator**.
+### 1. Definitions
 
-- **You may not use Core package code (including "Commands") in any other software** outside of the official HD Admin model without **explicit permission from the creator**.
+- **"Official Model"**: the HD Admin model published by the Licensor on the Roblox Creator Store, together with the code it loads at runtime from the Licensor's Roblox assets.
+- **"Core"**: all source code, modules, assets and user interfaces that make up HD Admin, including the MainModule and the loader, but excluding Your Content.
+- **"Config"**: the configuration surface of the Official Model. This is the Config instance and its descendants, including Settings, Roles, Commands and Themes.
+- **"API"**: the ServerAPI, ClientAPI and CommandAPI modules under Core, together with the objects and types they provide (such as the task object), as documented at [hdadmin.com](https://hdadmin.com).
+- **"Your Content"**: the settings, configurations, custom commands and other content you create within Config or through the API.
+- **"Private Experience"**: an experience on roblox.com whose privacy is set to Private in the Roblox Creator Dashboard.
 
-- **You may only modify and use modified versions of the Core** within experiences on roblox.com with Privacy set to **“Private”** under Settings within the Roblox Creator Dashboard or with **explicit permission from the creator**.
+### 2. What you may do
 
-- Any attempt to remove or circumvent these restrictions **automatically revokes** this license.
+The Licensor grants you a free, worldwide, non-exclusive, non-transferable license to:
 
+1. Use HD Admin within experiences on Roblox through the Official Model
+2. Customise HD Admin through Config and the API, and create Your Content
+3. Read the Core's source code
+4. Modify the Core, and use those modified versions, only within Private Experiences
 
-### 3. Permitted Use Cases
+Your Content belongs to you. This License claims no ownership over it.
 
-**✅ Extending HD Admin via Settings & Configurations**
+### 3. What you may not do
 
-- You are permitted to modify **Settings, and Config (Configurations) and its descendants**, located within the **official HD Admin model** to extend or customize its functionality.
+Unless the Licensor gives you written permission first, you may not:
 
-**✅ Using the HD Admin API**
+- Redistribute, reupload, republish or sell the Core, in whole or in part, modified or unmodified, anywhere. This includes the Roblox Creator Store, GitHub and any other platform
+- Make the Core loadable through any asset, model, plugin or module other than the Official Model
+- Use the Core or any part of it inside other software or products, including anything that competes with or substitutes for HD Admin
+- Remove or alter this License, or misrepresent where the Core came from
 
-- You may use the **HD Admin API** (as documented in the official repository) to modify or extend application behavior programmatically.
+### 4. Roblox
 
-**✅ In Private Roblox Experiences**
+Your use of the Roblox platform is governed by Roblox's own Terms of Use, which are separate from this License. Nothing in this License limits any rights Roblox grants or requires as the operator of the platform.
 
-- You may modify and use modified version of the Core **only in experiences on roblox.com with Privacy set to “Private”** under Settings within the Roblox Creator Dashboard.
+### 5. Termination
 
+Your rights under this License end automatically if you breach it. The Licensor may restore them at his discretion. Sections 6 to 8 survive termination.
 
-### 4. Contribution Agreement Requirement
+### 6. Feedback
 
-Before contributing to the **official HD Admin repositor**y (https://github.com/nanoblox/hd-admin), you must sign a **Contribution Agreement (CA)**, ensuring:
-- You have the **legal right** to submit contributions.
-- Your contributions adhere to this **Business Source License**.
+If you share ideas or suggestions for HD Admin, the Licensor may use them freely, without restriction or payment.
 
-Failure to sign the CA **revokes** the right to contribute.
+### 7. No warranty
 
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND. TO THE MAXIMUM EXTENT PERMITTED BY LAW, THE LICENSOR WILL NOT BE LIABLE FOR ANY DAMAGES ARISING FROM YOUR USE OF, OR INABILITY TO USE, THE SOFTWARE. Nothing in this License excludes or limits liability that cannot be excluded or limited under applicable law, including liability for death or personal injury caused by negligence, or for fraud.
 
-### 5. Change Date & Future Licensing
+### 8. Governing law
 
-On or before **1st January 2030**, the Licensor **may** choose to transition HD Admin to an **open-source license** (such as MIT or Apache 2.0). Until then, this B**usiness Source License** remains in effect.
+This License is governed by the law of England and Wales, and the courts of England and Wales have non-exclusive jurisdiction over any dispute. If you are a consumer, you keep the benefit of any mandatory protections of the law of the country you live in, and you may bring proceedings there.
 
+### 9. Contributing and permissions
 
-### 6. Disclaimer & Liability
+Contributions to HD Admin require a signed Contribution Agreement. See [CONTRIBUTING.md](CONTRIBUTING.md) in the official repository.
 
-THIS SOFTWARE IS PROVIDED "AS IS," WITHOUT WARRANTY OF ANY KIND. THE LICENSOR IS NOT LIABLE FOR ANY DAMAGES ARISING FROM THE USE OR INABILITY TO USE THE SOFTWARE.
-
-
------
-
-### Summary of Key Rules:
-
-- **🚫 No redistributing of the Core**
-- **🚫 No using Core package code in other software**
-- **🚫 No modifications to the Core except within private experiences**
-- **✅ You may configure HD Admin via Settings & Config**
-- **✅ You may use the HD Admin API to extend behavior**
-- **✍️ You must sign a CA before contributing**
-
------
-
-### Modify Core Package
-Are you interested in modifying the Core Package in a large public experience? Contact us directly by joining the [HD Admin Community Server](https://discord.gg/MkSVp9Gusu) and [opening a Private Inquiry ticket](https://discord.com/channels/372523042275852288/1384583439235420191).
+Would you like to modify the Core in a public experience, or use it somewhere this License does not allow? Email **ben@nanoblox.com**, or join the [HD Admin Community Server](https://discord.gg/MkSVp9Gusu) and open a Private Inquiry ticket.
