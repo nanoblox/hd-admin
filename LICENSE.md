@@ -15,9 +15,10 @@ This summary is here to help you understand the License at a glance. It is not p
 - ✅ **Use HD Admin freely in any Roblox experience** through the official model
 - ✅ **Customise it via Config**, including Settings, Roles, Commands and Themes
 - ✅ **Extend it via the API**
+- 🚫 **No referencing the MainModule's internals directly**, Config and the API are the only entry points
 - 🚫 **No redistributing or reuploading the Core**, on or off Roblox
 - 🚫 **No using Core code in other products**, including Creator Store models and plugins
-- 🚫 **No using modified versions of the Core outside Private Experiences**
+- 🚫 **No using modified versions of the MainModule outside Private Experiences**
 - ✍️ **Sign the Contribution Agreement before contributing**
 - 📧 **For anything else, ask:** ben@nanoblox.com
 
@@ -25,8 +26,9 @@ This summary is here to help you understand the License at a glance. It is not p
 
 ### 1. Definitions
 
-- **"Official Model"**: the HD Admin model published by the Licensor on the Roblox Creator Store, together with the code it loads at runtime from the Licensor's Roblox assets.
+- **"Official Model"**: the HD Admin model published by the Licensor on the Roblox Creator Store, together with any code it retrieves from the Licensor's Roblox assets while running, such as the latest MainModule.
 - **"Core"**: all source code, modules, assets and user interfaces that make up HD Admin, including the MainModule and the loader, but excluding Your Content.
+- **"MainModule"**: the part of the Core containing HD Admin's framework, services, commands and user interfaces. The Official Model retrieves the latest version of it from the Licensor's Roblox assets, or falls back to its own bundled copy.
 - **"Config"**: the configuration surface of the Official Model. This is the Config instance and its descendants, including Settings, Roles, Commands and Themes.
 - **"API"**: the ServerAPI, ClientAPI and CommandAPI modules under Core, together with the objects and types they provide (such as the task object), as documented at [hdadmin.com](https://hdadmin.com).
 - **"Your Content"**: the settings, configurations, custom commands and other content you create within Config or through the API.
@@ -39,7 +41,8 @@ The Licensor grants you a free, worldwide, non-exclusive, non-transferable licen
 1. Use HD Admin within experiences on Roblox through the Official Model
 2. Customise HD Admin through Config and the API, and create Your Content
 3. Read the Core's source code
-4. Modify the Core, and use those modified versions, only within Private Experiences
+4. Disable or remove parts of the Official Model within your own experience, such as turning off the Loader
+5. Within Private Experiences only, modify the MainModule and use those modified versions
 
 Your Content belongs to you. This License claims no ownership over it.
 
@@ -49,6 +52,7 @@ Unless the Licensor gives you written permission first, you may not:
 
 - Redistribute, reupload, republish or sell the Core, in whole or in part, modified or unmodified, anywhere. This includes the Roblox Creator Store, GitHub and any other platform
 - Make the Core loadable through any asset, model, plugin or module other than the Official Model
+- Reference, require or depend on anything inside the MainModule directly from your own code. Config and the API are the only surfaces you may build against, unless you are within a Private Experience
 - Use the Core or any part of it inside other software or products, including anything that competes with or substitutes for HD Admin
 - Remove or alter this License, or misrepresent where the Core came from
 
@@ -76,4 +80,4 @@ This License is governed by the law of England and Wales, and the courts of Engl
 
 Contributions to HD Admin require a signed Contribution Agreement. See [CONTRIBUTING.md](CONTRIBUTING.md) in the official repository.
 
-Would you like to modify the Core in a public experience, or use it somewhere this License does not allow? Email **ben@nanoblox.com**, or join the [HD Admin Community Server](https://discord.gg/MkSVp9Gusu) and open a Private Inquiry ticket.
+Would you like to modify the MainModule in a public experience, or use it somewhere this License does not allow? Email **ben@nanoblox.com**, or join the [HD Admin Community Server](https://discord.gg/MkSVp9Gusu) and open a Private Inquiry ticket.
