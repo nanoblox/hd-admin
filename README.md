@@ -4,9 +4,13 @@
 
 # HD Admin
 
-HD Admin provides admin commands for your Roblox game. It's the most installed admin system on Roblox with 35M+ installs across 1M+ experiences since 2017. It's built with the help of some of the largest games on the platform to scale past 100,000 live servers.
-
 **Official website: [hdadmin.com](https://hdadmin.com/)** · [Install guide](https://hdadmin.com/install/) · [Docs](https://hdadmin.com/whats-new-in-v2/) · [Every command](https://hdadmin.com/roblox-admin-commands/) · [Dashboard](https://dashboard.hdadmin.com/) · [Forum](https://forum.hdadmin.com/) · [Store](https://store.hdadmin.com/)
+
+## Contributing
+
+Please share all your suggestions, bug reports and questions at the [HD Admin Forum](https://forum.hdadmin.com/) as this is now our central place for handling and building on feedback. Pull requests are limited to the HD Admin team.
+
+If you find a security issue or exploit, please [report it as a private bug report at the HD Admin Forum](https://forum.hdadmin.com/new?type=bug) rather than posting it publicly.
 
 ## What you get
 
@@ -19,8 +23,7 @@ HD Admin provides admin commands for your Roblox game. It's the most installed a
 - You earn 100% (minus Roblox's cut) from the gamepasses and products that you connect to your HD Admin roles, and when players buy HD Admin UGC within your game, 40% of automatically goes to you (30% us, 30% Roblox).
 - Free to install
 
-
-## Get it
+## Install
 
 1. Take the model from the [Creator Store](https://create.roblox.com/store/asset/857927023/HD-Admin).
 2. In Studio, insert it into your game via the Toolbox, and leave it in Workspace or ServerScriptService, and publish.
@@ -30,14 +33,16 @@ The [install guide](https://hdadmin.com/install/) includes additional settings, 
 
 ## Build on it
 
-Every command is a typed Luau module and yours can be too. See [Custom Commands](https://hdadmin.com/custom-commands/), [Custom Themes](https://hdadmin.com/custom-themes/) and [Using the API](https://hdadmin.com/using-the-api/).
+Every command is a typed Luau module that can easily be extended onto the loader. See [Custom Commands](https://hdadmin.com/custom-commands/), [Custom Themes](https://hdadmin.com/custom-themes/) and [Using the API](https://hdadmin.com/using-the-api/).
 
-## Source
+## License
 
-This repository is the home of the v2 source, which is being prepared for publication under a source-available licence. Until then the built model on the Creator Store is the release, and every version is listed on the [forum's release notes](https://forum.hdadmin.com/updates).
+HD Admin is source-available. It's released under the [HD Admin Source-Available License](LICENSE.md).
 
 ## Community
 
-[Forum](https://forum.hdadmin.com/) for bug reports, suggestions and questions · [Discord](https://discord.gg/MkSVp9Gusu) · [DevForum](https://devforum.roblox.com/t/welcome-to-hd-admin/216819) · [YouTube](https://www.youtube.com/@1foreverhd) · [X](https://x.com/ForeverHD_)
+[Forum](https://forum.hdadmin.com/) · [Discord](https://discord.gg/MkSVp9Gusu) · [DevForum](https://devforum.roblox.com/t/welcome-to-hd-admin/216819) · [YouTube](https://www.youtube.com/@1foreverhd) · [X](https://x.com/ForeverHD_)
+
+## Contact
 
 HD Admin is made by ForeverHD and [nanoblox](https://nanoblox.com/). For business enquiries, reach out to ben@nanoblox.com.
